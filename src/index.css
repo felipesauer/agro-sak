@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-agro-950: #0f2a03;
+  --color-agro-900: #1a4205;
+  --color-agro-800: #276310;
+  --color-agro-700: #348419;
+  --color-agro-600: #45a524;
+  --color-agro-500: #5cc636;
+  --color-agro-400: #7dd95c;
+  --color-agro-300: #a6e88a;
+  --color-agro-200: #ccf2b5;
+  --color-agro-100: #e8f9de;
+  --color-agro-50: #f3fcee;
+
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-up: slide-up 0.4s ease-out;
+  --animate-scale-in: scale-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
