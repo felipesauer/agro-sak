@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
@@ -5,7 +6,10 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import DataFreshness from '../../components/ui/DataFreshness'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { useDieselPrice } from '../../db/hooks'
 
 // ── Types ──
 
@@ -75,7 +79,7 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.consumptionPerHour) return 'Informe o consumo do motor (L/h)'
   if (!inputs.operationalCapacity) return 'Informe a capacidade operacional (ha/h)'
   if (!inputs.dieselPrice) return 'Informe o preço do diesel'
-  if (parseFloat(inputs.operationalCapacity) <= 0) return 'Capacidade operacional deve ser positiva'
+  if (isNaN(parseFloat(inputs.operationalCapacity)) || parseFloat(inputs.operationalCapacity) <= 0) return 'Capacidade operacional deve ser positiva'
   return null
 }
 
@@ -91,8 +95,13 @@ const CONSUMPTION_REFERENCE = [
 // ── Component ──
 
 export default function FuelConsumption() {
+  const dieselFromDb = useDieselPrice()
+  const currentInitial = useMemo<Inputs>(() => ({
+    ...INITIAL,
+    dieselPrice: dieselFromDb ? String(dieselFromDb.price) : INITIAL.dieselPrice,
+  }), [dieselFromDb])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, Result>({ initialInputs: currentInitial, calculate, validate })
 
   const handleOperationChange = (value: string) => {
     updateInput('operation', value)
@@ -151,24 +160,13 @@ export default function FuelConsumption() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Consumo típico por operação
               </p>
-              <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1">Operação</th>
-                    <th className="pb-1">Consumo (L/h)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CONSUMPTION_REFERENCE.map((row) => (
-                    <tr key={row.operation} className="border-t border-gray-200">
-                      <td className="py-1">{row.operation}</td>
-                      <td className="py-1">{row.range}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
+              <ComparisonTable
+                columns={[
+                  { key: 'operation' as const, label: 'Operação' },
+                  { key: 'range' as const, label: 'Consumo (L/h)' },
+                ]}
+                rows={CONSUMPTION_REFERENCE}
+              />
             </div>
           </div>
         )
@@ -223,6 +221,7 @@ export default function FuelConsumption() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
+      <DataFreshness table="fuelPrices" label="Diesel" />
       <ActionButtons onCalculate={run} onClear={clear} />
     </CalculatorLayout>
   )

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
@@ -7,6 +8,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { MOISTURE_STANDARD, cropOptionsFrom } from '../../data/reference-data'
+import { useMoistureStandards } from '../../db/hooks'
 
 // ── Types ──
 
@@ -35,8 +37,6 @@ const INITIAL: Inputs = {
   dryingCostPerBag: '',
   pricePerBag: '',
 }
-
-const CROP_OPTIONS = cropOptionsFrom(MOISTURE_STANDARD)
 
 // ── Calculation ──
 
@@ -72,15 +72,31 @@ function validate(inputs: Inputs): string | null {
   const ui = parseFloat(inputs.initialMoisture)
   const uf = parseFloat(inputs.targetMoisture)
   if (ui <= uf) return 'Umidade inicial deve ser maior que a final'
-  if (parseFloat(inputs.initialWeight) <= 0) return 'Peso deve ser positivo'
+  if (isNaN(parseFloat(inputs.initialWeight)) || parseFloat(inputs.initialWeight) <= 0) return 'Peso deve ser positivo'
   return null
 }
 
 // ── Component ──
 
 export default function DryingLoss() {
+  const dbStandards = useMoistureStandards()
+  const moistureStds = useMemo(() => {
+    if (!dbStandards) return MOISTURE_STANDARD
+    return Object.fromEntries(dbStandards.map(d => [d.crop, d.moisture])) as Record<string, number>
+  }, [dbStandards])
+  const cropOptions = useMemo(() => [
+    ...cropOptionsFrom(moistureStds),
+    { value: 'custom', label: '✦ Personalizado' },
+  ], [moistureStds])
   const { inputs, result, error, updateInput, run, clear } =
     useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+
+  const handleCropChange = (v: string) => {
+    updateInput('crop', v)
+    if (v !== 'custom') {
+      updateInput('targetMoisture', String(moistureStds[v] ?? 14))
+    }
+  }
 
   return (
     <CalculatorLayout
@@ -140,8 +156,8 @@ export default function DryingLoss() {
       <SelectField
         label="Cultura"
         value={inputs.crop}
-        onChange={(v) => updateInput('crop', v)}
-        options={CROP_OPTIONS}
+        onChange={handleCropChange}
+        options={cropOptions}
         required
       />
 

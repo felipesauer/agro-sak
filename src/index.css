@@ -37,3 +37,74 @@ body {
   @apply bg-gray-50 text-gray-900 antialiased;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+/* ── Print styles ── */
+
+@media print {
+  /* Hide everything except the result */
+  header,
+  nav,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Show only the result section */
+  #calculator-result {
+    border: 1px solid #d1d5db !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #f9fafb !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    page-break-inside: avoid;
+  }
+
+  /* Improve readability in print */
+  #calculator-result h2 {
+    font-size: 14pt;
+    margin-bottom: 12px;
+  }
+
+  /* Print header with tool name */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #45a524;
+  }
+
+  /* Print footer branding */
+  .print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 9pt;
+    color: #6b7280;
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid #d1d5db;
+  }
+
+  /* Remove animations */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Ensure results are visible */
+  [data-result-card] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

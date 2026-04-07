@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useRef, type ReactNode } from 'react'
 import { ChevronRight, Info, BookOpen, BarChart3 } from 'lucide-react'
 import { useSEO } from '../../hooks/useSEO'
+import ResultActions from '../ui/ResultActions'
 
 interface CalculatorLayoutProps {
   title: string
@@ -20,29 +21,42 @@ export default function CalculatorLayout({
   methodology,
 }: CalculatorLayoutProps) {
   const [showInfo, setShowInfo] = useState(false)
+  const resultRef = useRef<HTMLDivElement>(null)
   useSEO({ title, description })
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
+      {/* Print-only header */}
+      <div className="hidden print:block print-header">
+        🌱 Agro SAK — {title}
+      </div>
+
       {/* Title */}
-      <div className="mb-6">
+      <div className="mb-6 print:hidden">
         <h1 className="text-2xl md:text-3xl font-bold text-agro-800 mb-2">{title}</h1>
         <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">{description}</p>
       </div>
 
       {/* Calculator form */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 mb-4 shadow-sm space-y-4 animate-slide-up">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 mb-4 shadow-sm space-y-4 animate-slide-up print:hidden">
         {children}
       </div>
 
       {/* Result */}
       {result && (
-        <div className="bg-gradient-to-br from-agro-50 via-emerald-50 to-green-50 border border-agro-200 rounded-2xl p-6 shadow-sm mb-4 animate-scale-in">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-agro-600 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-white" />
+        <div
+          ref={resultRef}
+          id="calculator-result"
+          className="bg-gradient-to-br from-agro-50 via-emerald-50 to-green-50 border border-agro-200 rounded-2xl p-6 shadow-sm mb-4 animate-scale-in print:shadow-none print:border-gray-300 print:rounded-none print:p-4"
+        >
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-agro-600 flex items-center justify-center print:hidden">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-sm font-bold text-agro-800 uppercase tracking-wide">Resultado</h2>
             </div>
-            <h2 className="text-sm font-bold text-agro-800 uppercase tracking-wide">Resultado</h2>
+            <ResultActions title={title} resultRef={resultRef} />
           </div>
           {result}
         </div>
@@ -50,7 +64,7 @@ export default function CalculatorLayout({
 
       {/* About section */}
       {(about || methodology) && (
-        <div className="mt-6">
+        <div className="mt-6 print:hidden">
           <button
             type="button"
             onClick={() => setShowInfo(!showInfo)}
@@ -85,6 +99,11 @@ export default function CalculatorLayout({
           )}
         </div>
       )}
+
+      {/* Print-only footer */}
+      <div className="hidden print:block print-footer">
+        Calculado em agrosak.com.br — {new Date().toLocaleDateString('pt-BR')} — Resultados para fins de referência
+      </div>
     </div>
   )
 }

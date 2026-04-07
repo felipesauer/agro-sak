@@ -5,6 +5,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
 
 // ── Types ──
@@ -82,8 +83,8 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.speed) return 'Informe a velocidade de aplicação'
   if (!inputs.nozzleSpacing) return 'Informe o espaçamento entre bicos'
   if (!inputs.tankCapacity) return 'Informe a capacidade do tanque'
-  if (parseFloat(inputs.speed) <= 0) return 'Velocidade deve ser positiva'
-  if (parseFloat(inputs.nozzleSpacing) <= 0) return 'Espaçamento deve ser positivo'
+  if (isNaN(parseFloat(inputs.speed)) || parseFloat(inputs.speed) <= 0) return 'Velocidade deve ser positiva'
+  if (isNaN(parseFloat(inputs.nozzleSpacing)) || parseFloat(inputs.nozzleSpacing) <= 0) return 'Espaçamento deve ser positivo'
   return null
 }
 
@@ -145,22 +146,13 @@ export default function SprayerCalibration() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Volume recomendado por tipo de gota
               </p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1">Tipo de gota</th>
-                    <th className="pb-1">Volume (L/ha)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {VOLUME_REFERENCE.map((row) => (
-                    <tr key={row.droplet} className="border-t border-gray-200">
-                      <td className="py-1">{row.droplet}</td>
-                      <td className="py-1">{row.range}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ComparisonTable
+                columns={[
+                  { key: 'droplet' as const, label: 'Tipo de gota' },
+                  { key: 'range' as const, label: 'Volume (L/ha)' },
+                ]}
+                rows={VOLUME_REFERENCE}
+              />
             </div>
           </div>
         )

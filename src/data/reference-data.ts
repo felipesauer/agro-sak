@@ -376,3 +376,260 @@ export const FREIGHT_REF = {
   tollAvgPerKm: 0.08,
   dieselPriceRef: 6.30, // R$/L reference
 }
+
+// ── Seed treatment reference data — Source: EMBRAPA / Adapar ──
+
+export interface SeedTreatmentProduct {
+  name: string
+  type: 'fungicide' | 'insecticide' | 'inoculant' | 'nematicide' | 'biostimulant'
+  dosePerKg: number // mL per 100 kg of seeds (label rate)
+  pricePerLiter: number // R$/L reference
+}
+
+export const SEED_TREATMENT_PRODUCTS: SeedTreatmentProduct[] = [
+  // Fungicides
+  { name: 'Vitavax-Thiram 200 SC', type: 'fungicide', dosePerKg: 250, pricePerLiter: 85 },
+  { name: 'Maxim Advanced', type: 'fungicide', dosePerKg: 100, pricePerLiter: 220 },
+  { name: 'Derosal Plus', type: 'fungicide', dosePerKg: 200, pricePerLiter: 95 },
+  // Insecticides
+  { name: 'Cruiser 350 FS', type: 'insecticide', dosePerKg: 200, pricePerLiter: 350 },
+  { name: 'Standak Top', type: 'insecticide', dosePerKg: 200, pricePerLiter: 280 },
+  { name: 'Fortenza 600 FS', type: 'insecticide', dosePerKg: 100, pricePerLiter: 450 },
+  // Inoculants
+  { name: 'Inoculante líquido (Bradyrhizobium)', type: 'inoculant', dosePerKg: 100, pricePerLiter: 15 },
+  { name: 'Co-inoculante (Azospirillum)', type: 'inoculant', dosePerKg: 100, pricePerLiter: 20 },
+  // Nematicides
+  { name: 'Avicta 500 FS', type: 'nematicide', dosePerKg: 100, pricePerLiter: 520 },
+  // Biostimulants
+  { name: 'Stimulate', type: 'biostimulant', dosePerKg: 500, pricePerLiter: 130 },
+]
+
+export const SEED_TREATMENT_TYPE_LABELS: Record<string, string> = {
+  fungicide: 'Fungicida',
+  insecticide: 'Inseticida',
+  inoculant: 'Inoculante',
+  nematicide: 'Nematicida',
+  biostimulant: 'Bioestimulante',
+}
+
+// ── Soil analysis interpretation — Source: EMBRAPA / Raij et al. (IAC Boletim 100) ──
+
+export interface SoilNutrientRange {
+  unit: string
+  ranges: { label: string; min: number; max: number; color: string }[]
+}
+
+export const SOIL_ANALYSIS_RANGES: Record<string, SoilNutrientRange> = {
+  pH: {
+    unit: '',
+    ranges: [
+      { label: 'Muito baixo', min: 0, max: 4.5, color: 'red' },
+      { label: 'Baixo', min: 4.5, max: 5.0, color: 'amber' },
+      { label: 'Médio', min: 5.0, max: 5.5, color: 'yellow' },
+      { label: 'Adequado', min: 5.5, max: 6.5, color: 'emerald' },
+      { label: 'Alto', min: 6.5, max: 14, color: 'blue' },
+    ],
+  },
+  organicMatter: {
+    unit: 'g/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 15, color: 'red' },
+      { label: 'Médio', min: 15, max: 25, color: 'amber' },
+      { label: 'Adequado', min: 25, max: 40, color: 'emerald' },
+      { label: 'Alto', min: 40, max: 999, color: 'blue' },
+    ],
+  },
+  P: {
+    unit: 'mg/dm³',
+    ranges: [
+      { label: 'Muito baixo', min: 0, max: 6, color: 'red' },
+      { label: 'Baixo', min: 6, max: 12, color: 'amber' },
+      { label: 'Médio', min: 12, max: 20, color: 'yellow' },
+      { label: 'Adequado', min: 20, max: 40, color: 'emerald' },
+      { label: 'Alto', min: 40, max: 999, color: 'blue' },
+    ],
+  },
+  K: {
+    unit: 'mmolc/dm³',
+    ranges: [
+      { label: 'Muito baixo', min: 0, max: 0.8, color: 'red' },
+      { label: 'Baixo', min: 0.8, max: 1.5, color: 'amber' },
+      { label: 'Médio', min: 1.5, max: 3.0, color: 'yellow' },
+      { label: 'Adequado', min: 3.0, max: 6.0, color: 'emerald' },
+      { label: 'Alto', min: 6.0, max: 999, color: 'blue' },
+    ],
+  },
+  Ca: {
+    unit: 'mmolc/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 15, color: 'red' },
+      { label: 'Médio', min: 15, max: 30, color: 'amber' },
+      { label: 'Adequado', min: 30, max: 70, color: 'emerald' },
+      { label: 'Alto', min: 70, max: 999, color: 'blue' },
+    ],
+  },
+  Mg: {
+    unit: 'mmolc/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 5, color: 'red' },
+      { label: 'Médio', min: 5, max: 8, color: 'amber' },
+      { label: 'Adequado', min: 8, max: 20, color: 'emerald' },
+      { label: 'Alto', min: 20, max: 999, color: 'blue' },
+    ],
+  },
+  S: {
+    unit: 'mg/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 5, color: 'red' },
+      { label: 'Médio', min: 5, max: 10, color: 'amber' },
+      { label: 'Adequado', min: 10, max: 20, color: 'emerald' },
+      { label: 'Alto', min: 20, max: 999, color: 'blue' },
+    ],
+  },
+  B: {
+    unit: 'mg/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 0.2, color: 'red' },
+      { label: 'Médio', min: 0.2, max: 0.6, color: 'amber' },
+      { label: 'Adequado', min: 0.6, max: 1.0, color: 'emerald' },
+      { label: 'Alto', min: 1.0, max: 999, color: 'blue' },
+    ],
+  },
+  Cu: {
+    unit: 'mg/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 0.3, color: 'red' },
+      { label: 'Médio', min: 0.3, max: 0.8, color: 'amber' },
+      { label: 'Adequado', min: 0.8, max: 1.5, color: 'emerald' },
+      { label: 'Alto', min: 1.5, max: 999, color: 'blue' },
+    ],
+  },
+  Mn: {
+    unit: 'mg/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 1.3, color: 'red' },
+      { label: 'Médio', min: 1.3, max: 5.0, color: 'amber' },
+      { label: 'Adequado', min: 5.0, max: 15, color: 'emerald' },
+      { label: 'Alto', min: 15, max: 999, color: 'blue' },
+    ],
+  },
+  Zn: {
+    unit: 'mg/dm³',
+    ranges: [
+      { label: 'Baixo', min: 0, max: 0.6, color: 'red' },
+      { label: 'Médio', min: 0.6, max: 1.2, color: 'amber' },
+      { label: 'Adequado', min: 1.2, max: 3.0, color: 'emerald' },
+      { label: 'Alto', min: 3.0, max: 999, color: 'blue' },
+    ],
+  },
+}
+
+/** Classify a value within a SoilNutrientRange and return the matching range entry */
+export function classifySoilNutrient(nutrient: string, value: number): { label: string; color: string } | null {
+  const ranges = SOIL_ANALYSIS_RANGES[nutrient]?.ranges
+  if (!ranges) return null
+  for (const range of ranges) {
+    if (value >= range.min && value < range.max) return { label: range.label, color: range.color }
+  }
+  return null
+}
+
+// ── Drying energy reference — Source: EMBRAPA Instrumentação / CONAB ──
+
+export const DRYING_ENERGY_REF = {
+  // kcal needed to evaporate 1 kg of water from grain
+  kcalPerKgWater: 700,
+  // Energy source efficiency and cost
+  sources: {
+    firewood: { label: 'Lenha', kcalPerUnit: 3100, unit: 'kg', pricePerUnit: 0.25, efficiency: 0.65 },
+    lpg: { label: 'GLP (Gás)', kcalPerUnit: 11000, unit: 'kg', pricePerUnit: 7.50, efficiency: 0.85 },
+    electricity: { label: 'Elétrico', kcalPerUnit: 860, unit: 'kWh', pricePerUnit: 0.85, efficiency: 0.95 },
+    diesel: { label: 'Diesel', kcalPerUnit: 10200, unit: 'L', pricePerUnit: 6.30, efficiency: 0.80 },
+  },
+  // Typical dryer throughput (t/h) by capacity
+  dryerCapacity: {
+    small: { label: 'Pequeno (até 10 t/h)', throughput: 7 },
+    medium: { label: 'Médio (10–30 t/h)', throughput: 20 },
+    large: { label: 'Grande (30+ t/h)', throughput: 40 },
+  },
+  // Third-party drying cost reference (R$ per 60kg sack)
+  thirdPartyCostPerBag: { min: 2.50, avg: 4.00, max: 6.00 },
+} as const
+
+// ── Fertilizer sources for custom blending — Source: EMBRAPA / ANDA ──
+
+export interface FertilizerSource {
+  name: string
+  n: number   // % N
+  p2o5: number // % P₂O₅
+  k2o: number  // % K₂O
+  s: number    // % S
+  pricePerTon: number // R$/t reference
+}
+
+export const FERTILIZER_SOURCES: FertilizerSource[] = [
+  { name: 'Ureia', n: 45, p2o5: 0, k2o: 0, s: 0, pricePerTon: 2800 },
+  { name: 'MAP (11-52-00)', n: 11, p2o5: 52, k2o: 0, s: 0, pricePerTon: 3800 },
+  { name: 'DAP (18-46-00)', n: 18, p2o5: 46, k2o: 0, s: 0, pricePerTon: 3600 },
+  { name: 'KCl (Cloreto de Potássio)', n: 0, p2o5: 0, k2o: 60, s: 0, pricePerTon: 2600 },
+  { name: 'SSP (Superfosfato Simples)', n: 0, p2o5: 18, k2o: 0, s: 12, pricePerTon: 1200 },
+  { name: 'SFS (Superfosfato Triplo)', n: 0, p2o5: 46, k2o: 0, s: 0, pricePerTon: 3200 },
+  { name: 'Sulfato de Amônio', n: 21, p2o5: 0, k2o: 0, s: 24, pricePerTon: 1800 },
+  { name: 'Nitrato de Amônio', n: 34, p2o5: 0, k2o: 0, s: 0, pricePerTon: 2400 },
+  { name: 'Sulfato de Potássio', n: 0, p2o5: 0, k2o: 50, s: 18, pricePerTon: 3800 },
+]
+
+// ── Crop insurance (Proagro / PSR) reference — Source: MAPA / BACEN Res. 4.939 ──
+
+export const CROP_INSURANCE_REF = {
+  // PSR subsidy ranges by crop category (% of premium subsidized by government)
+  subsidyRates: {
+    grains: { label: 'Grãos (soja, milho, trigo)', rate: 40 },
+    secondCrop: { label: 'Safrinha', rate: 40 },
+    fruits: { label: 'Fruticultura', rate: 40 },
+    horticulture: { label: 'Olericultura', rate: 40 },
+    coffee: { label: 'Café', rate: 40 },
+    forestry: { label: 'Florestal', rate: 40 },
+    livestock: { label: 'Pecuária', rate: 30 },
+    aquaculture: { label: 'Aquicultura', rate: 30 },
+  },
+  // Typical premium rates (% of insured value) by risk level
+  premiumRates: {
+    low: { label: 'Baixo risco', rate: 3.5 },
+    medium: { label: 'Risco médio', rate: 6.0 },
+    high: { label: 'Alto risco', rate: 9.0 },
+  },
+  // Coverage levels
+  coverageLevels: [
+    { value: '60', label: '60%' },
+    { value: '65', label: '65%' },
+    { value: '70', label: '70%' },
+    { value: '75', label: '75%' },
+    { value: '80', label: '80%' },
+  ],
+  // Proagro rates (% of financed value) — BACEN
+  proagroRate: 2.0, // % do valor financiado
+  proagroMaisRate: 4.0, // Proagro Mais — para mini/pequeno produtor
+} as const
+
+// ── Carbon Sequestration Rates (tCO₂eq/ha/year by crop system) ──
+// Source: EMBRAPA Solos / Plano ABC+ (Agricultura de Baixa Emissão de Carbono)
+
+export const CARBON_SEQUESTRATION: Record<string, number> = {
+  soybean_corn: 0.4,    // Soja/Milho safrinha — sistema mais comum no Cerrado
+  soybean_wheat: 0.45,  // Soja/Trigo — Sul do Brasil
+  soybean_cotton: 0.35, // Soja/Algodão — Cerrado
+  corn_mono: 0.25,      // Milho safra única
+  sugarcane: 0.6,       // Cana-de-açúcar — alto aporte de biomassa
+  pasture: 0.8,         // Pastagem bem manejada — alto potencial de sequestro
+  coffee: 0.5,          // Café — sistema perene
+}
+
+// ── Carbon Credit Price Reference (R$/tCO₂eq — voluntary market Brazil 2023-2024) ──
+// Source: Ecosystem Marketplace, CEBDS
+
+export const CARBON_PRICE_REF = {
+  min: 25,   // R$/tCO₂eq — projetos de menor qualidade/volume
+  avg: 50,   // R$/tCO₂eq — média mercado voluntário BR
+  max: 120,  // R$/tCO₂eq — projetos premium com co-benefícios
+} as const

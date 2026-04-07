@@ -17,6 +17,7 @@ interface Inputs {
   threshingGrains: string
   sacPrice: string
   area: string
+  customGrainsFactor: string
 }
 
 interface LossDetail {
@@ -40,6 +41,7 @@ const CROP_OPTIONS = [
   { value: 'wheat', label: 'Trigo' },
   { value: 'rice', label: 'Arroz' },
   { value: 'bean', label: 'Feijão' },
+  { value: 'custom', label: '✦ Personalizado' },
 ]
 
 // Grãos/m² por sc/ha — soja: 16, milho: 8, trigo: 20, arroz: 14, feijão: 12
@@ -59,12 +61,15 @@ const INITIAL: Inputs = {
   threshingGrains: '6',
   sacPrice: '115',
   area: '',
+  customGrainsFactor: '',
 }
 
 // ── Calculation ──
 
 function calculate(inputs: Inputs): Result | null {
-  const grainsFactor = GRAINS_PER_SC[inputs.crop] ?? 16
+  const grainsFactor = inputs.crop === 'custom'
+    ? (parseFloat(inputs.customGrainsFactor) || 16)
+    : (GRAINS_PER_SC[inputs.crop] ?? 16)
   const price = parseFloat(inputs.sacPrice)
   const expectedYield = parseFloat(inputs.expectedYield)
   const area = parseFloat(inputs.area) || 0
@@ -202,6 +207,16 @@ export default function HarvestLoss() {
         value={inputs.crop}
         onChange={(v) => updateInput('crop', v)}
       />
+
+      {inputs.crop === 'custom' && (
+        <InputField
+          label="Grãos/m² por sc/ha"
+          value={inputs.customGrainsFactor}
+          onChange={(v) => updateInput('customGrainsFactor', v)}
+          placeholder="ex: 16"
+          hint="Soja≈16, Milho≈8, Trigo≈20, Arroz≈14, Feijão≈12"
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField

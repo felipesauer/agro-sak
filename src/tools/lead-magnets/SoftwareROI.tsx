@@ -14,6 +14,9 @@ interface Inputs {
   crop: string
   management: string
   softwareCostMonth: string
+  customInputCost: string
+  customProd: string
+  customPrice: string
 }
 
 interface SavingsRow {
@@ -34,6 +37,9 @@ const INITIAL: Inputs = {
   crop: 'soybean',
   management: 'spreadsheet',
   softwareCostMonth: '290',
+  customInputCost: '',
+  customProd: '',
+  customPrice: '',
 }
 
 const CROP_OPTIONS = [
@@ -41,6 +47,7 @@ const CROP_OPTIONS = [
   { value: 'corn', label: 'Milho' },
   { value: 'cotton', label: 'Algodão' },
   { value: 'mixed', label: 'Misto (Soja + Milho)' },
+  { value: 'custom', label: '✦ Personalizado' },
 ]
 
 const MGMT_OPTIONS = [
@@ -79,9 +86,15 @@ function calculate(inputs: Inputs): Result | null {
   const area = parseFloat(inputs.area)
   const swCost = parseFloat(inputs.softwareCostMonth) || 290
 
-  const inputCost = (INPUT_COST[inputs.crop] ?? 2800) * area
-  const prod = AVG_PROD[inputs.crop] ?? 55
-  const price = AVG_PRICE[inputs.crop] ?? 110
+  const inputCost = (inputs.crop === 'custom'
+    ? (parseFloat(inputs.customInputCost) || 2800)
+    : (INPUT_COST[inputs.crop] ?? 2800)) * area
+  const prod = inputs.crop === 'custom'
+    ? (parseFloat(inputs.customProd) || 55)
+    : (AVG_PROD[inputs.crop] ?? 55)
+  const price = inputs.crop === 'custom'
+    ? (parseFloat(inputs.customPrice) || 110)
+    : (AVG_PRICE[inputs.crop] ?? 110)
 
   // Savings estimates (conservative)
   const inputSaving = inputCost * 0.015
@@ -111,7 +124,7 @@ function calculate(inputs: Inputs): Result | null {
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.area) return 'Informe a área da fazenda'
-  if (parseFloat(inputs.area) <= 0) return 'Área deve ser positiva'
+  if (isNaN(parseFloat(inputs.area)) || parseFloat(inputs.area) <= 0) return 'Área deve ser positiva'
   return null
 }
 
@@ -201,6 +214,35 @@ export default function SoftwareROI() {
           onChange={(v) => updateInput('management', v as never)}
         />
       </div>
+
+      {inputs.crop === 'custom' && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <InputField
+            label="Custo de insumos"
+            unit="R$/ha"
+            value={inputs.customInputCost}
+            onChange={(v) => updateInput('customInputCost', v as never)}
+            placeholder="ex: 2800"
+            min="0"
+          />
+          <InputField
+            label="Produtividade média"
+            unit="sc/ha"
+            value={inputs.customProd}
+            onChange={(v) => updateInput('customProd', v as never)}
+            placeholder="ex: 55"
+            min="0"
+          />
+          <InputField
+            label="Preço médio da saca"
+            unit="R$/sc"
+            value={inputs.customPrice}
+            onChange={(v) => updateInput('customPrice', v as never)}
+            placeholder="ex: 110"
+            min="0"
+          />
+        </div>
+      )}
 
       <InputField
         label="Custo mensal do software"

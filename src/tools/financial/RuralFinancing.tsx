@@ -6,6 +6,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency } from '../../utils/formatters'
 
 // ── Types ──
@@ -149,14 +150,17 @@ export default function RuralFinancing() {
   }
 
   // Only show first 6 and last 3 installments in summary
-  const visibleInstallments = useMemo(() => {
+  const tableRows = useMemo(() => {
     if (!result) return []
     const inst = result.installments
-    if (inst.length <= 12) return inst
-    return [...inst.slice(0, 6), ...inst.slice(-3)]
+    if (inst.length <= 12) return inst.map((r) => ({ ...r, _ellipsis: false }))
+    const rows = [
+      ...inst.slice(0, 6).map((r) => ({ ...r, _ellipsis: false })),
+      { month: 0, payment: 0, principal: 0, interest: 0, balance: 0, _ellipsis: true },
+      ...inst.slice(-3).map((r) => ({ ...r, _ellipsis: false })),
+    ]
+    return rows
   }, [result])
-
-  const showEllipsis = result ? result.installments.length > 12 : false
 
   return (
     <CalculatorLayout
@@ -203,39 +207,22 @@ export default function RuralFinancing() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Tabela de amortização ({inputs.system.toUpperCase()})
               </p>
-              <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1 pr-2">Mês</th>
-                    <th className="pb-1 pr-2">Parcela</th>
-                    <th className="pb-1 pr-2">Amortiz.</th>
-                    <th className="pb-1 pr-2">Juros</th>
-                    <th className="pb-1">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleInstallments.map((inst, idx) => {
-                  const showDots = showEllipsis && idx === 6
-                  return (
-                    <tr key={showDots ? 'ellipsis' : inst.month} className="border-t border-gray-200">
-                      {showDots ? (
-                        <td colSpan={5} className="py-1 text-center text-gray-400">…</td>
-                      ) : (
-                        <>
-                          <td className="py-1 pr-2">{inst.month}</td>
-                          <td className="py-1 pr-2">{formatCurrency(inst.payment)}</td>
-                          <td className="py-1 pr-2">{formatCurrency(inst.principal)}</td>
-                          <td className="py-1 pr-2">{formatCurrency(inst.interest)}</td>
-                          <td className="py-1">{formatCurrency(inst.balance, 0)}</td>
-                        </>
-                      )}
-                    </tr>
-                  )
-                })}
-                </tbody>
-              </table>
-              </div>
+              <ComparisonTable
+                columns={[
+                  { key: 'month' as never, label: 'Mês' },
+                  { key: 'payment' as never, label: 'Parcela', format: (v) => formatCurrency(v as number) },
+                  { key: 'principal' as never, label: 'Amortiz.', format: (v) => formatCurrency(v as number) },
+                  { key: 'interest' as never, label: 'Juros', format: (v) => formatCurrency(v as number) },
+                  { key: 'balance' as never, label: 'Saldo', format: (v) => formatCurrency(v as number, 0) },
+                ]}
+                rows={tableRows as unknown as Record<string, unknown>[]}
+                rowKey={'month' as never}
+                colSpanRow={(row) =>
+                  (row as unknown as { _ellipsis: boolean })._ellipsis
+                    ? <span className="text-gray-400">…</span>
+                    : null
+                }
+              />
             </div>
 
             <AlertBanner

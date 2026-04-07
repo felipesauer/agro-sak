@@ -91,4 +91,22 @@ export const TOOLS: ToolInfo[] = [
   { id: 42, slug: 'gps-area', name: 'Calculadora de Área por GPS', description: 'Desenhe no mapa e calcule a área', category: 'lead-magnet', priority: 'gold', phase: 9, ready: true },
   { id: 43, slug: 'crop-comparer', name: 'Comparador de Culturas', description: 'Soja × Milho × Algodão — qual rende mais?', category: 'lead-magnet', priority: 'gold', phase: 9, ready: true },
   { id: 37, slug: 'water-balance', name: 'Balanço Hídrico', description: 'Monitoramento de chuva e déficit hídrico', category: 'utility', priority: 'medium', phase: 9, ready: true },
+
+  // ── Phase 10: New Tools ──
+  { id: 44, slug: 'seed-treatment', name: 'Tratamento de Sementes', description: 'Dose de fungicida, inseticida e inoculante por kg de semente', category: 'agronomic', priority: 'high', phase: 10, ready: true },
+  { id: 45, slug: 'crop-insurance', name: 'Seguro Rural / Proagro', description: 'Prêmio do seguro rural e simulação de indenização', category: 'financial', priority: 'high', phase: 10, ready: true },
+  { id: 46, slug: 'soil-analysis', name: 'Interpretação de Análise de Solo', description: 'Classifique nutrientes e veja o diagnóstico do solo', category: 'agronomic', priority: 'high', phase: 10, ready: true },
+  { id: 47, slug: 'drying-cost', name: 'Custo de Secagem', description: 'Custo energético da secagem e comparativo com terceiros', category: 'grain', priority: 'high', phase: 10, ready: true },
+  { id: 48, slug: 'fertilizer-blend', name: 'Formulação de Adubo', description: 'Monte sua mistura de fertilizantes a partir de fontes individuais', category: 'agronomic', priority: 'high', phase: 10, ready: true },
+
+  // ── Phase 11: Sustainability ──
+  { id: 49, slug: 'carbon-credit', name: 'Crédito de Carbono Rural', description: 'Estime sequestro de carbono e receita com créditos', category: 'lead-magnet', priority: 'gold', phase: 11, ready: true },
+  { id: 50, slug: 'gypsum', name: 'Gesso Agrícola', description: 'Necessidade de gessagem para correção subsuperficial', category: 'agronomic', priority: 'high', phase: 11, ready: true },
+  { id: 51, slug: 'electricity-cost', name: 'Custo de Energia Elétrica', description: 'Custo energético de pivôs, secadores e equipamentos', category: 'operational', priority: 'high', phase: 11, ready: true },
+  { id: 52, slug: 'grain-classification', name: 'Classificação de Grãos', description: 'Classifique soja/milho conforme IN MAPA e calcule descontos', category: 'grain', priority: 'high', phase: 11, ready: true },
+  { id: 53, slug: 'soil-sampling', name: 'Amostragem de Solo', description: 'Calcule amostras, grade e custo para análise de solo', category: 'agronomic', priority: 'high', phase: 11, ready: true },
+  { id: 54, slug: 'payback-period', name: 'Payback de Investimento', description: 'Tempo de retorno, VPL e ROI de investimentos rurais', category: 'financial', priority: 'high', phase: 11, ready: true },
+  { id: 55, slug: 'rain-volume', name: 'Volume de Chuva', description: 'Converta mm de chuva para litros/ha e custo equivalente', category: 'utility', priority: 'medium', phase: 11, ready: true },
+  { id: 56, slug: 'silo-dimensioning', name: 'Dimensionamento de Silo', description: 'Capacidade de silos cilíndricos, graneleiros e bolsa', category: 'grain', priority: 'high', phase: 11, ready: true },
+  { id: 57, slug: 'crop-rotation', name: 'Rotação de Culturas', description: 'Compare rotação × monocultura e veja o benefício econômico', category: 'agronomic', priority: 'high', phase: 11, ready: true },
 ]

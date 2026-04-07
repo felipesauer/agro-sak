@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
@@ -5,7 +6,9 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
+import { useFreightRates } from '../../db/hooks'
 
 // ── Types ──
 
@@ -74,8 +77,14 @@ function validate(inputs: Inputs): string | null {
 // ── Component ──
 
 export default function GrainFreight() {
+  const dbFreight = useFreightRates()
+  const currentInitial = useMemo<Inputs>(() => {
+    if (!dbFreight?.length) return INITIAL
+    const avg = dbFreight.find(r => r.key === 'avgPerTonKm')
+    return { ...INITIAL, freightPerKm: avg ? String(avg.value) : INITIAL.freightPerKm }
+  }, [dbFreight])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, Result>({ initialInputs: currentInitial, calculate, validate })
 
   const handleVehicle = (v: string) => {
     updateInput('vehicleType', v)
@@ -115,36 +124,25 @@ export default function GrainFreight() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Comparativo por tipo de veículo
               </p>
-              <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1 pr-2">Veículo</th>
-                    <th className="pb-1 pr-2">Carga</th>
-                    <th className="pb-1 pr-2">R$/t</th>
-                    <th className="pb-1">R$/sc</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {VEHICLE_OPTIONS.map((v) => {
-                    const t = parseFloat(VEHICLE_LOAD[v.value])
-                    const dist = parseFloat(inputs.distance)
-                    const fkm = parseFloat(inputs.freightPerKm)
-                    const total = dist * fkm
-                    const perT = total / t
-                    const perSc = perT / (1000 / (parseFloat(inputs.sacWeight) || 60))
-                    return (
-                      <tr key={v.value} className={`border-t border-gray-200 ${v.value === inputs.vehicleType ? 'font-medium text-agro-700' : ''}`}>
-                        <td className="py-1 pr-2">{v.label}</td>
-                        <td className="py-1 pr-2">{VEHICLE_LOAD[v.value]} t</td>
-                        <td className="py-1 pr-2">{formatCurrency(perT)}</td>
-                        <td className="py-1">{formatCurrency(perSc)}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-              </div>
+              <ComparisonTable
+                columns={[
+                  { key: 'label', label: 'Veículo' },
+                  { key: 'load', label: 'Carga' },
+                  { key: 'perT', label: 'R$/t', align: 'right', format: (v) => formatCurrency(v as number) },
+                  { key: 'perSc', label: 'R$/sc', align: 'right', format: (v) => formatCurrency(v as number) },
+                ]}
+                rows={VEHICLE_OPTIONS.map((v) => {
+                  const t = parseFloat(VEHICLE_LOAD[v.value])
+                  const dist = parseFloat(inputs.distance)
+                  const fkm = parseFloat(inputs.freightPerKm)
+                  const total = dist * fkm
+                  const perT = total / t
+                  const perSc = perT / (1000 / (parseFloat(inputs.sacWeight) || 60))
+                  return { vehicle: v.value, label: v.label, load: `${VEHICLE_LOAD[v.value]} t`, perT, perSc }
+                })}
+                rowKey="vehicle"
+                rowClassName={(row) => (row.vehicle as string) === inputs.vehicleType ? 'font-medium text-agro-700' : ''}
+              />
             </div>
           </div>
         )

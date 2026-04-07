@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
@@ -8,6 +8,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
 import { SEEDING_DEFAULTS, cropOptionsFrom } from '../../data/reference-data'
+import { useAllSeedingDefaults } from '../../db/hooks'
 
 // ── Types ──
 
@@ -28,8 +29,6 @@ interface Result {
   bagsPerHa: number
   costPerHa: number | null
 }
-
-const CROP_OPTIONS = cropOptionsFrom(SEEDING_DEFAULTS)
 
 function getInitial(crop: string): Inputs {
   const d = SEEDING_DEFAULTS[crop] ?? SEEDING_DEFAULTS.soybean
@@ -89,6 +88,22 @@ function validate(inputs: Inputs): string | null {
 // ── Component ──
 
 export default function SeedingRate() {
+  const dbDefaults = useAllSeedingDefaults()
+  const seedingData = useMemo(() => {
+    if (!dbDefaults?.length) return SEEDING_DEFAULTS
+    return Object.fromEntries(dbDefaults.map(d => [d.crop, {
+      populationMin: d.populationMin,
+      populationMax: d.populationMax,
+      populationDefault: d.populationDefault,
+      rowSpacingDefault: d.rowSpacingDefault,
+      tswDefault: d.tswDefault,
+    }])) as Record<string, typeof SEEDING_DEFAULTS[string]>
+  }, [dbDefaults])
+  const cropOptions = useMemo(() => [
+    ...cropOptionsFrom(seedingData),
+    { value: 'custom', label: '✦ Personalizado' },
+  ], [seedingData])
+
   const [crop, setCrop] = useState('soybean')
   const { inputs, result, error, updateInput, run, clear } =
     useCalculator<Inputs, Result>({
@@ -99,14 +114,16 @@ export default function SeedingRate() {
 
   const handleCropChange = (value: string) => {
     setCrop(value)
-    const d = SEEDING_DEFAULTS[value] ?? SEEDING_DEFAULTS.soybean
     updateInput('crop', value as never)
-    updateInput('population', String(d.populationDefault) as never)
-    updateInput('rowSpacing', String(d.rowSpacingDefault) as never)
-    updateInput('tsw', String(d.tswDefault) as never)
+    if (value !== 'custom') {
+      const d = seedingData[value] ?? SEEDING_DEFAULTS.soybean
+      updateInput('population', String(d.populationDefault) as never)
+      updateInput('rowSpacing', String(d.rowSpacingDefault) as never)
+      updateInput('tsw', String(d.tswDefault) as never)
+    }
   }
 
-  const defaults = SEEDING_DEFAULTS[crop] ?? SEEDING_DEFAULTS.soybean
+  const defaults = crop !== 'custom' ? (seedingData[crop] ?? SEEDING_DEFAULTS.soybean) : null
 
   return (
     <CalculatorLayout
@@ -163,7 +180,7 @@ export default function SeedingRate() {
     >
       <SelectField
         label="Cultura"
-        options={CROP_OPTIONS}
+        options={cropOptions}
         value={inputs.crop}
         onChange={handleCropChange}
       />
@@ -175,7 +192,7 @@ export default function SeedingRate() {
           value={inputs.population}
           onChange={(v) => updateInput('population', v as never)}
           placeholder="ex: 320000"
-          hint={`Referência: ${formatNumber(defaults.populationMin, 0)} – ${formatNumber(defaults.populationMax, 0)}`}
+          hint={defaults ? `Referência: ${formatNumber(defaults.populationMin, 0)} – ${formatNumber(defaults.populationMax, 0)}` : ''}
           min="50000"
           max="600000"
           required
@@ -221,7 +238,7 @@ export default function SeedingRate() {
           value={inputs.tsw}
           onChange={(v) => updateInput('tsw', v as never)}
           placeholder="ex: 145"
-          hint={`Referência ${CROP_OPTIONS.find(c => c.value === crop)?.label}: ${defaults.tswDefault}g`}
+          hint={defaults ? `Referência ${cropOptions.find(c => c.value === crop)?.label}: ${defaults.tswDefault}g` : ''}
           min="10"
           max="500"
           required

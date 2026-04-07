@@ -3,11 +3,13 @@ import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 
 // ── Types ──
 
 interface FormulaEntry {
+  id: string
   n: string
   p: string
   k: string
@@ -26,15 +28,16 @@ interface FormulaResult {
   isBest: boolean
 }
 
+let _entryId = 0
 function emptyEntry(): FormulaEntry {
-  return { n: '', p: '', k: '', price: '', supplier: '' }
+  return { id: `fe-${++_entryId}`, n: '', p: '', k: '', price: '', supplier: '' }
 }
 
 // ── Component ──
 
 export default function NpkFormulaComparer() {
   const [entries, setEntries] = useState<FormulaEntry[]>([
-    { n: '8', p: '28', k: '16', price: '145', supplier: '' },
+    { id: `fe-${++_entryId}`, n: '8', p: '28', k: '16', price: '145', supplier: '' },
     emptyEntry(),
   ])
   const [results, setResults] = useState<FormulaResult[] | null>(null)
@@ -112,40 +115,25 @@ export default function NpkFormulaComparer() {
       result={
         results && (
           <div className="space-y-4">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-agro-50 text-left">
-                    <th className="p-2 border border-agro-200">Fórmula</th>
-                    <th className="p-2 border border-agro-200">Fornecedor</th>
-                    <th className="p-2 border border-agro-200">Conc. (%)</th>
-                    <th className="p-2 border border-agro-200">R$/kg N</th>
-                    <th className="p-2 border border-agro-200">R$/kg P₂O₅</th>
-                    <th className="p-2 border border-agro-200">R$/kg K₂O</th>
-                    <th className="p-2 border border-agro-200">R$/ponto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((f) => (
-                    <tr
-                      key={f.formula + f.supplier}
-                      className={f.isBest ? 'bg-agro-100 font-semibold' : ''}
-                    >
-                      <td className="p-2 border border-agro-200">
-                        {f.formula}
-                        {f.isBest && <span className="ml-1 text-agro-700">★</span>}
-                      </td>
-                      <td className="p-2 border border-agro-200">{f.supplier}</td>
-                      <td className="p-2 border border-agro-200">{formatNumber(f.totalPercent, 0)}%</td>
-                      <td className="p-2 border border-agro-200">{f.costPerKgN ? formatCurrency(f.costPerKgN) : '—'}</td>
-                      <td className="p-2 border border-agro-200">{f.costPerKgP ? formatCurrency(f.costPerKgP) : '—'}</td>
-                      <td className="p-2 border border-agro-200">{f.costPerKgK ? formatCurrency(f.costPerKgK) : '—'}</td>
-                      <td className="p-2 border border-agro-200">{formatCurrency(f.costPerPoint)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ComparisonTable
+              columns={[
+                {
+                  key: 'formula',
+                  label: 'Fórmula',
+                  format: (v, row) => (
+                    <>{v as string}{(row as Record<string, unknown>).isBest && <span className="ml-1 text-agro-700">★</span>}</>
+                  ),
+                },
+                { key: 'supplier', label: 'Fornecedor' },
+                { key: 'totalPercent', label: 'Conc. (%)', format: (v) => `${formatNumber(v as number, 0)}%` },
+                { key: 'costPerKgN', label: 'R$/kg N', format: (v) => (v as number) ? formatCurrency(v as number) : '—' },
+                { key: 'costPerKgP', label: 'R$/kg P₂O₅', format: (v) => (v as number) ? formatCurrency(v as number) : '—' },
+                { key: 'costPerKgK', label: 'R$/kg K₂O', format: (v) => (v as number) ? formatCurrency(v as number) : '—' },
+                { key: 'costPerPoint', label: 'R$/ponto', format: (v) => formatCurrency(v as number) },
+              ]}
+              rows={results}
+              rowClassName={(row) => (row as Record<string, unknown>).isBest ? 'bg-agro-100 font-semibold' : ''}
+            />
 
             {results.some((f) => f.totalPercent < 20) && (
               <AlertBanner
@@ -158,7 +146,7 @@ export default function NpkFormulaComparer() {
       }
     >
       {entries.map((entry, idx) => (
-        <div key={idx} className="border border-agro-200 rounded-lg p-4 space-y-3">
+        <div key={entry.id} className="border border-agro-200 rounded-lg p-4 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold text-agro-700">Formulação {idx + 1}</span>
             {entries.length > 2 && (

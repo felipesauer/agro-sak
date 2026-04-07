@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -105,21 +106,43 @@ function calculate(inputs: Inputs, rates: CbsRates): Result | null {
 // ── Component ──
 
 export default function TaxReform() {
-  const [inputs, setInputs] = useState<Inputs>(INITIAL)
-  const [result, setResult] = useState<Result | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [rates, setRates] = useState<CbsRates | null>(null)
-  const [loadingRates, setLoadingRates] = useState(false)
+  const [loadingRates, setLoadingRates] = useState(true)
   const [rateYear, setRateYear] = useState('2033-01-01')
 
-  const updateInput = useCallback((key: keyof Inputs, value: string) => {
-    setInputs(prev => ({ ...prev, [key]: value }))
+  const validateWithRates = useCallback(
+    (inputs: Inputs): string | null => {
+      if (!inputs.annualRevenue) return 'Informe o faturamento anual'
+      const dom = parseFloat(inputs.domesticPercent) || 0
+      const exp = parseFloat(inputs.exportPercent) || 0
+      if (Math.abs(dom + exp - 100) > 1) return 'Mercado interno + exportação deve somar 100%'
+      if (!rates) return 'Aguardando taxas da API...'
+      return null
+    },
+    [rates],
+  )
+
+  const calculateWithRates = useCallback(
+    (inputs: Inputs) => (rates ? calculate(inputs, rates) : null),
+    [rates],
+  )
+
+  const { inputs, result, error, updateInput, run, clear } =
+    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate: calculateWithRates, validate: validateWithRates })
+
+  const handleRateYearChange = useCallback((value: string) => {
+    setRateYear(value)
+    setLoadingRates(true)
   }, [])
+
+  const handleStateChange = useCallback((value: string) => {
+    updateInput('state', value as never)
+    setLoadingRates(true)
+  }, [updateInput])
 
   // Fetch CBS/IBS rates when state or year changes
   useEffect(() => {
     let cancelled = false
-    setLoadingRates(true)
     fetchCbsRates(inputs.state, rateYear).then(r => {
       if (!cancelled) {
         setRates(r)
@@ -128,31 +151,6 @@ export default function TaxReform() {
     })
     return () => { cancelled = true }
   }, [inputs.state, rateYear])
-
-  const run = useCallback(() => {
-    if (!inputs.annualRevenue) {
-      setError('Informe o faturamento anual')
-      return
-    }
-    const dom = parseFloat(inputs.domesticPercent) || 0
-    const exp = parseFloat(inputs.exportPercent) || 0
-    if (Math.abs(dom + exp - 100) > 1) {
-      setError('Mercado interno + exportação deve somar 100%')
-      return
-    }
-    if (!rates) {
-      setError('Aguardando taxas da API...')
-      return
-    }
-    setError(null)
-    setResult(calculate(inputs, rates))
-  }, [inputs, rates])
-
-  const clear = useCallback(() => {
-    setInputs(INITIAL)
-    setResult(null)
-    setError(null)
-  }, [])
 
   return (
     <CalculatorLayout
@@ -221,7 +219,7 @@ export default function TaxReform() {
           label="Ano de referência"
           options={YEAR_OPTIONS}
           value={rateYear}
-          onChange={setRateYear}
+          onChange={handleRateYearChange}
         />
       </div>
 
@@ -229,7 +227,7 @@ export default function TaxReform() {
         label="Estado"
         options={STATE_OPTIONS}
         value={inputs.state}
-        onChange={(v) => updateInput('state', v)}
+        onChange={handleStateChange}
       />
 
       <InputField

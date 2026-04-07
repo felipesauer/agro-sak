@@ -6,6 +6,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
 
 // ── Types ──
@@ -13,6 +14,7 @@ import { formatNumber } from '../../utils/formatters'
 type FormulationType = 'SC' | 'WG' | 'EC' | 'SL'
 
 interface Product {
+  id: string
   name: string
   formulation: FormulationType
   dosePerHa: string
@@ -45,7 +47,8 @@ const INITIAL_INPUTS: Inputs = {
   area: '',
 }
 
-const EMPTY_PRODUCT: Product = {
+let _productId = 0
+const EMPTY_PRODUCT: Omit<Product, 'id'> = {
   name: '',
   formulation: 'SC',
   dosePerHa: '',
@@ -76,13 +79,13 @@ const ADDITION_PRIORITY: Record<FormulationType, number> = {
 
 export default function TankMix() {
   const [products, setProducts] = useState<Product[]>([
-    { ...EMPTY_PRODUCT },
-    { ...EMPTY_PRODUCT },
+    { id: `p-${++_productId}`, ...EMPTY_PRODUCT },
+    { id: `p-${++_productId}`, ...EMPTY_PRODUCT },
   ])
 
   const addProduct = () => {
     if (products.length < 6) {
-      setProducts([...products, { ...EMPTY_PRODUCT }])
+      setProducts([...products, { id: `p-${++_productId}`, ...EMPTY_PRODUCT }])
     }
   }
 
@@ -172,35 +175,33 @@ export default function TankMix() {
                 <p className="text-xs font-medium text-gray-500 uppercase mb-2">
                   Quantidade por produto
                 </p>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-left">
-                      <th className="py-1.5 text-gray-600 font-medium">Produto</th>
-                      <th className="py-1.5 text-right text-gray-600 font-medium">
-                        Por tanque
-                      </th>
-                      <th className="py-1.5 text-right text-gray-600 font-medium">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.products.map((p, i) => (
-                      <tr key={i} className="border-b border-gray-100">
-                        <td className="py-1.5">
-                          {p.name}{' '}
-                          <span className="text-xs text-gray-400">({p.formulation})</span>
-                        </td>
-                        <td className="py-1.5 text-right font-medium">
-                          {formatNumber(p.perTank, 2)} {p.unit}
-                        </td>
-                        <td className="py-1.5 text-right font-medium">
-                          {formatNumber(p.total, 2)} {p.unit}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <ComparisonTable
+                  columns={[
+                    {
+                      key: 'name' as const,
+                      label: 'Produto',
+                      format: (_v, row) => (
+                        <>{row!.name} <span className="text-xs text-gray-400">({row!.formulation})</span></>
+                      ),
+                    },
+                    {
+                      key: 'perTank' as const,
+                      label: 'Por tanque',
+                      align: 'right' as const,
+                      cellClassName: () => 'font-medium',
+                      format: (_v, row) => `${formatNumber(row!.perTank as number, 2)} ${row!.unit}`,
+                    },
+                    {
+                      key: 'total' as const,
+                      label: 'Total',
+                      align: 'right' as const,
+                      cellClassName: () => 'font-medium',
+                      format: (_v, row) => `${formatNumber(row!.total as number, 2)} ${row!.unit}`,
+                    },
+                  ]}
+                  rows={result.products}
+                  rowKey="name"
+                />
               </div>
             )}
 
@@ -211,7 +212,7 @@ export default function TankMix() {
                 </p>
                 <ol className="text-sm space-y-1">
                   {result.additionOrder.map((name, i) => (
-                    <li key={i} className="flex items-center gap-2">
+                    <li key={name} className="flex items-center gap-2">
                       <span className="bg-agro-100 text-agro-800 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                         {i + 1}
                       </span>
@@ -276,7 +277,7 @@ export default function TankMix() {
 
         {products.map((product, index) => (
           <div
-            key={index}
+            key={product.id}
             className="border border-gray-200 rounded-lg p-3 mb-3 bg-gray-50"
           >
             <div className="flex items-center justify-between mb-2">

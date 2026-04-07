@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import MainLayout from './components/layout/MainLayout'
 import HomePage from './pages/HomePage'
 
@@ -47,6 +47,20 @@ const Irrigation = lazy(() => import('./tools/lead-magnets/Irrigation'))
 const GpsArea = lazy(() => import('./tools/lead-magnets/GpsArea'))
 const CropComparer = lazy(() => import('./tools/lead-magnets/CropComparer'))
 const WaterBalance = lazy(() => import('./tools/utilities/WaterBalance'))
+const SeedTreatment = lazy(() => import('./tools/agronomic/SeedTreatment'))
+const CropInsurance = lazy(() => import('./tools/financial/CropInsurance'))
+const SoilAnalysis = lazy(() => import('./tools/agronomic/SoilAnalysis'))
+const DryingCost = lazy(() => import('./tools/grain/DryingCost'))
+const FertilizerBlend = lazy(() => import('./tools/agronomic/FertilizerBlend'))
+const CarbonCredit = lazy(() => import('./tools/lead-magnets/CarbonCredit'))
+const GypsumCalculator = lazy(() => import('./tools/agronomic/GypsumCalculator'))
+const ElectricityCost = lazy(() => import('./tools/operational/ElectricityCost'))
+const GrainClassification = lazy(() => import('./tools/grain/GrainClassification'))
+const SoilSampling = lazy(() => import('./tools/agronomic/SoilSampling'))
+const PaybackPeriod = lazy(() => import('./tools/financial/PaybackPeriod'))
+const RainVolume = lazy(() => import('./tools/utilities/RainVolume'))
+const SiloDimensioning = lazy(() => import('./tools/grain/SiloDimensioning'))
+const CropRotation = lazy(() => import('./tools/agronomic/CropRotation'))
 
 function LazyFallback() {
   return (
@@ -67,6 +81,7 @@ export default function App() {
             <ToolRoutes />
           </Suspense>
         } />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   )
@@ -118,6 +133,21 @@ function ToolRoutes() {
       <Route path="gps-area" element={<GpsArea />} />
       <Route path="crop-comparer" element={<CropComparer />} />
       <Route path="water-balance" element={<WaterBalance />} />
+      <Route path="seed-treatment" element={<SeedTreatment />} />
+      <Route path="crop-insurance" element={<CropInsurance />} />
+      <Route path="soil-analysis" element={<SoilAnalysis />} />
+      <Route path="drying-cost" element={<DryingCost />} />
+      <Route path="fertilizer-blend" element={<FertilizerBlend />} />
+      <Route path="carbon-credit" element={<CarbonCredit />} />
+      <Route path="gypsum" element={<GypsumCalculator />} />
+      <Route path="electricity-cost" element={<ElectricityCost />} />
+      <Route path="grain-classification" element={<GrainClassification />} />
+      <Route path="soil-sampling" element={<SoilSampling />} />
+      <Route path="payback-period" element={<PaybackPeriod />} />
+      <Route path="rain-volume" element={<RainVolume />} />
+      <Route path="silo-dimensioning" element={<SiloDimensioning />} />
+      <Route path="crop-rotation" element={<CropRotation />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

@@ -22,6 +22,7 @@ interface Inputs {
   tempMin: string
   tempMean: string
   irrigationSystem: string
+  customKc: string
 }
 
 interface Result {
@@ -47,9 +48,10 @@ const INITIAL: Inputs = {
   tempMin: '22',
   tempMean: '28',
   irrigationSystem: 'pivot',
+  customKc: '',
 }
 
-const CROP_OPTIONS = cropOptionsFrom(CROP_KC)
+const CROP_OPTIONS = [...cropOptionsFrom(CROP_KC), { value: 'custom', label: '✦ Personalizado' }]
 
 const PHASE_OPTIONS = [
   { value: 'initial', label: 'Germinação / Inicial' },
@@ -103,7 +105,9 @@ function calculate(inputs: Inputs): Result | null {
   const rootDepth = parseFloat(inputs.rootDepth)
   const precip = parseFloat(inputs.precipitation) || 0
   const efficiency = SYSTEM_EFFICIENCY[inputs.irrigationSystem] ?? 0.85
-  const kc = KC[inputs.crop]?.[inputs.phase] ?? 1.0
+  const kc = inputs.crop === 'custom'
+    ? (parseFloat(inputs.customKc) || 1.0)
+    : (KC[inputs.crop]?.[inputs.phase] ?? 1.0)
 
   // Hargreaves simplified ETo (mm/day)
   const tRange = Math.max(tMax - tMin, 0.1)
@@ -138,7 +142,7 @@ function calculate(inputs: Inputs): Result | null {
 function validate(inputs: Inputs): string | null {
   if (!inputs.tempMax || !inputs.tempMin || !inputs.tempMean) return 'Informe as temperaturas'
   if (parseFloat(inputs.fieldCapacity) <= parseFloat(inputs.wiltingPoint)) return 'Capacidade de campo deve ser maior que ponto de murcha'
-  if (parseFloat(inputs.rootDepth) <= 0) return 'Profundidade radicular deve ser positiva'
+  if (isNaN(parseFloat(inputs.rootDepth)) || parseFloat(inputs.rootDepth) <= 0) return 'Profundidade radicular deve ser positiva'
   return null
 }
 
@@ -176,7 +180,11 @@ export default function Irrigation() {
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField label="Cultura" options={CROP_OPTIONS} value={inputs.crop} onChange={(v) => updateInput('crop', v as never)} />
-        <SelectField label="Fase fenológica" options={PHASE_OPTIONS} value={inputs.phase} onChange={(v) => updateInput('phase', v as never)} />
+        {inputs.crop === 'custom' ? (
+          <InputField label="Kc (coef. da cultura)" value={inputs.customKc} onChange={(v) => updateInput('customKc', v as never)} placeholder="ex: 1.10" step="0.01" hint="Informe o Kc para sua cultura/fase" />
+        ) : (
+          <SelectField label="Fase fenológica" options={PHASE_OPTIONS} value={inputs.phase} onChange={(v) => updateInput('phase', v as never)} />
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

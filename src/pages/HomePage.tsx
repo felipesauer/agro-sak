@@ -214,7 +214,7 @@ function ToolCard({ tool }: { tool: (typeof TOOLS)[number] }) {
         <p className="font-bold text-gray-800 text-sm group-hover:text-agro-700 transition-colors leading-snug">
           {tool.name}
         </p>
-        {badge && tool.priority !== 'low' && (
+        {badge && (
           <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${badge.className}`}>
             {tool.priority === 'gold' && <Star className="w-3 h-3" />}
             {badge.label}

@@ -5,6 +5,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
 
 // ── Reference tables (simplified EMBRAPA/Cerrado) ──
@@ -73,6 +74,9 @@ interface Inputs {
   kSoil: string
   organicMatter: string
   inoculated: string
+  customN: string
+  customP: string
+  customK: string
 }
 
 interface Result {
@@ -91,6 +95,9 @@ const INITIAL: Inputs = {
   kSoil: '',
   organicMatter: '',
   inoculated: 'yes',
+  customN: '',
+  customP: '',
+  customK: '',
 }
 
 const CROP_OPTIONS = [
@@ -98,6 +105,7 @@ const CROP_OPTIONS = [
   { value: 'corn', label: 'Milho' },
   { value: 'cotton', label: 'Algodão' },
   { value: 'bean', label: 'Feijão' },
+  { value: 'custom', label: '✦ Personalizado' },
 ]
 
 const TEXTURE_OPTIONS = [
@@ -114,23 +122,33 @@ const INOC_OPTIONS = [
 // ── Calculation ──
 
 function calculate(inputs: Inputs): Result | null {
-  const p = parseFloat(inputs.pSoil)
-  const k = parseFloat(inputs.kSoil)
+  let nRec: number, pRec: number, kRec: number, pLevel: string, kLevel: string
 
-  const pClasses = P_CLASSES[inputs.texture] ?? P_CLASSES.clay
-  const pLevelIdx = classifyLevel(p, pClasses.limits)
-  const kLevelIdx = classifyLevel(k, K_CLASSES.limits)
+  if (inputs.crop === 'custom') {
+    nRec = parseFloat(inputs.customN) || 0
+    pRec = parseFloat(inputs.customP) || 0
+    kRec = parseFloat(inputs.customK) || 0
+    pLevel = 'Personalizado'
+    kLevel = 'Personalizado'
+  } else {
+    const p = parseFloat(inputs.pSoil)
+    const k = parseFloat(inputs.kSoil)
 
-  const pLevel = pClasses.labels[pLevelIdx]
-  const kLevel = K_CLASSES.labels[kLevelIdx]
+    const pClasses = P_CLASSES[inputs.texture] ?? P_CLASSES.clay
+    const pLevelIdx = classifyLevel(p, pClasses.limits)
+    const kLevelIdx = classifyLevel(k, K_CLASSES.limits)
 
-  const nRef = N_REC[inputs.crop] ?? N_REC.soybean
-  const nRec = inputs.inoculated === 'yes' ? nRef.inoculated : nRef.notInoculated
+    pLevel = pClasses.labels[pLevelIdx]
+    kLevel = K_CLASSES.labels[kLevelIdx]
 
-  const pRecTable = P_REC[inputs.crop] ?? P_REC.soybean
-  const kRecTable = K_REC[inputs.crop] ?? K_REC.soybean
-  const pRec = pRecTable[pLevelIdx] ?? 0
-  const kRec = kRecTable[kLevelIdx] ?? 0
+    const nRef = N_REC[inputs.crop] ?? N_REC.soybean
+    nRec = inputs.inoculated === 'yes' ? nRef.inoculated : nRef.notInoculated
+
+    const pRecTable = P_REC[inputs.crop] ?? P_REC.soybean
+    const kRecTable = K_REC[inputs.crop] ?? K_REC.soybean
+    pRec = pRecTable[pLevelIdx] ?? 0
+    kRec = kRecTable[kLevelIdx] ?? 0
+  }
 
   // Find best 3 formulas
   const scored = NPK_FORMULAS
@@ -183,6 +201,10 @@ function calculate(inputs: Inputs): Result | null {
 }
 
 function validate(inputs: Inputs): string | null {
+  if (inputs.crop === 'custom') {
+    if (!inputs.customP && !inputs.customK && !inputs.customN) return 'Informe ao menos um nutriente alvo'
+    return null
+  }
   if (!inputs.pSoil) return 'Informe o fósforo (P) do laudo'
   if (!inputs.kSoil) return 'Informe o potássio (K) do laudo'
   return null
@@ -215,32 +237,19 @@ export default function NpkFertilization() {
             {result.formulas.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Formulações sugeridas</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-agro-50 text-left">
-                        <th className="p-2 border border-agro-200">Fórmula</th>
-                        <th className="p-2 border border-agro-200">kg/ha</th>
-                        <th className="p-2 border border-agro-200">sc 50kg/ha</th>
-                        <th className="p-2 border border-agro-200">N (kg)</th>
-                        <th className="p-2 border border-agro-200">P₂O₅ (kg)</th>
-                        <th className="p-2 border border-agro-200">K₂O (kg)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.formulas.map((f, i) => (
-                        <tr key={f.formula} className={i === 0 ? 'bg-agro-100 font-semibold' : ''}>
-                          <td className="p-2 border border-agro-200">{f.formula}</td>
-                          <td className="p-2 border border-agro-200">{formatNumber(f.kgPerHa, 0)}</td>
-                          <td className="p-2 border border-agro-200">{formatNumber(f.bagsPerHa, 1)}</td>
-                          <td className="p-2 border border-agro-200">{formatNumber(f.nSupplied, 0)}</td>
-                          <td className="p-2 border border-agro-200">{formatNumber(f.pSupplied, 0)}</td>
-                          <td className="p-2 border border-agro-200">{formatNumber(f.kSupplied, 0)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ComparisonTable
+                  columns={[
+                    { key: 'formula', label: 'Fórmula' },
+                    { key: 'kgPerHa', label: 'kg/ha', format: (v) => formatNumber(v as number, 0) },
+                    { key: 'bagsPerHa', label: 'sc 50kg/ha', format: (v) => formatNumber(v as number, 1) },
+                    { key: 'nSupplied', label: 'N (kg)', format: (v) => formatNumber(v as number, 0) },
+                    { key: 'pSupplied', label: 'P₂O₅ (kg)', format: (v) => formatNumber(v as number, 0) },
+                    { key: 'kSupplied', label: 'K₂O (kg)', format: (v) => formatNumber(v as number, 0) },
+                  ]}
+                  rows={result.formulas}
+                  highlightIndex={0}
+                  rowKey="formula"
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   A primeira formulação é a melhor aproximação. Ajustes finos devem ser feitos por um agrônomo.
                 </p>
@@ -264,15 +273,46 @@ export default function NpkFertilization() {
           value={inputs.crop}
           onChange={(v) => updateInput('crop', v as never)}
         />
-        <SelectField
-          label="Textura do solo"
-          options={TEXTURE_OPTIONS}
-          value={inputs.texture}
-          onChange={(v) => updateInput('texture', v as never)}
-        />
+        {inputs.crop !== 'custom' && (
+          <SelectField
+            label="Textura do solo"
+            options={TEXTURE_OPTIONS}
+            value={inputs.texture}
+            onChange={(v) => updateInput('texture', v as never)}
+          />
+        )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {inputs.crop === 'custom' ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <InputField
+            label="N alvo"
+            unit="kg/ha"
+            value={inputs.customN}
+            onChange={(v) => updateInput('customN', v as never)}
+            placeholder="ex: 120"
+            min="0"
+          />
+          <InputField
+            label="P₂O₅ alvo"
+            unit="kg/ha"
+            value={inputs.customP}
+            onChange={(v) => updateInput('customP', v as never)}
+            placeholder="ex: 90"
+            min="0"
+          />
+          <InputField
+            label="K₂O alvo"
+            unit="kg/ha"
+            value={inputs.customK}
+            onChange={(v) => updateInput('customK', v as never)}
+            placeholder="ex: 60"
+            min="0"
+          />
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Fósforo no solo (P Mehlich)"
           unit="mg/dm³"
@@ -317,6 +357,8 @@ export default function NpkFertilization() {
           />
         )}
       </div>
+        </>
+      )}
 
       {error && (
         <div className="mt-3">

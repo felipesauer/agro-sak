@@ -171,7 +171,7 @@ export default function FarmDiagnostics() {
     >
       <div className="space-y-6">
         {QUESTIONS.map((q, idx) => (
-          <div key={idx} className="space-y-2">
+          <div key={q.text} className="space-y-2">
             <p className="text-sm font-medium">
               <span className="text-agro-600">{idx + 1}.</span> {q.text}
               <span className="ml-1 text-xs text-gray-400">({q.dimension})</span>

@@ -85,7 +85,7 @@ export interface SyncMeta {
   table: string
   lastSyncAt: string
   ttlMinutes: number
-  status: 'ok' | 'error' | 'pending'
+  status: 'ok' | 'error' | 'pending' | 'seed'
 }
 
 // ── Database ──

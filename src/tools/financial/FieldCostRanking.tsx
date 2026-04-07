@@ -3,7 +3,10 @@ import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
+import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { useCropPrice } from '../../db/hooks'
 
 // ── Types ──
 
@@ -19,6 +22,7 @@ interface FieldEntry {
 }
 
 interface FieldResult {
+  id: number
   name: string
   area: number
   totalCost: number
@@ -39,8 +43,10 @@ function emptyField(id: number): FieldEntry {
 // ── Component ──
 
 export default function FieldCostRanking() {
+  const soyPrice = useCropPrice('soybean')
+  const defaultPrice = soyPrice?.avg ?? PRICE_PER_SC
   const [fields, setFields] = useState<FieldEntry[]>([emptyField(1), emptyField(2)])
-  const [pricePerSc, setPricePerSc] = useState<string>('115')
+  const [pricePerSc, setPricePerSc] = useState<string>(String(defaultPrice))
   const [results, setResults] = useState<FieldResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -78,7 +84,7 @@ export default function FieldCostRanking() {
       const revenuePerHa = prod * price
       const profitPerHa = revenuePerHa - costPerHa
       const profit = profitPerHa * area
-      return { name: f.name, area, totalCost, costPerHa, costPerSc, revenuePerHa, profitPerHa, profit }
+      return { id: f.id, name: f.name, area, totalCost, costPerHa, costPerSc, revenuePerHa, profitPerHa, profit }
     })
 
     results.sort((a, b) => b.profitPerHa - a.profitPerHa)
@@ -103,38 +109,32 @@ export default function FieldCostRanking() {
         results && (
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Ranking de Rentabilidade</h3>
-            <div className="overflow-x-auto">
-              <table className="text-sm w-full border-collapse min-w-[600px]">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 text-left border">#</th>
-                    <th className="p-2 text-left border">Talhão</th>
-                    <th className="p-2 text-right border">Área (ha)</th>
-                    <th className="p-2 text-right border">Custo/ha</th>
-                    <th className="p-2 text-right border">Custo/sc</th>
-                    <th className="p-2 text-right border">Lucro/ha</th>
-                    <th className="p-2 text-right border">Lucro total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((r, i) => (
-                    <tr key={i} className={r.profitPerHa < 0 ? 'bg-red-50' : ''}>
-                      <td className="p-2 border font-medium">{i + 1}</td>
-                      <td className="p-2 border">{r.name}</td>
-                      <td className="p-2 border text-right">{formatNumber(r.area, 1)}</td>
-                      <td className="p-2 border text-right">{formatCurrency(r.costPerHa)}</td>
-                      <td className="p-2 border text-right">{formatCurrency(r.costPerSc)}</td>
-                      <td className={`p-2 border text-right font-bold ${r.profitPerHa >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {formatCurrency(r.profitPerHa)}
-                      </td>
-                      <td className={`p-2 border text-right ${r.profit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {formatCurrency(r.profit)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ComparisonTable
+              columns={[
+                { key: 'rank', label: '#' },
+                { key: 'name', label: 'Talhão' },
+                { key: 'area', label: 'Área', unit: 'ha', align: 'right', format: (v) => formatNumber(v as number, 1) },
+                { key: 'costPerHa', label: 'Custo/ha', align: 'right', format: (v) => formatCurrency(v as number) },
+                { key: 'costPerSc', label: 'Custo/sc', align: 'right', format: (v) => formatCurrency(v as number) },
+                {
+                  key: 'profitPerHa',
+                  label: 'Lucro/ha',
+                  align: 'right',
+                  format: (v) => formatCurrency(v as number),
+                  cellClassName: (v) => `font-bold ${(v as number) >= 0 ? 'text-green-700' : 'text-red-700'}`,
+                },
+                {
+                  key: 'profit',
+                  label: 'Lucro total',
+                  align: 'right',
+                  format: (v) => formatCurrency(v as number),
+                  cellClassName: (v) => (v as number) >= 0 ? 'text-green-700' : 'text-red-700',
+                },
+              ]}
+              rows={results.map((r, i) => ({ ...r, rank: i + 1 }))}
+              rowKey="id"
+              rowClassName={(row) => (row.profitPerHa as number) < 0 ? 'bg-red-50' : ''}
+            />
 
             {results.some((r) => r.profitPerHa < 0) && (
               <AlertBanner
@@ -200,6 +200,7 @@ export default function FieldCostRanking() {
 
       {error && <AlertBanner variant="error" message={error} />}
 
+      <DataFreshness table="cropPrices" label="Preços" />
       <ActionButtons onCalculate={run} onClear={clear} />
     </CalculatorLayout>
   )

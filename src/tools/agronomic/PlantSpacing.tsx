@@ -47,8 +47,8 @@ export default function PlantSpacing() {
     validate(inputs) {
       if (!inputs.rowSpacing) return 'Informe o espaçamento entre linhas'
       if (!inputs.plantSpacing) return 'Informe o espaçamento entre plantas'
-      if (parseFloat(inputs.rowSpacing) <= 0) return 'Espaçamento entre linhas deve ser positivo'
-      if (parseFloat(inputs.plantSpacing) <= 0) return 'Espaçamento entre plantas deve ser positivo'
+      if (isNaN(parseFloat(inputs.rowSpacing)) || parseFloat(inputs.rowSpacing) <= 0) return 'Espaçamento entre linhas deve ser positivo'
+      if (isNaN(parseFloat(inputs.plantSpacing)) || parseFloat(inputs.plantSpacing) <= 0) return 'Espaçamento entre plantas deve ser positivo'
       return null
     },
   })
@@ -68,7 +68,7 @@ export default function PlantSpacing() {
     validate(inputs) {
       if (!inputs.rowSpacing) return 'Informe o espaçamento entre linhas'
       if (!inputs.population) return 'Informe a população desejada'
-      if (parseFloat(inputs.population) <= 0) return 'População deve ser positiva'
+      if (isNaN(parseFloat(inputs.population)) || parseFloat(inputs.population) <= 0) return 'População deve ser positiva'
       return null
     },
   })

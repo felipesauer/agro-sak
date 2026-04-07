@@ -5,6 +5,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
 
 // ── Types ──
@@ -20,6 +21,7 @@ interface Inputs {
 }
 
 interface YearRow {
+  [key: string]: unknown
   year: number
   depreciation: number
   maintenance: number
@@ -150,28 +152,15 @@ export default function MachineDepreciation() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Projeção ano a ano
               </p>
-              <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1 pr-2">Ano</th>
-                    <th className="pb-1 pr-2">Depreciação</th>
-                    <th className="pb-1 pr-2">Manutenção</th>
-                    <th className="pb-1">Valor de Mercado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.yearTable.map((row) => (
-                    <tr key={row.year} className="border-t border-gray-200">
-                      <td className="py-1 pr-2">{row.year}</td>
-                      <td className="py-1 pr-2">{formatCurrency(row.depreciation, 0)}</td>
-                      <td className="py-1 pr-2">{formatCurrency(row.maintenance, 0)}</td>
-                      <td className="py-1">{formatCurrency(row.marketValue, 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
+              <ComparisonTable
+                columns={[
+                  { key: 'year' as const, label: 'Ano' },
+                  { key: 'depreciation' as const, label: 'Depreciação', format: (v) => formatCurrency(v as number, 0) },
+                  { key: 'maintenance' as const, label: 'Manutenção', format: (v) => formatCurrency(v as number, 0) },
+                  { key: 'marketValue' as const, label: 'Valor de Mercado', format: (v) => formatCurrency(v as number, 0) },
+                ]}
+                rows={result.yearTable}
+              />
             </div>
           </div>
         )

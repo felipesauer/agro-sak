@@ -39,11 +39,11 @@ export default function ResultCard({
   const valueColor = highlight ? 'text-agro-800' : VALUE_COLORS[variant]
 
   return (
-    <div className={`rounded-xl p-4 ${bgStyle} animate-slide-up`}>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+    <div className={`rounded-xl p-4 ${bgStyle} animate-slide-up`} data-result-card>
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1" data-result-label>
         {label}
       </p>
-      <p className={`text-xl sm:text-2xl font-bold ${valueColor} break-words`}>
+      <p className={`text-xl sm:text-2xl font-bold ${valueColor} break-words`} data-result-value>
         {prefix && (
           <span className="text-sm font-normal text-gray-500 mr-1">{prefix}</span>
         )}

@@ -46,7 +46,7 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.tankVolume) return 'Informe o volume do tanque'
   if (!inputs.sprayVolume) return 'Informe o volume de calda por hectare'
   if (!inputs.dosePerHa) return 'Informe a dose por hectare'
-  if (parseFloat(inputs.sprayVolume) <= 0) return 'Volume de calda deve ser positivo'
+  if (isNaN(parseFloat(inputs.sprayVolume)) || parseFloat(inputs.sprayVolume) <= 0) return 'Volume de calda deve ser positivo'
   return null
 }
 

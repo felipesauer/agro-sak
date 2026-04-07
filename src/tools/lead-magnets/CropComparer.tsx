@@ -3,6 +3,7 @@ import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 
 // ── Types ──
@@ -133,34 +134,24 @@ export default function CropComparer() {
             </div>
 
             {/* Comparison table */}
-            <div className="overflow-x-auto">
-              <table className="text-sm w-full border-collapse min-w-[500px]">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 text-left border">Cultura</th>
-                    <th className="p-2 text-right border">Receita/ha</th>
-                    <th className="p-2 text-right border">Custo/ha</th>
-                    <th className="p-2 text-right border">Lucro/ha</th>
-                    <th className="p-2 text-right border">ROI</th>
-                    <th className="p-2 text-right border">Margem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((r) => (
-                    <tr key={r.name}>
-                      <td className="p-2 border font-medium">{r.name}</td>
-                      <td className="p-2 border text-right">{formatCurrency(r.revenuePerHa)}</td>
-                      <td className="p-2 border text-right">{formatCurrency(r.costPerHa)}</td>
-                      <td className={`p-2 border text-right font-bold ${r.profitPerHa >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {formatCurrency(r.profitPerHa)}
-                      </td>
-                      <td className="p-2 border text-right">{formatNumber(r.roi, 1)}%</td>
-                      <td className="p-2 border text-right">{formatNumber(r.margin, 1)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ComparisonTable
+              columns={[
+                { key: 'name', label: 'Cultura' },
+                { key: 'revenuePerHa', label: 'Receita/ha', align: 'right', format: (v) => formatCurrency(v as number) },
+                { key: 'costPerHa', label: 'Custo/ha', align: 'right', format: (v) => formatCurrency(v as number) },
+                {
+                  key: 'profitPerHa',
+                  label: 'Lucro/ha',
+                  align: 'right',
+                  format: (v) => formatCurrency(v as number),
+                  cellClassName: (v) => `font-bold ${(v as number) >= 0 ? 'text-green-700' : 'text-red-700'}`,
+                },
+                { key: 'roi', label: 'ROI', align: 'right', format: (v) => `${formatNumber(v as number, 1)}%` },
+                { key: 'margin', label: 'Margem', align: 'right', format: (v) => `${formatNumber(v as number, 1)}%` },
+              ]}
+              rows={results as unknown as Record<string, unknown>[]}
+              rowKey={'name' as never}
+            />
 
             {results.length >= 2 && (
               <AlertBanner

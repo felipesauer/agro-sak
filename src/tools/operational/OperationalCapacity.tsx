@@ -4,6 +4,7 @@ import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
 
 // ── Types ──
@@ -119,22 +120,13 @@ export default function OperationalCapacity() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Eficiências típicas por operação
               </p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1">Operação</th>
-                    <th className="pb-1">Eficiência</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {EFFICIENCY_REFERENCE.map((row) => (
-                    <tr key={row.operation} className="border-t border-gray-200">
-                      <td className="py-1">{row.operation}</td>
-                      <td className="py-1">{row.range}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ComparisonTable
+                columns={[
+                  { key: 'operation' as const, label: 'Operação' },
+                  { key: 'range' as const, label: 'Eficiência' },
+                ]}
+                rows={EFFICIENCY_REFERENCE}
+              />
             </div>
           </div>
         )

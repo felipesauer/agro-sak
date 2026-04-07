@@ -39,7 +39,10 @@ const INITIAL: Inputs = {
   limePrice: '',
 }
 
-const CROP_OPTIONS = cropOptionsFrom(BASE_SATURATION_TARGETS)
+const CROP_OPTIONS = [
+  ...cropOptionsFrom(BASE_SATURATION_TARGETS),
+  { value: 'custom', label: '✦ Personalizado' },
+]
 
 const METHOD_OPTIONS = [
   { value: 'base-saturation', label: 'Saturação por Bases (V%)' },
@@ -91,13 +94,15 @@ export default function LimingCalculator() {
 
   const handleCropChange = (value: string) => {
     updateInput('crop', value as never)
-    const target = BASE_SATURATION_TARGETS[value]
-    if (target) {
-      updateInput('v2', String(target.min) as never)
+    if (value !== 'custom') {
+      const target = BASE_SATURATION_TARGETS[value]
+      if (target) {
+        updateInput('v2', String(target.min) as never)
+      }
     }
   }
 
-  const currentTarget = BASE_SATURATION_TARGETS[inputs.crop]
+  const currentTarget = inputs.crop !== 'custom' ? BASE_SATURATION_TARGETS[inputs.crop] : null
   const lowPrnt = parseFloat(inputs.prnt) < 70 && parseFloat(inputs.prnt) > 0
 
   return (

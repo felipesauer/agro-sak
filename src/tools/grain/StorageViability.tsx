@@ -4,7 +4,7 @@ import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
-import { formatCurrency } from '../../utils/formatters'
+import { formatCurrency, formatNumber } from '../../utils/formatters'
 
 // ── Types ──
 
@@ -133,7 +133,7 @@ export default function StorageViability() {
                 <div className="flex justify-between"><span>Armazenagem</span><span>{formatCurrency(result.storageCost, 0)}</span></div>
                 <div className="flex justify-between"><span>Custo de capital</span><span>{formatCurrency(result.capitalCost, 0)}</span></div>
                 <div className="flex justify-between"><span>Seguro</span><span>{formatCurrency(result.insuranceCost, 0)}</span></div>
-                <div className="flex justify-between"><span>Quebra técnica</span><span>{result.breakageSc.toFixed(1)} sc</span></div>
+                <div className="flex justify-between"><span>Quebra técnica</span><span>{formatNumber(result.breakageSc, 1)} sc</span></div>
                 <div className="flex justify-between font-bold border-t border-gray-300 pt-1 mt-1">
                   <span>Total</span><span>{formatCurrency(result.totalCost, 0)}</span>
                 </div>

@@ -10,6 +10,7 @@ import { formatNumber } from '../../utils/formatters'
 // ── Types ──
 
 interface Point {
+  id: string
   lat: string
   lng: string
 }
@@ -82,13 +83,15 @@ function perimeterFromCoords(coords: Array<[number, number]>): number {
   return total
 }
 
+let _pointId = 0
+
 // ── Component ──
 
 export default function GpsArea() {
   const [points, setPoints] = useState<Point[]>([
-    { lat: '', lng: '' },
-    { lat: '', lng: '' },
-    { lat: '', lng: '' },
+    { id: `pt-${++_pointId}`, lat: '', lng: '' },
+    { id: `pt-${++_pointId}`, lat: '', lng: '' },
+    { id: `pt-${++_pointId}`, lat: '', lng: '' },
   ])
   const [alqType, setAlqType] = useState('mt')
   const [result, setResult] = useState<Result | null>(null)
@@ -100,7 +103,7 @@ export default function GpsArea() {
   }
 
   function addPoint() {
-    setPoints((prev) => [...prev, { lat: '', lng: '' }])
+    setPoints((prev) => [...prev, { id: `pt-${++_pointId}`, lat: '', lng: '' }])
   }
 
   function removePoint(idx: number) {
@@ -119,7 +122,7 @@ export default function GpsArea() {
         setPoints((prev) =>
           prev.map((p, i) =>
             i === idx
-              ? { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }
+              ? { ...p, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }
               : p
           )
         )
@@ -162,7 +165,7 @@ export default function GpsArea() {
   }
 
   function clear() {
-    setPoints([{ lat: '', lng: '' }, { lat: '', lng: '' }, { lat: '', lng: '' }])
+    setPoints([{ id: crypto.randomUUID(), lat: '', lng: '' }, { id: crypto.randomUUID(), lat: '', lng: '' }, { id: crypto.randomUUID(), lat: '', lng: '' }])
     setResult(null)
     setError(null)
   }
@@ -200,7 +203,7 @@ export default function GpsArea() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">Vértices do polígono</h3>
         {points.map((p, i) => (
-          <div key={i} className="flex items-end gap-2">
+          <div key={p.id} className="flex items-end gap-2">
             <span className="text-xs text-gray-500 w-6 text-center mb-2">{i + 1}</span>
             <div className="flex-1">
               <InputField

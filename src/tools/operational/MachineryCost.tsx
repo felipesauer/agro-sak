@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
@@ -5,7 +6,9 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
-import { formatCurrency } from '../../utils/formatters'
+import DataFreshness from '../../components/ui/DataFreshness'
+import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { useDieselPrice } from '../../db/hooks'
 
 // ── Types ──
 
@@ -155,8 +158,13 @@ function validate(inputs: Inputs): string | null {
 // ── Component ──
 
 export default function MachineryCost() {
+  const dieselFromDb = useDieselPrice()
+  const currentInitial = useMemo<Inputs>(() => ({
+    ...INITIAL,
+    dieselPrice: dieselFromDb ? String(dieselFromDb.price) : INITIAL.dieselPrice,
+  }), [dieselFromDb])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, Result>({ initialInputs: currentInitial, calculate, validate })
 
   const COST_LABELS: { key: keyof CostBreakdown; label: string }[] = [
     { key: 'depreciation', label: 'Depreciação' },
@@ -224,7 +232,7 @@ export default function MachineryCost() {
                   <div key={c.key} className="mb-2">
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-700">{c.label}</span>
-                      <span className="text-gray-600">{formatCurrency(val)} ({pct.toFixed(0)}%)</span>
+                      <span className="text-gray-600">{formatCurrency(val)} ({formatNumber(pct, 0)}%)</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div className="h-1.5 rounded-full bg-agro-500" style={{ width: `${pct}%` }} />
@@ -277,6 +285,7 @@ export default function MachineryCost() {
 
       {error && <AlertBanner variant="error" message={error} />}
       <ActionButtons onCalculate={run} onClear={clear} />
+      <DataFreshness table="fuelPrices" />
     </CalculatorLayout>
   )
 }

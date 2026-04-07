@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
@@ -7,6 +8,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { MOISTURE_STANDARD, IMPURITY_STANDARD, cropOptionsFrom } from '../../data/reference-data'
+import { useMoistureStandards } from '../../db/hooks'
 
 // ── Types ──
 
@@ -40,19 +42,17 @@ const INITIAL: Inputs = {
   pricePerBag: '',
 }
 
-const CROP_OPTIONS = cropOptionsFrom(MOISTURE_STANDARD)
-
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
+function calculate(inputs: Inputs, moistureStds: Record<string, number>, impurityStds: Record<string, number>): Result | null {
   const grossKg = parseFloat(inputs.grossWeight)
   const moistureMeasured = parseFloat(inputs.moistureMeasured)
   const impurityMeasured = parseFloat(inputs.impurityMeasured)
   const damaged = parseFloat(inputs.damaged) || 0
   const price = parseFloat(inputs.pricePerBag) || 0
 
-  const moistureStd = MOISTURE_STANDARD[inputs.crop] ?? 14
-  const impurityStd = IMPURITY_STANDARD[inputs.crop] ?? 1
+  const moistureStd = moistureStds[inputs.crop] ?? 14
+  const impurityStd = impurityStds[inputs.crop] ?? 1
 
   // Moisture discount
   const moistureFactor =
@@ -96,15 +96,29 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.grossWeight) return 'Informe o peso bruto da carga'
   if (!inputs.moistureMeasured) return 'Informe a umidade medida'
   if (!inputs.impurityMeasured) return 'Informe a impureza medida'
-  if (parseFloat(inputs.grossWeight) <= 0) return 'Peso bruto deve ser positivo'
+  if (isNaN(parseFloat(inputs.grossWeight)) || parseFloat(inputs.grossWeight) <= 0) return 'Peso bruto deve ser positivo'
   return null
 }
 
 // ── Component ──
 
 export default function MoistureDiscount() {
+  const dbStandards = useMoistureStandards()
+  const moistureStds = useMemo(() => {
+    if (!dbStandards) return MOISTURE_STANDARD
+    return Object.fromEntries(dbStandards.map(d => [d.crop, d.moisture])) as Record<string, number>
+  }, [dbStandards])
+  const impurityStds = useMemo(() => {
+    if (!dbStandards) return IMPURITY_STANDARD
+    return Object.fromEntries(dbStandards.map(d => [d.crop, d.impurity])) as Record<string, number>
+  }, [dbStandards])
+  const cropOptions = useMemo(() => [
+    ...cropOptionsFrom(moistureStds),
+    { value: 'custom', label: '✦ Personalizado' },
+  ], [moistureStds])
+  const calcFn = useMemo(() => (inputs: Inputs) => calculate(inputs, moistureStds, impurityStds), [moistureStds, impurityStds])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate: calcFn, validate })
 
   const moistureHigh =
     inputs.crop === 'soybean' && parseFloat(inputs.moistureMeasured) > 18
@@ -188,7 +202,7 @@ export default function MoistureDiscount() {
         label="Cultura"
         value={inputs.crop}
         onChange={(v) => updateInput('crop', v)}
-        options={CROP_OPTIONS}
+        options={cropOptions}
         required
       />
 

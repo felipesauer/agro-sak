@@ -1,12 +1,16 @@
+import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
+import DataFreshness from '../../components/ui/DataFreshness'
 import { formatNumber } from '../../utils/formatters'
 import { NUTRIENT_REMOVAL, cropOptionsFrom } from '../../data/reference-data'
 import { BAG_WEIGHT_KG } from '../../utils/conversions'
+import { useAllNutrientRemoval } from '../../db/hooks'
 
 // ── Types ──
 
@@ -18,6 +22,11 @@ interface Inputs {
   priceN: string
   priceP: string
   priceK: string
+  customN: string
+  customP: string
+  customK: string
+  customS: string
+  customBagKg: string
 }
 
 interface NutrientRow {
@@ -39,9 +48,12 @@ const INITIAL: Inputs = {
   priceN: '',
   priceP: '',
   priceK: '',
+  customN: '15',
+  customP: '8',
+  customK: '5',
+  customS: '2',
+  customBagKg: '60',
 }
-
-const CROP_OPTIONS = cropOptionsFrom(NUTRIENT_REMOVAL)
 
 const PART_OPTIONS = [
   { value: 'grain', label: 'Apenas grão' },
@@ -50,12 +62,16 @@ const PART_OPTIONS = [
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
+type NutrientData = Record<string, { n: number; p2o5: number; k2o: number; s: number }>
+
+function calculate(inputs: Inputs, nutrientData: NutrientData): Result | null {
   const prod = parseFloat(inputs.productivity)
-  const bagKg = BAG_WEIGHT_KG[inputs.crop] ?? 60
+  const bagKg = inputs.crop === 'custom' ? (parseFloat(inputs.customBagKg) || 60) : (BAG_WEIGHT_KG[inputs.crop] ?? 60)
   const tonsPerHa = (prod * bagKg) / 1000
 
-  const removal = NUTRIENT_REMOVAL[inputs.crop]
+  const removal = inputs.crop === 'custom'
+    ? { n: parseFloat(inputs.customN) || 0, p2o5: parseFloat(inputs.customP) || 0, k2o: parseFloat(inputs.customK) || 0, s: parseFloat(inputs.customS) || 0 }
+    : nutrientData[inputs.crop]
   if (!removal) return null
 
   const strawFactor = inputs.part === 'grain_straw' ? 1.3 : 1
@@ -82,15 +98,25 @@ function calculate(inputs: Inputs): Result | null {
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.productivity) return 'Informe a produtividade'
-  if (parseFloat(inputs.productivity) <= 0) return 'Produtividade deve ser positiva'
+  if (isNaN(parseFloat(inputs.productivity)) || parseFloat(inputs.productivity) <= 0) return 'Produtividade deve ser positiva'
   return null
 }
 
 // ── Component ──
 
 export default function NutrientRemoval() {
+  const dbData = useAllNutrientRemoval()
+  const nutrientData = useMemo<NutrientData>(() => {
+    if (!dbData) return NUTRIENT_REMOVAL
+    return Object.fromEntries(dbData.map(d => [d.crop, { n: d.n, p2o5: d.p2o5, k2o: d.k2o, s: d.s }]))
+  }, [dbData])
+  const cropOptions = useMemo(() => [
+    ...cropOptionsFrom(nutrientData),
+    { value: 'custom', label: '✦ Personalizado' },
+  ], [nutrientData])
+  const calcFn = useMemo(() => (inputs: Inputs) => calculate(inputs, nutrientData), [nutrientData])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate: calcFn, validate })
 
   return (
     <CalculatorLayout
@@ -99,36 +125,25 @@ export default function NutrientRemoval() {
       result={
         result && (
           <div className="space-y-4">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-agro-50 text-left">
-                    <th className="p-2 border border-agro-200">Nutriente</th>
-                    <th className="p-2 border border-agro-200">kg/ha</th>
-                    {result.totalArea && (
-                      <>
-                        <th className="p-2 border border-agro-200">Total (kg)</th>
-                        <th className="p-2 border border-agro-200">Total (t)</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.rows.map((row) => (
-                    <tr key={row.nutrient}>
-                      <td className="p-2 border border-agro-200 font-medium">{row.nutrient}</td>
-                      <td className="p-2 border border-agro-200">{formatNumber(row.kgPerHa, 1)}</td>
-                      {result.totalArea && (
-                        <>
-                          <td className="p-2 border border-agro-200">{formatNumber(row.totalKg!, 0)}</td>
-                          <td className="p-2 border border-agro-200">{formatNumber(row.totalKg! / 1000, 2)}</td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ComparisonTable
+              columns={[
+                { key: 'nutrient', label: 'Nutriente' },
+                { key: 'kgPerHa', label: 'kg/ha', align: 'right', format: (v) => formatNumber(v as number, 1) },
+                ...(result.totalArea
+                  ? [
+                      { key: 'totalKg' as const, label: 'Total (kg)', align: 'right' as const, format: (v: unknown) => formatNumber(v as number, 0) },
+                      { key: 'totalT' as const, label: 'Total (t)', align: 'right' as const, format: (v: unknown) => formatNumber(v as number, 2) },
+                    ]
+                  : []),
+              ]}
+              rows={result.rows.map((row) => ({
+                nutrient: row.nutrient,
+                kgPerHa: row.kgPerHa,
+                totalKg: row.totalKg ?? 0,
+                totalT: row.totalKg ? row.totalKg / 1000 : 0,
+              }))}
+              rowKey="nutrient"
+            />
 
             <AlertBanner
               variant="info"
@@ -141,7 +156,7 @@ export default function NutrientRemoval() {
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           label="Cultura"
-          options={CROP_OPTIONS}
+          options={cropOptions}
           value={inputs.crop}
           onChange={(v) => updateInput('crop', v as never)}
         />
@@ -152,6 +167,16 @@ export default function NutrientRemoval() {
           onChange={(v) => updateInput('part', v as never)}
         />
       </div>
+
+      {inputs.crop === 'custom' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <InputField label="Peso da saca" unit="kg" value={inputs.customBagKg} onChange={(v) => updateInput('customBagKg', v as never)} placeholder="ex: 60" />
+          <InputField label="N exportado" unit="kg/t" value={inputs.customN} onChange={(v) => updateInput('customN', v as never)} placeholder="ex: 15" />
+          <InputField label="P₂O₅ exportado" unit="kg/t" value={inputs.customP} onChange={(v) => updateInput('customP', v as never)} placeholder="ex: 8" />
+          <InputField label="K₂O exportado" unit="kg/t" value={inputs.customK} onChange={(v) => updateInput('customK', v as never)} placeholder="ex: 5" />
+          <InputField label="S exportado" unit="kg/t" value={inputs.customS} onChange={(v) => updateInput('customS', v as never)} placeholder="ex: 2" />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
@@ -180,6 +205,7 @@ export default function NutrientRemoval() {
         </div>
       )}
 
+      <DataFreshness table="nutrientRemoval" label="Nutrientes" />
       <ActionButtons onCalculate={run} onClear={clear} />
     </CalculatorLayout>
   )

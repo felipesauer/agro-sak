@@ -1,20 +1,32 @@
+import type { ReactNode } from 'react'
+
 interface Column<T> {
   key: keyof T
   label: string
   unit?: string
-  format?: (value: T[keyof T]) => string
+  format?: (value: T[keyof T], row?: T) => ReactNode
+  align?: 'left' | 'center' | 'right'
+  cellClassName?: (value: T[keyof T], row?: T) => string
 }
 
 interface ComparisonTableProps<T extends Record<string, unknown>> {
   columns: Column<T>[]
   rows: T[]
   highlightIndex?: number
+  rowKey?: keyof T
+  rowClassName?: (row: T, index: number) => string
+  colSpanRow?: (row: T, index: number) => ReactNode | null
 }
+
+const ALIGN_CLASS = { left: 'text-left', center: 'text-center', right: 'text-right' }
 
 export default function ComparisonTable<T extends Record<string, unknown>>({
   columns,
   rows,
   highlightIndex,
+  rowKey,
+  rowClassName,
+  colSpanRow,
 }: ComparisonTableProps<T>) {
   return (
     <div className="overflow-x-auto">
@@ -24,7 +36,7 @@ export default function ComparisonTable<T extends Record<string, unknown>>({
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                className="text-left py-2 px-3 font-medium text-gray-600"
+                className={`py-2 px-3 font-medium text-gray-600 ${ALIGN_CLASS[col.align ?? 'left']}`}
               >
                 {col.label}
                 {col.unit && (
@@ -35,22 +47,42 @@ export default function ComparisonTable<T extends Record<string, unknown>>({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
-            <tr
-              key={i}
-              className={`border-b border-gray-100 ${
-                i === highlightIndex ? 'bg-agro-50 font-medium' : ''
-              }`}
-            >
-              {columns.map((col) => (
-                <td key={String(col.key)} className="py-2 px-3">
-                  {col.format
-                    ? col.format(row[col.key])
-                    : String(row[col.key] ?? '')}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row, i) => {
+            const span = colSpanRow ? colSpanRow(row, i) : null
+            if (span !== null && span !== undefined) {
+              return (
+                <tr
+                  key={rowKey ? String(row[rowKey]) : `span-${i}`}
+                  className="border-b border-gray-100"
+                >
+                  <td colSpan={columns.length} className="py-2 px-3 text-center">
+                    {span}
+                  </td>
+                </tr>
+              )
+            }
+            const highlight = i === highlightIndex ? 'bg-agro-50 font-medium' : ''
+            const custom = rowClassName ? rowClassName(row, i) : ''
+            return (
+              <tr
+                key={rowKey ? String(row[rowKey]) : String(columns[0] ? row[columns[0].key] : i)}
+                className={`border-b border-gray-100 ${highlight} ${custom}`}
+              >
+                {columns.map((col) => {
+                  const val = row[col.key]
+                  const cellCls = col.cellClassName ? col.cellClassName(val, row) : ''
+                  return (
+                    <td
+                      key={String(col.key)}
+                      className={`py-2 px-3 ${ALIGN_CLASS[col.align ?? 'left']} ${cellCls}`}
+                    >
+                      {col.format ? col.format(val, row) : String(val ?? '')}
+                    </td>
+                  )
+                })}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

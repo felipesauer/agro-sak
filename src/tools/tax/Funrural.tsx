@@ -5,6 +5,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 
 // ── Types ──
@@ -142,35 +143,20 @@ export default function Funrural() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Alíquotas vigentes
               </p>
-              <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1">Tipo</th>
-                    <th className="pb-1">Funrural</th>
-                    <th className="pb-1">RAT</th>
-                    <th className="pb-1">SENAR</th>
-                    <th className="pb-1">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-t border-gray-200">
-                    <td className="py-1">PF</td>
-                    <td className="py-1">1,2%</td>
-                    <td className="py-1">0,1%</td>
-                    <td className="py-1">0,2%</td>
-                    <td className="py-1 font-medium">1,5%</td>
-                  </tr>
-                  <tr className="border-t border-gray-200">
-                    <td className="py-1">PJ</td>
-                    <td className="py-1">2,5%</td>
-                    <td className="py-1">0,1%</td>
-                    <td className="py-1">0,25%</td>
-                    <td className="py-1 font-medium">2,85%</td>
-                  </tr>
-                </tbody>
-              </table>
-              </div>
+              <ComparisonTable
+                columns={[
+                  { key: 'tipo', label: 'Tipo' },
+                  { key: 'funrural', label: 'Funrural' },
+                  { key: 'rat', label: 'RAT' },
+                  { key: 'senar', label: 'SENAR' },
+                  { key: 'total', label: 'Total', cellClassName: () => 'font-medium' },
+                ]}
+                rows={[
+                  { tipo: 'PF', funrural: '1,2%', rat: '0,1%', senar: '0,2%', total: '1,5%' },
+                  { tipo: 'PJ', funrural: '2,5%', rat: '0,1%', senar: '0,25%', total: '2,85%' },
+                ]}
+                rowKey="tipo"
+              />
             </div>
 
             <AlertBanner

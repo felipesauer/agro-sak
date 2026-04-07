@@ -19,6 +19,7 @@ interface Inputs {
   tempMean: string
   tempMax: string
   tempMin: string
+  customKc: string
 }
 
 interface Result {
@@ -42,9 +43,10 @@ const INITIAL: Inputs = {
   tempMean: '28',
   tempMax: '34',
   tempMin: '22',
+  customKc: '',
 }
 
-const CROP_OPTIONS = cropOptionsFrom(CROP_KC)
+const CROP_OPTIONS = [...cropOptionsFrom(CROP_KC), { value: 'custom', label: '✦ Personalizado' }]
 
 const PHASE_OPTIONS = [
   { value: 'vegetative', label: 'Vegetativa' },
@@ -90,7 +92,9 @@ function calculate(inputs: Inputs): Result | null {
   const precipWeek = parseFloat(inputs.precipWeek) || 0
   const precipMonth = parseFloat(inputs.precipMonth) || 0
 
-  const kc = KC[inputs.crop]?.[inputs.phase] ?? 1.0
+  const kc = inputs.crop === 'custom'
+    ? (parseFloat(inputs.customKc) || 1.0)
+    : (KC[inputs.crop]?.[inputs.phase] ?? 1.0)
   const soilFactor = SOIL_FACTOR[inputs.soilTexture] ?? 1.0
 
   // Hargreaves ETo (mm/day)
@@ -231,7 +235,11 @@ export default function WaterBalance() {
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField label="Cultura" options={CROP_OPTIONS} value={inputs.crop} onChange={(v) => updateInput('crop', v as never)} />
-        <SelectField label="Fase fenológica" options={PHASE_OPTIONS} value={inputs.phase} onChange={(v) => updateInput('phase', v as never)} />
+        {inputs.crop === 'custom' ? (
+          <InputField label="Kc (coef. da cultura)" value={inputs.customKc} onChange={(v) => updateInput('customKc', v as never)} placeholder="ex: 1.10" step="0.01" hint="Informe o Kc para sua cultura/fase" />
+        ) : (
+          <SelectField label="Fase fenológica" options={PHASE_OPTIONS} value={inputs.phase} onChange={(v) => updateInput('phase', v as never)} />
+        )}
       </div>
 
       <SelectField label="Textura do solo" options={SOIL_OPTIONS} value={inputs.soilTexture} onChange={(v) => updateInput('soilTexture', v as never)} />

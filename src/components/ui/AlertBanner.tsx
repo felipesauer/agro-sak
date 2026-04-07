@@ -30,7 +30,7 @@ export default function AlertBanner({
   const Icon = ALERT_ICON[variant]
 
   return (
-    <div className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-sm ${styles[variant]}`}>
+    <div className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-sm ${styles[variant]}`} data-alert-banner>
       <Icon className={`mt-0.5 shrink-0 w-4 h-4 ${iconColors[variant]}`} />
       <div>
         {title && <p className="font-semibold mb-0.5">{title}</p>}

@@ -15,6 +15,7 @@ interface Inputs {
   crop: string
   value: string
   fromUnit: string
+  customBagKg: string
 }
 
 interface Result {
@@ -28,9 +29,13 @@ const INITIAL: Inputs = {
   crop: 'soybean',
   value: '',
   fromUnit: 'sc_ha',
+  customBagKg: '60',
 }
 
-const CROP_OPTIONS = cropOptionsFrom(BAG_WEIGHT_KG)
+const CROP_OPTIONS = [
+  ...cropOptionsFrom(BAG_WEIGHT_KG),
+  { value: 'custom', label: '✦ Personalizado' },
+]
 
 const UNIT_OPTIONS = [
   { value: 'sc_ha', label: 'sc/ha' },
@@ -54,8 +59,8 @@ const STATE_AVERAGES: Record<string, number> = {
 
 function calculate(inputs: Inputs): Result | null {
   const val = parseFloat(inputs.value)
-  const bagKg = BAG_WEIGHT_KG[inputs.crop] ?? 60
-  const buAcFactor = SC_HA_TO_BU_AC[inputs.crop] ?? null
+  const bagKg = inputs.crop === 'custom' ? (parseFloat(inputs.customBagKg) || 60) : (BAG_WEIGHT_KG[inputs.crop] ?? 60)
+  const buAcFactor = inputs.crop === 'custom' ? null : (SC_HA_TO_BU_AC[inputs.crop] ?? null)
 
   // Convert input to kg/ha first (base unit)
   let kgHa: number
@@ -165,8 +170,20 @@ export default function YieldConverter() {
         onChange={(v) => updateInput('crop', v)}
         options={CROP_OPTIONS}
         required
-        hint="Define o peso da saca e fator de conversão bushel"
+        hint={inputs.crop !== 'custom' ? 'Define o peso da saca e fator de conversão bushel' : ''}
       />
+
+      {inputs.crop === 'custom' && (
+        <InputField
+          label="Peso da saca"
+          unit="kg"
+          value={inputs.customBagKg}
+          onChange={(v) => updateInput('customBagKg', v)}
+          placeholder="ex: 60"
+          min="1"
+          required
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField

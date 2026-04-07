@@ -5,6 +5,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
 
 // ── Types ──
@@ -142,22 +143,13 @@ export default function FarmLease() {
                 Médias regionais de arrendamento (soja)
               </p>
               <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="pb-1">Região</th>
-                    <th className="pb-1">Arrendamento</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {LEASE_REFERENCE.map((row) => (
-                    <tr key={row.region} className="border-t border-gray-200">
-                      <td className="py-1">{row.region}</td>
-                      <td className="py-1">{row.range}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ComparisonTable
+                columns={[
+                  { key: 'region' as const, label: 'Região' },
+                  { key: 'range' as const, label: 'Arrendamento' },
+                ]}
+                rows={LEASE_REFERENCE}
+              />
               </div>
             </div>
           </div>

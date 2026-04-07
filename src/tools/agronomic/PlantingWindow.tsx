@@ -2,6 +2,7 @@ import { useState } from 'react'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import SelectField from '../../components/ui/SelectField'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 
 // ── Planting window data (simplified ZARC reference) ──
 
@@ -209,34 +210,28 @@ export default function PlantingWindow() {
       </div>
 
       {windows.length > 0 ? (
-        <div className="overflow-x-auto mt-4">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-agro-50 text-left">
-                <th className="p-2 border border-agro-200">GM / Tipo</th>
-                <th className="p-2 border border-agro-200">Início</th>
-                <th className="p-2 border border-agro-200">Fim</th>
-                <th className="p-2 border border-agro-200">Colheita est.</th>
-                <th className="p-2 border border-agro-200">Risco</th>
-              </tr>
-            </thead>
-            <tbody>
-              {windows.map((w) => (
-                <tr key={w.gm}>
-                  <td className="p-2 border border-agro-200 font-medium">{w.gm}</td>
-                  <td className="p-2 border border-agro-200">{w.start}</td>
-                  <td className="p-2 border border-agro-200">{w.end}</td>
-                  <td className="p-2 border border-agro-200">{w.harvestEstimate}</td>
-                  <td className="p-2 border border-agro-200">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${RISK_COLORS[w.risk]}`}>
-                      {RISK_LABELS[w.risk]}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ComparisonTable
+          columns={[
+            { key: 'gm', label: 'GM / Tipo' },
+            { key: 'start', label: 'Início' },
+            { key: 'end', label: 'Fim' },
+            { key: 'harvestEstimate', label: 'Colheita est.' },
+            {
+              key: 'risk',
+              label: 'Risco',
+              format: (v) => {
+                const risk = v as 'low' | 'medium' | 'high'
+                return (
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${RISK_COLORS[risk]}`}>
+                    {RISK_LABELS[risk]}
+                  </span>
+                )
+              },
+            },
+          ]}
+          rows={windows as unknown as Record<string, unknown>[]}
+          rowKey={'gm' as never}
+        />
       ) : (
         <div className="mt-4">
           <AlertBanner

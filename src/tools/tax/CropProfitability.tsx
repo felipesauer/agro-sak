@@ -4,12 +4,14 @@ import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
+import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 import { CROP_LABELS } from '../../data/reference-data'
 
 // ── Types ──
 
 interface CropEntry {
+  id: string
   name: string
   productivity: string
   price: string
@@ -30,8 +32,9 @@ const AVAILABLE_CROPS = Object.entries(CROP_LABELS)
   .filter(([key]) => !['pasture', 'brachiaria', 'millet'].includes(key))
   .map(([value, label]) => ({ value, label }))
 
+let _cropId = 0
 function emptyCrop(name: string): CropEntry {
-  return { name, productivity: '', price: '', cost: '' }
+  return { id: `ce-${++_cropId}`, name, productivity: '', price: '', cost: '' }
 }
 
 // ── Component ──
@@ -39,8 +42,8 @@ function emptyCrop(name: string): CropEntry {
 export default function CropProfitability() {
   const [producerType, setProducerType] = useState('pf')
   const [crops, setCrops] = useState<CropEntry[]>([
-    { name: 'soybean', productivity: '65', price: '115', cost: '3200' },
-    { name: 'corn', productivity: '120', price: '55', cost: '2800' },
+    { id: `ce-${++_cropId}`, name: 'soybean', productivity: '65', price: '115', cost: '3200' },
+    { id: `ce-${++_cropId}`, name: 'corn', productivity: '120', price: '55', cost: '2800' },
   ])
   const [results, setResults] = useState<CropResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -117,41 +120,23 @@ export default function CropProfitability() {
       result={
         results && (
           <div className="space-y-4">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-agro-50 text-left">
-                    <th className="p-2 border border-agro-200">#</th>
-                    <th className="p-2 border border-agro-200">Cultura</th>
-                    <th className="p-2 border border-agro-200">Receita</th>
-                    <th className="p-2 border border-agro-200">Custo</th>
-                    <th className="p-2 border border-agro-200">Funrural</th>
-                    <th className="p-2 border border-agro-200">Lucro</th>
-                    <th className="p-2 border border-agro-200">ROI</th>
-                    <th className="p-2 border border-agro-200">Margem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((r, i) => (
-                    <tr
-                      key={r.name}
-                      className={
-                        r.profit < 0 ? 'bg-red-50' : i === 0 ? 'bg-agro-100 font-semibold' : ''
-                      }
-                    >
-                      <td className="p-2 border border-agro-200">{i + 1}</td>
-                      <td className="p-2 border border-agro-200">{r.name}</td>
-                      <td className="p-2 border border-agro-200">{formatCurrency(r.revenue)}</td>
-                      <td className="p-2 border border-agro-200">{formatCurrency(r.cost)}</td>
-                      <td className="p-2 border border-agro-200">{formatCurrency(r.funrural)}</td>
-                      <td className="p-2 border border-agro-200">{formatCurrency(r.profit)}</td>
-                      <td className="p-2 border border-agro-200">{formatNumber(r.roi, 1)}%</td>
-                      <td className="p-2 border border-agro-200">{formatNumber(r.margin, 1)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ComparisonTable
+              columns={[
+                { key: 'rank', label: '#' },
+                { key: 'name', label: 'Cultura' },
+                { key: 'revenue', label: 'Receita', format: (v) => formatCurrency(v as number) },
+                { key: 'cost', label: 'Custo', format: (v) => formatCurrency(v as number) },
+                { key: 'funrural', label: 'Funrural', format: (v) => formatCurrency(v as number) },
+                { key: 'profit', label: 'Lucro', format: (v) => formatCurrency(v as number) },
+                { key: 'roi', label: 'ROI', format: (v) => `${formatNumber(v as number, 1)}%` },
+                { key: 'margin', label: 'Margem', format: (v) => `${formatNumber(v as number, 1)}%` },
+              ]}
+              rows={results.map((r, i) => ({ ...r, rank: String(i + 1) }))}
+              rowClassName={(row, i) =>
+                (row as Record<string, unknown>).profit as number < 0 ? 'bg-red-50' : i === 0 ? 'bg-agro-100 font-semibold' : ''
+              }
+              rowKey="name"
+            />
 
             {/* Visual bars */}
             <div className="space-y-2">
@@ -189,7 +174,7 @@ export default function CropProfitability() {
       />
 
       {crops.map((crop, idx) => (
-        <div key={idx} className="border border-agro-200 rounded-lg p-4 space-y-3">
+        <div key={crop.id} className="border border-agro-200 rounded-lg p-4 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold text-agro-700">Cultura {idx + 1}</span>
             {crops.length > 2 && (

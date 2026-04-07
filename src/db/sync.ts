@@ -20,7 +20,7 @@ interface SyncConfig {
 async function fetchBcbSeries(seriesCode: number): Promise<number | null> {
   try {
     const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${seriesCode}/dados/ultimos/1?formato=json`
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) })
     if (!res.ok) return null
     const data = await res.json()
     return data?.[0]?.valor ? parseFloat(data[0].valor) : null
@@ -30,42 +30,26 @@ async function fetchBcbSeries(seriesCode: number): Promise<number | null> {
 }
 
 async function syncFuelPrices(): Promise<boolean> {
-  // ANP diesel price — use BCB series 22022 (Diesel S10 avg price)
-  // Falls back to a reasonable default if API is unreachable
-  const price = await fetchBcbSeries(22022)
-  if (price === null) return false
-
-  // Update all state entries with the national average
-  const existing = await db.fuelPrices.toArray()
-  if (existing.length === 0) return false
-
-  const ops = existing.map((entry) =>
-    db.fuelPrices.update(entry.id!, { price, source: 'bcb', updatedAt: new Date().toISOString() })
-  )
-  await Promise.all(ops)
-  await updateSyncMeta('fuelPrices')
+  // No free public API for diesel retail prices.
+  // Diesel prices use manually-maintained seed data.
+  // Mark sync meta as 'seed' so DataFreshness shows the correct status.
+  await updateSyncMeta('fuelPrices', 'seed')
   return true
 }
 
 async function syncCropPrices(): Promise<boolean> {
-  // CEPEA/ESALQ soybean indicator — BCB series 11899
-  const soyPrice = await fetchBcbSeries(11899)
-  if (soyPrice === null) return false
-
-  // Update soybean price (convert from R$/60kg to R$/sc)
-  await db.cropPrices
-    .where('crop')
-    .equals('soybean')
-    .modify({ avg: soyPrice, source: 'bcb', updatedAt: new Date().toISOString() })
-
-  await updateSyncMeta('cropPrices')
+  // BCB series 11899 does NOT exist — it hangs the connection.
+  // Crop prices use manually-maintained seed/reference data.
+  // Mark sync meta as 'seed' so DataFreshness shows the correct status.
+  await updateSyncMeta('cropPrices', 'seed')
   return true
 }
 
 async function syncExchangeRates(): Promise<boolean> {
   // USD/BRL exchange rate — BCB series 1
   const usdBrl = await fetchBcbSeries(1)
-  if (usdBrl === null) return false
+  // Sanity check: USD/BRL should be between 3 and 10
+  if (usdBrl === null || usdBrl < 3 || usdBrl > 10) return false
 
   // Store as a special entry in taxRates for reference
   const existing = await db.taxRates.where('key').equals('USD_BRL').first()
@@ -81,14 +65,14 @@ async function syncExchangeRates(): Promise<boolean> {
 
 // ── Sync metadata ──
 
-async function updateSyncMeta(tableName: string) {
+async function updateSyncMeta(tableName: string, source: 'ok' | 'seed' = 'ok') {
   const existing = await db.syncMeta.where('table').equals(tableName).first()
   const now = new Date().toISOString()
 
   if (existing) {
-    await db.syncMeta.update(existing.id!, { lastSyncAt: now, status: 'ok' as const })
+    await db.syncMeta.update(existing.id!, { lastSyncAt: now, status: source })
   } else {
-    await db.syncMeta.add({ table: tableName, lastSyncAt: now, ttlMinutes: 1440, status: 'ok' as const })
+    await db.syncMeta.add({ table: tableName, lastSyncAt: now, ttlMinutes: 1440, status: source })
   }
 }
 

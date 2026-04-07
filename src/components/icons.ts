@@ -33,6 +33,11 @@ import {
   CalendarDays,
   Settings,
   RefreshCw,
+  Share2,
+  Copy,
+  Printer,
+  Check,
+  Link,
   type LucideIcon,
 } from 'lucide-react'
 import type { ToolCategory } from '../data/tools'
@@ -141,4 +146,9 @@ export {
   CalendarDays,
   Settings,
   RefreshCw,
+  Share2,
+  Copy,
+  Printer,
+  Check,
+  Link,
 }

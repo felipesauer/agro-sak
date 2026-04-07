@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -61,92 +61,90 @@ const PRODUCER_OPTIONS = [
 
 const STEPS = 7 // grid resolution
 
+// ── Validation ──
+
+function validate(inputs: Inputs): string | null {
+  const cost = parseFloat(inputs.productionCost)
+  const area = parseFloat(inputs.area)
+  const priceMin = parseFloat(inputs.priceMin)
+  const priceMax = parseFloat(inputs.priceMax)
+  const prodMin = parseFloat(inputs.prodMin)
+  const prodMax = parseFloat(inputs.prodMax)
+
+  if (!cost || cost <= 0) return 'Informe o custo de produção'
+  if (!area || area <= 0) return 'Informe a área'
+  if (!priceMin || !priceMax || priceMin <= 0 || priceMax <= 0) return 'Informe o range de preço'
+  if (!prodMin || !prodMax || prodMin <= 0 || prodMax <= 0) return 'Informe o range de produtividade'
+  if (priceMin >= priceMax) return 'Preço mínimo deve ser menor que o máximo'
+  if (prodMin >= prodMax) return 'Produtividade mínima deve ser menor que a máxima'
+  return null
+}
+
+// ── Calculation ──
+
+function calculateResult(inputs: Inputs): Result | null {
+  const cost = parseFloat(inputs.productionCost)
+  const area = parseFloat(inputs.area)
+  const priceMin = parseFloat(inputs.priceMin)
+  const priceMax = parseFloat(inputs.priceMax)
+  const prodMin = parseFloat(inputs.prodMin)
+  const prodMax = parseFloat(inputs.prodMax)
+
+  const funruralRate = (inputs.producerType === 'pf' ? FUNRURAL_RATES.PF.total : FUNRURAL_RATES.PJ.total) / 100
+  const totalCost = cost * area
+
+  const priceSteps: number[] = []
+  const prodSteps: number[] = []
+  for (let i = 0; i < STEPS; i++) {
+    priceSteps.push(priceMin + (priceMax - priceMin) * (i / (STEPS - 1)))
+    prodSteps.push(prodMin + (prodMax - prodMin) * (i / (STEPS - 1)))
+  }
+
+  const heatmap: HeatCell[][] = prodSteps.map((prod) =>
+    priceSteps.map((price) => {
+      const grossRevenue = area * prod * price
+      const funruralCost = grossRevenue * funruralRate
+      const profit = grossRevenue - funruralCost - totalCost
+      return { price, productivity: prod, profit }
+    })
+  )
+
+  const scenarioConfigs = [
+    { label: 'Pessimista', priceIdx: 1, prodIdx: 1 },
+    { label: 'Base', priceIdx: Math.floor(STEPS / 2), prodIdx: Math.floor(STEPS / 2) },
+    { label: 'Otimista', priceIdx: STEPS - 2, prodIdx: STEPS - 2 },
+  ]
+
+  const scenarios: Scenario[] = scenarioConfigs.map(({ label, priceIdx, prodIdx }) => {
+    const price = priceSteps[priceIdx]
+    const prod = prodSteps[prodIdx]
+    const grossRevenue = area * prod * price
+    const funruralCost = grossRevenue * funruralRate
+    const revenue = grossRevenue - funruralCost
+    const profit = revenue - totalCost
+    return {
+      label,
+      price,
+      productivity: prod,
+      revenue,
+      totalCost,
+      profit,
+      profitPerHa: profit / area,
+      roi: (profit / totalCost) * 100,
+    }
+  })
+
+  const midPrice = priceSteps[Math.floor(STEPS / 2)]
+  const breakEvenProd = cost / (midPrice * (1 - funruralRate))
+
+  return { scenarios, heatmap, priceSteps, prodSteps, breakEvenProd }
+}
+
 // ── Component ──
 
 export default function CropSimulator() {
-  const [inputs, setInputs] = useState<Inputs>(INITIAL)
-  const [result, setResult] = useState<Result | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  function updateInput(key: keyof Inputs, val: string) {
-    setInputs((prev) => ({ ...prev, [key]: val }))
-  }
-
-  function run() {
-    const cost = parseFloat(inputs.productionCost)
-    const area = parseFloat(inputs.area)
-    const priceMin = parseFloat(inputs.priceMin)
-    const priceMax = parseFloat(inputs.priceMax)
-    const prodMin = parseFloat(inputs.prodMin)
-    const prodMax = parseFloat(inputs.prodMax)
-
-    if (!cost || cost <= 0) { setError('Informe o custo de produção'); return }
-    if (!area || area <= 0) { setError('Informe a área'); return }
-    if (!priceMin || !priceMax || priceMin <= 0 || priceMax <= 0) { setError('Informe o range de preço'); return }
-    if (!prodMin || !prodMax || prodMin <= 0 || prodMax <= 0) { setError('Informe o range de produtividade'); return }
-    if (priceMin >= priceMax) { setError('Preço mínimo deve ser menor que o máximo'); return }
-    if (prodMin >= prodMax) { setError('Produtividade mínima deve ser menor que a máxima'); return }
-
-    const funrural = inputs.producerType === 'pf' ? FUNRURAL_RATES.PF : FUNRURAL_RATES.PJ
-    const totalCost = cost * area
-
-    // Generate steps
-    const priceSteps: number[] = []
-    const prodSteps: number[] = []
-    for (let i = 0; i < STEPS; i++) {
-      priceSteps.push(priceMin + (priceMax - priceMin) * (i / (STEPS - 1)))
-      prodSteps.push(prodMin + (prodMax - prodMin) * (i / (STEPS - 1)))
-    }
-
-    // Heatmap grid (rows = productivity, cols = price)
-    const heatmap: HeatCell[][] = prodSteps.map((prod) =>
-      priceSteps.map((price) => {
-        const grossRevenue = area * prod * price
-        const funruralCost = grossRevenue * funrural
-        const profit = grossRevenue - funruralCost - totalCost
-        return { price, productivity: prod, profit }
-      })
-    )
-
-    // Scenarios: pessimist, base, optimist
-    const scenarioConfigs = [
-      { label: 'Pessimista', priceIdx: 1, prodIdx: 1 },
-      { label: 'Base', priceIdx: Math.floor(STEPS / 2), prodIdx: Math.floor(STEPS / 2) },
-      { label: 'Otimista', priceIdx: STEPS - 2, prodIdx: STEPS - 2 },
-    ]
-
-    const scenarios: Scenario[] = scenarioConfigs.map(({ label, priceIdx, prodIdx }) => {
-      const price = priceSteps[priceIdx]
-      const prod = prodSteps[prodIdx]
-      const grossRevenue = area * prod * price
-      const funruralCost = grossRevenue * funrural
-      const revenue = grossRevenue - funruralCost
-      const profit = revenue - totalCost
-      return {
-        label,
-        price,
-        productivity: prod,
-        revenue,
-        totalCost,
-        profit,
-        profitPerHa: profit / area,
-        roi: (profit / totalCost) * 100,
-      }
-    })
-
-    // Break-even productivity at mid price
-    const midPrice = priceSteps[Math.floor(STEPS / 2)]
-    const breakEvenProd = cost / (midPrice * (1 - funrural))
-
-    setError(null)
-    setResult({ scenarios, heatmap, priceSteps, prodSteps, breakEvenProd })
-  }
-
-  function clear() {
-    setInputs(INITIAL)
-    setResult(null)
-    setError(null)
-  }
+  const { inputs, result, error, updateInput, run, clear } =
+    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate: calculateResult, validate })
 
   // Color for profit cell
   function profitColor(profit: number, maxAbs: number): string {
