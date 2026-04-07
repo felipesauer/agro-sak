@@ -67,8 +67,8 @@ export default function CropComparer() {
       const cost = parseFloat(c.productionCost)
       const revenue = prod * price
       const profit = revenue - cost
-      const roi = (profit / cost) * 100
-      const margin = (profit / revenue) * 100
+      const roi = cost > 0 ? (profit / cost) * 100 : 0
+      const margin = revenue > 0 ? (profit / revenue) * 100 : 0
       return { name: c.name, revenuePerHa: revenue, costPerHa: cost, profitPerHa: profit, roi, margin }
     })
 

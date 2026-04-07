@@ -157,6 +157,9 @@ export default function Funrural() {
                 ]}
                 rowKey="tipo"
               />
+              <p className="text-xs text-gray-500 mt-2">
+                Alíquotas vigentes desde jan/2018 (Lei 13.606/2018). Verifique atualizações na legislação.
+              </p>
             </div>
 
             <AlertBanner

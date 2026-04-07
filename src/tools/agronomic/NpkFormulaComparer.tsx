@@ -17,7 +17,7 @@ interface FormulaEntry {
   supplier: string
 }
 
-interface FormulaResult {
+interface FormulaResult extends Record<string, unknown> {
   formula: string
   supplier: string
   totalPercent: number
@@ -64,6 +64,16 @@ export default function NpkFormulaComparer() {
       setError('Preencha pelo menos 2 formulações com preço para comparar')
       setResults(null)
       return
+    }
+
+    // Validate N+P+K ≤ 100%
+    for (const e of valid) {
+      const total = (parseFloat(e.n) || 0) + (parseFloat(e.p) || 0) + (parseFloat(e.k) || 0)
+      if (total > 100) {
+        setError(`N + P₂O₅ + K₂O não pode ultrapassar 100% (formulação com ${total}%)`)
+        setResults(null)
+        return
+      }
     }
 
     const parsed: FormulaResult[] = valid.map((e) => {
@@ -121,7 +131,7 @@ export default function NpkFormulaComparer() {
                   key: 'formula',
                   label: 'Fórmula',
                   format: (v, row) => (
-                    <>{v as string}{(row as Record<string, unknown>).isBest && <span className="ml-1 text-agro-700">★</span>}</>
+                    <>{v as string}{(row as Record<string, unknown>).isBest && <span className="ml-1 text-agro-700" role="img" aria-label="Melhor opção">★</span>}</>
                   ),
                 },
                 { key: 'supplier', label: 'Fornecedor' },

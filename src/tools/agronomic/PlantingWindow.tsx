@@ -28,6 +28,12 @@ const PLANTING_WINDOWS: Record<string, Record<string, WindowEntry[]>> = {
       { gm: 'Safrinha', start: '01/Jan', end: '15/Fev', harvestEstimate: 'Jun–Jul', risk: 'medium' },
       { gm: 'Safrinha (tardio)', start: '16/Fev', end: '10/Mar', harvestEstimate: 'Jul–Ago', risk: 'high' },
     ],
+    cotton: [
+      { gm: '2ª Safra (algodão adensado)', start: '15/Jan', end: '15/Fev', harvestEstimate: 'Jul–Ago', risk: 'medium' },
+    ],
+    bean: [
+      { gm: '3ª Safra (irrigado)', start: '15/Mai', end: '30/Jun', harvestEstimate: 'Set–Out', risk: 'medium' },
+    ],
   },
   GO: {
     soybean: [
@@ -52,6 +58,11 @@ const PLANTING_WINDOWS: Record<string, Record<string, WindowEntry[]>> = {
     corn_2: [
       { gm: 'Safrinha', start: '01/Fev', end: '15/Mar', harvestEstimate: 'Jul–Ago', risk: 'medium' },
     ],
+    wheat: [
+      { gm: 'Precoce', start: '01/Abr', end: '31/Mai', harvestEstimate: 'Ago–Set', risk: 'low' },
+      { gm: 'Médio', start: '15/Abr', end: '15/Jun', harvestEstimate: 'Set–Out', risk: 'low' },
+      { gm: 'Tardio', start: '01/Mai', end: '30/Jun', harvestEstimate: 'Out–Nov', risk: 'medium' },
+    ],
   },
   MS: {
     soybean: [
@@ -71,6 +82,10 @@ const PLANTING_WINDOWS: Record<string, Record<string, WindowEntry[]>> = {
     ],
     corn_2: [
       { gm: 'Safrinha', start: '01/Fev', end: '15/Mar', harvestEstimate: 'Jul–Ago', risk: 'high' },
+    ],
+    wheat: [
+      { gm: 'Precoce', start: '15/Mar', end: '30/Abr', harvestEstimate: 'Jul–Ago', risk: 'low' },
+      { gm: 'Médio', start: '01/Abr', end: '31/Mai', harvestEstimate: 'Ago–Set', risk: 'medium' },
     ],
   },
   MG: {
@@ -92,6 +107,11 @@ const PLANTING_WINDOWS: Record<string, Record<string, WindowEntry[]>> = {
     ],
     corn_1: [
       { gm: '1ª Safra', start: '01/Set', end: '15/Nov', harvestEstimate: 'Fev–Mar', risk: 'low' },
+    ],
+    wheat: [
+      { gm: 'Precoce', start: '15/Mai', end: '30/Jun', harvestEstimate: 'Set–Out', risk: 'low' },
+      { gm: 'Médio', start: '01/Jun', end: '15/Jul', harvestEstimate: 'Out–Nov', risk: 'low' },
+      { gm: 'Tardio', start: '15/Jun', end: '31/Jul', harvestEstimate: 'Nov–Dez', risk: 'medium' },
     ],
   },
   BA: {
@@ -132,6 +152,10 @@ const PLANTING_WINDOWS: Record<string, Record<string, WindowEntry[]>> = {
     corn_1: [
       { gm: '1ª Safra', start: '01/Set', end: '30/Nov', harvestEstimate: 'Fev–Mar', risk: 'low' },
     ],
+    wheat: [
+      { gm: 'Precoce', start: '01/Mai', end: '15/Jun', harvestEstimate: 'Set–Out', risk: 'low' },
+      { gm: 'Médio', start: '15/Mai', end: '30/Jun', harvestEstimate: 'Out–Nov', risk: 'low' },
+    ],
   },
   DF: {
     soybean: [
@@ -166,6 +190,9 @@ const CROP_OPTIONS = [
   { value: 'soybean', label: 'Soja' },
   { value: 'corn_1', label: 'Milho 1ª Safra' },
   { value: 'corn_2', label: 'Milho Safrinha' },
+  { value: 'wheat', label: 'Trigo' },
+  { value: 'cotton', label: 'Algodão' },
+  { value: 'bean', label: 'Feijão' },
 ]
 
 const RISK_COLORS: Record<string, string> = {
@@ -245,7 +272,7 @@ export default function PlantingWindow() {
 
       <AlertBanner
         variant="warning"
-        message="Dados de referência simplificados. Consulte sempre o ZARC vigente no site do MAPA para datas oficiais do seu município."
+        message="Dados de referência simplificados. Consulte sempre o ZARC vigente no site do MAPA (zarc.agricultura.gov.br) para datas oficiais do seu município."
       />
     </CalculatorLayout>
   )

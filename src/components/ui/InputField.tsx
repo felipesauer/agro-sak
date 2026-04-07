@@ -13,8 +13,8 @@ function formatBrNumber(raw: string, decimals: number): string {
 }
 
 function stripBrFormat(display: string): string {
-  // Remove thousand separators (.) and convert decimal comma to dot
-  return display.replace(/\./g, '').replace(',', '.')
+  // Remove thousand separators (.) and convert ALL decimal commas to dots
+  return display.replace(/\./g, '').replace(/,/g, '.')
 }
 
 interface InputFieldProps {
@@ -70,11 +70,17 @@ export default function InputField({
       const cleaned = e.target.value.replace(/[^0-9.,-]/g, '')
       // Convert to raw number string for upstream
       const raw = stripBrFormat(cleaned)
+      // Enforce min/max even for masked inputs
+      const num = parseFloat(raw)
+      if (!isNaN(num)) {
+        if (min !== undefined && num < parseFloat(min)) return
+        if (max !== undefined && num > parseFloat(max)) return
+      }
       onChange(raw)
     } else {
       onChange(e.target.value)
     }
-  }, [isMasked, onChange])
+  }, [isMasked, onChange, min, max])
 
   const handleFocus = useCallback(() => setFocused(true), [])
   const handleBlur = useCallback(() => setFocused(false), [])

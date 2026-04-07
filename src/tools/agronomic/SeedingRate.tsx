@@ -20,6 +20,7 @@ interface Inputs {
   germination: string
   vigor: string
   tsw: string
+  bagWeight: string
   seedPrice: string
 }
 
@@ -40,6 +41,7 @@ function getInitial(crop: string): Inputs {
     germination: '85',
     vigor: '90',
     tsw: String(d.tswDefault),
+    bagWeight: '40',
     seedPrice: '',
   }
 }
@@ -64,8 +66,9 @@ function calculate(inputs: Inputs): Result | null {
   // Kg per hectare
   const kgPerHa = (adjustedSeedsPerHa * tsw) / 1_000_000
 
-  // 40kg bags
-  const bagsPerHa = kgPerHa / 40
+  // Bags (customizable weight)
+  const bagWeight = parseFloat(inputs.bagWeight) || 40
+  const bagsPerHa = kgPerHa / bagWeight
 
   // Cost
   const costPerHa = price > 0 ? bagsPerHa * price : null
@@ -157,7 +160,7 @@ export default function SeedingRate() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <ResultCard
-                label="Sacas de 40 kg por hectare"
+                label={`Sacas de ${inputs.bagWeight || '40'} kg por hectare`}
                 value={formatNumber(result.bagsPerHa, 2)}
                 unit="sc/ha"
                 variant="default"
@@ -254,8 +257,19 @@ export default function SeedingRate() {
       </div>
 
       <InputField
+        label="Peso da saca de semente"
+        unit="kg"
+        value={inputs.bagWeight}
+        onChange={(v) => updateInput('bagWeight', v as never)}
+        placeholder="ex: 40"
+        min="10"
+        max="60"
+        hint="Peso da saca comercial (40, 50 ou 60 kg)"
+      />
+
+      <InputField
         label="Preço da saca de semente (opcional)"
-        unit="R$/sc 40kg"
+        unit={`R$/sc ${inputs.bagWeight || '40'}kg`}
         value={inputs.seedPrice}
         onChange={(v) => updateInput('seedPrice', v as never)}
         placeholder="ex: 350"

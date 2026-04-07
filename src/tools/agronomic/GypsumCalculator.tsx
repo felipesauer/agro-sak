@@ -221,6 +221,11 @@ export default function GypsumCalculator() {
               message="Considere parcelar a aplicação em 2 anos para doses acima de 3 t/ha."
             />
           )}
+
+          <AlertBanner
+            variant="info"
+            message="A migração do gesso no perfil do solo não é linear — depende da textura, umidade e teor de matéria orgânica. O efeito pleno pode levar 6 a 12 meses."
+          />
         </div>
       )}
       about="Calcule a quantidade de gesso agrícola (CaSO₄) necessária para corrigir o perfil subsuperficial do solo (20-40 cm). O gesso melhora o ambiente radicular em profundidade, fornece cálcio e enxofre, e reduz a toxidez por alumínio sem alterar o pH."

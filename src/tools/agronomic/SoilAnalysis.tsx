@@ -1,15 +1,23 @@
 import useCalculator from '../../hooks/useCalculator'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
+import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatPercent } from '../../utils/formatters'
 import { SOIL_ANALYSIS_RANGES, classifySoilNutrient } from '../../data/reference-data'
 
+const EXTRACTION_OPTIONS = [
+  { value: 'resin', label: 'Resina (IAC — SP)' },
+  { value: 'mehlich1', label: 'Mehlich-1 (Cerrado/Sul)' },
+  { value: 'dtpa', label: 'DTPA (micronutrientes)' },
+]
+
 // ── Types ──
 
 interface Inputs {
+  extractionMethod: string
   pH: string
   organicMatter: string
   P: string
@@ -61,6 +69,7 @@ const NUTRIENT_DISPLAY: Record<string, string> = {
 }
 
 const INITIAL: Inputs = {
+  extractionMethod: 'resin',
   pH: '',
   organicMatter: '',
   P: '',
@@ -273,8 +282,22 @@ export default function SoilAnalysis() {
         )
       }
       about="A interpretação da análise de solo é o primeiro passo para definir a estratégia de correção e adubação da lavoura. Com base nos valores do laudo do laboratório, classificamos cada nutriente em faixas (muito baixo, baixo, médio, adequado, alto) e calculamos indicadores como CTC, V% e relações entre cátions."
-      methodology="Classificação baseada nos critérios da IAC (Boletim 100 — Raij et al.) e EMBRAPA Cerrados. CTC = Ca + Mg + K + H+Al. V% = (Ca + Mg + K) / CTC × 100. m% = H+Al / CTC × 100. Relações catiônicas segundo padrões regionais do Cerrado e Sul do Brasil."
+      methodology="Classificação baseada nos critérios da IAC (Boletim 100 — Raij et al.) e EMBRAPA Cerrados. CTC = Ca + Mg + K + H+Al. V% = (Ca + Mg + K) / CTC × 100. m% = H+Al / CTC × 100. Relações catiônicas segundo padrões regionais do Cerrado e Sul do Brasil. Faixas assumem extração por Resina (SP/IAC) ou Mehlich-1 (Cerrado) — valores de referência podem variar conforme o método do seu laboratório."
     >
+      <SelectField
+        label="Método de extração do laudo"
+        options={EXTRACTION_OPTIONS}
+        value={inputs.extractionMethod}
+        onChange={(v) => updateInput('extractionMethod', v as never)}
+      />
+
+      {inputs.extractionMethod !== 'resin' && (
+        <AlertBanner
+          variant="warning"
+          message="As faixas de classificação são calibradas para extração por Resina (IAC — Boletim 100). Laudos com Mehlich-1 podem ter valores de referência diferentes, especialmente para fósforo."
+        />
+      )}
+
       <h3 className="text-sm font-semibold text-gray-700 mt-2">Macronutrientes e pH</h3>
       <div className="grid gap-4 sm:grid-cols-3">
         <InputField

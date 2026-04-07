@@ -16,6 +16,7 @@ interface ComparisonTableProps<T extends Record<string, unknown>> {
   rowKey?: keyof T
   rowClassName?: (row: T, index: number) => string
   colSpanRow?: (row: T, index: number) => ReactNode | null
+  'aria-label'?: string
 }
 
 const ALIGN_CLASS = { left: 'text-left', center: 'text-center', right: 'text-right' }
@@ -27,15 +28,17 @@ export default function ComparisonTable<T extends Record<string, unknown>>({
   rowKey,
   rowClassName,
   colSpanRow,
+  'aria-label': ariaLabel,
 }: ComparisonTableProps<T>) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm" aria-label={ariaLabel}>
         <thead>
           <tr className="border-b border-gray-200">
             {columns.map((col) => (
               <th
                 key={String(col.key)}
+                scope="col"
                 className={`py-2 px-3 font-medium text-gray-600 ${ALIGN_CLASS[col.align ?? 'left']}`}
               >
                 {col.label}

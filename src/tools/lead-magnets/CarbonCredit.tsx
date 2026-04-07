@@ -215,6 +215,11 @@ export default function CarbonCredit() {
               message="Sistemas integrados (ILPF/SAF) são os que mais sequestram carbono — excelente para o mercado de créditos."
             />
           )}
+
+          <AlertBanner
+            variant="warning"
+            message="Valores são estimativas para orientação. A geração real de créditos de carbono requer projeto certificado por entidade credenciada (Verra, Gold Standard ou similar) com monitoramento e verificação em campo."
+          />
         </div>
       )}
       about="Estime o potencial de sequestro de carbono da sua propriedade rural e a receita que pode ser gerada com a venda de créditos de carbono no mercado voluntário. Considera as principais práticas conservacionistas reconhecidas pelo Plano ABC+ (Agricultura de Baixa Emissão de Carbono)."

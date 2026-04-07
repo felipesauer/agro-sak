@@ -148,6 +148,13 @@ export default function LimingCalculator() {
               variant="info"
               message="Aguarde 60–90 dias após a aplicação antes do plantio para que o calcário reaja no solo."
             />
+
+            {inputs.depth === '40' && (
+              <AlertBanner
+                variant="info"
+                message="O fator ×2 para incorporação a 0–40 cm é uma simplificação. A dose ideal depende do perfil do solo e da capacidade de incorporação dos implementos."
+              />
+            )}
           </div>
         )
       }

@@ -29,6 +29,7 @@ interface Result {
   weeklyDemand: number
   weeklyBalance: number
   monthlyBalance: number
+  irrigationLamina: number
   condition: string
   conditionVariant: 'info' | 'success' | 'warning' | 'error'
   recommendation: string
@@ -144,6 +145,10 @@ function calculate(inputs: Inputs): Result | null {
     recommendation = 'ALERTA MÁXIMO: Floração com déficit hídrico causa perda irreversível de produtividade. Irrigar imediatamente!'
   }
 
+  // Irrigation lamina: how much water to apply (mm) to cover the deficit
+  // Only meaningful when there's a deficit (negative balance)
+  const irrigationLamina = effectiveBalance < 0 ? Math.abs(effectiveBalance) : 0
+
   return {
     eto,
     etc,
@@ -151,6 +156,7 @@ function calculate(inputs: Inputs): Result | null {
     weeklyDemand,
     weeklyBalance,
     monthlyBalance,
+    irrigationLamina,
     condition,
     conditionVariant,
     recommendation,
@@ -159,6 +165,7 @@ function calculate(inputs: Inputs): Result | null {
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.tempMean || !inputs.tempMax || !inputs.tempMin) return 'Informe as temperaturas'
+  if (parseFloat(inputs.tempMax) < parseFloat(inputs.tempMin)) return 'Temperatura máxima deve ser maior que a mínima'
   if (!inputs.precipWeek && !inputs.precipMonth) return 'Informe ao menos a precipitação da semana'
   return null
 }
@@ -174,7 +181,7 @@ export default function WaterBalance() {
       title="Balanço Hídrico"
       description="Monitore o balanço hídrico da lavoura comparando precipitação com evapotranspiração estimada. Método Hargreaves simplificado."
       about="Monitore o balanço hídrico da lavoura: compare a chuva recebida com a demanda da cultura (ETc). Identifique déficit ou excesso hídrico para tomar decisões de irrigação."
-      methodology="ETc = ETo × Kc (coeficiente da cultura por fase). ETo estimada por Hargreaves: 0,0023 × Ra × (Tmed + 17,8) × √(Tmax - Tmin). Balanço = Precipitação - ETc."
+      methodology="ETc = ETo × Kc (coeficiente da cultura por fase). ETo estimada por Hargreaves: 0,0023 × Ra × (Tmed + 17,8) × √(Tmax - Tmin). Balanço = Precipitação - ETc. Ra fixo em 15 mm/dia (aproximação para latitudes tropicais entre 10°S e 25°S)."
       result={
         result && (
           <div className="space-y-4">
@@ -186,7 +193,7 @@ export default function WaterBalance() {
               <ResultCard label="Demanda semanal" value={formatNumber(result.weeklyDemand, 1)} unit="mm/semana" variant="default" />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <ResultCard
                 label="Balanço semanal"
                 value={formatNumber(result.weeklyBalance, 1)}
@@ -200,7 +207,23 @@ export default function WaterBalance() {
                 unit="mm"
                 variant={result.monthlyBalance >= 0 ? 'success' : 'danger'}
               />
+              {result.irrigationLamina > 0 && (
+                <ResultCard
+                  label="Lâmina de irrigação"
+                  value={formatNumber(result.irrigationLamina, 1)}
+                  unit="mm/semana"
+                  highlight
+                  variant="danger"
+                />
+              )}
             </div>
+
+            {result.irrigationLamina > 0 && (
+              <AlertBanner
+                variant="warning"
+                message={`Recomendação: aplique aproximadamente ${formatNumber(result.irrigationLamina, 1)} mm de irrigação nesta semana para cobrir o déficit hídrico (${formatNumber(result.irrigationLamina / 7, 1)} mm/dia). Ajuste conforme eficiência do sistema de irrigação (pivô ~85%, aspersão ~75%, gotejo ~95%).`}
+              />
+            )}
 
             {/* Visual bar */}
             <div>
@@ -229,6 +252,11 @@ export default function WaterBalance() {
                 <span className="text-xs w-16">Excesso</span>
               </div>
             </div>
+
+            <AlertBanner
+              variant="info"
+              message="ETo calculada com Ra fixo de 15 mm/dia (aproximação para latitudes tropicais). Para maior precisão, use dados de estação meteorológica local."
+            />
           </div>
         )
       }

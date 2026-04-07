@@ -14,6 +14,7 @@ import { formatNumber, formatPercent } from '../../utils/formatters'
 interface Inputs {
   system: string
   area: string
+  rotationBonus: string
   soybeanYield: string
   cornYield: string
   soybeanPrice: string
@@ -45,6 +46,7 @@ interface Result {
 const INITIAL: Inputs = {
   system: 'soy_corn',
   area: '',
+  rotationBonus: '8',
   soybeanYield: '',
   cornYield: '',
   soybeanPrice: '',
@@ -58,10 +60,6 @@ const SYSTEM_OPTIONS = [
   { value: 'soy_wheat', label: 'Soja + Trigo' },
   { value: 'soy_only', label: 'Soja solteira (referência)' },
 ]
-
-// Rotation benefits (EMBRAPA)
-// Corn/wheat after soy: +5-15% yield boost on next soy due to improved soil biology
-const ROTATION_YIELD_BONUS = 0.08 // 8% average yield increase on soy following rotation
 
 const COLUMNS: { key: keyof CropRow; label: string; format?: (v: unknown) => string; align?: 'left' | 'center' | 'right' }[] = [
   { key: 'crop', label: 'Cultura', align: 'left' },
@@ -162,6 +160,20 @@ export default function CropRotation() {
         required
         hint="Área total do sistema de rotação"
       />
+
+      {showSecondCrop && (
+        <InputField
+          label="Bônus de rotação na soja"
+          unit="%"
+          value={inputs.rotationBonus}
+          onChange={(v) => updateInput('rotationBonus', v as never)}
+          placeholder="Ex: 8"
+          min="0"
+          max="20"
+          step="1"
+          hint="Ganho de produtividade na soja em rotação (EMBRAPA: 5–15%)"
+        />
+      )}
 
       {/* Soybean inputs */}
       <div className="border-t border-gray-100 pt-4 mt-2">
@@ -282,7 +294,7 @@ function calculate(inputs: Inputs): Result {
   const sc = parseFloat(inputs.soybeanCost)
 
   const isRotation = system !== 'soy_only'
-  const rotationBenefit = isRotation ? ROTATION_YIELD_BONUS : 0
+  const rotationBenefit = isRotation ? (parseFloat(inputs.rotationBonus) || 8) / 100 : 0
 
   // Apply rotation bonus to soybean yield
   const sy = syRaw * (1 + rotationBenefit)

@@ -27,7 +27,7 @@ interface Inputs {
   area: string
 }
 
-interface ProductResult {
+interface ProductResult extends Record<string, unknown> {
   name: string
   formulation: FormulationType
   perTank: number
@@ -129,7 +129,7 @@ export default function TankMix() {
     const additionOrder = [...validProducts]
       .sort(
         (a, b) =>
-          ADDITION_PRIORITY[a.formulation] - ADDITION_PRIORITY[b.formulation],
+          (ADDITION_PRIORITY[a.formulation] ?? 99) - (ADDITION_PRIORITY[b.formulation] ?? 99),
       )
       .map((p) => `${p.name} (${p.formulation})`)
 

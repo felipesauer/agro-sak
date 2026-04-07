@@ -106,7 +106,7 @@ export default function FarmDiagnostics() {
       title="Diagnóstico de Gestão da Fazenda"
       description="Avalie o nível de maturidade da gestão da sua fazenda em 6 dimensões. 12 perguntas rápidas, resultado imediato."
       about="Faça um diagnóstico rápido da maturidade de gestão da sua fazenda. Responda 12 perguntas em 6 dimensões (financeiro, insumos, planejamento, máquinas, fiscal e tecnologia) e receba uma pontuação."
-      methodology="Cada pergunta pontua de 0 a 3 (nunca, às vezes, quase sempre, sempre). Pontuação total: 0-36 pontos. Classificação: Iniciante (0-36%), Em desenvolvimento (36-72%), Avançado (72-100%)."
+      methodology="Cada pergunta pontua de 0 a 3 (nunca, às vezes, quase sempre, sempre). Pontuação total: 0-36 pontos. Classificação: Iniciante (0-33%), Em desenvolvimento (34-67%), Avançado (68-100%)."
       result={
         showResult ? (
           <div className="space-y-6">

@@ -50,14 +50,18 @@ function validate(inputs: Inputs): string | null {
   return null
 }
 
+const UNIT_MAP = {
+  L: { small: 'mL', perHa: 'L/ha', full: 'L' },
+  kg: { small: 'g', perHa: 'kg/ha', full: 'kg' },
+} as const
+
 // ── Component ──
 
 export default function SprayMix() {
   const { inputs, result, error, updateInput, run, clear } =
     useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
 
-  const unitLabel = inputs.unit === 'L' ? 'mL' : 'g'
-  const unitLabelHa = inputs.unit === 'L' ? 'L/ha' : 'kg/ha'
+  const units = UNIT_MAP[inputs.unit as keyof typeof UNIT_MAP] ?? UNIT_MAP.L
 
   return (
     <CalculatorLayout
@@ -72,18 +76,18 @@ export default function SprayMix() {
               <ResultCard
                 label="Por tanque cheio"
                 value={formatNumber(result.perTank * 1000, 0)}
-                unit={unitLabel}
+                unit={units.small}
                 highlight
                 variant="default"
               >
                 <p className="text-xs text-gray-500 mt-1">
-                  {formatNumber(result.perTank, 2)} {inputs.unit === 'L' ? 'L' : 'kg'}
+                  {formatNumber(result.perTank, 2)} {units.full}
                 </p>
               </ResultCard>
               <ResultCard
                 label="Por 100L de calda"
                 value={formatNumber(result.per100L * 1000, 0)}
-                unit={unitLabel}
+                unit={units.small}
                 variant="default"
               />
               <ResultCard
@@ -126,7 +130,7 @@ export default function SprayMix() {
 
       <InputField
         label="Dose do produto (conforme bula)"
-        unit={unitLabelHa}
+        unit={units.perHa}
         value={inputs.dosePerHa}
         onChange={(v) => updateInput('dosePerHa', v)}
         placeholder="ex: 0.5"

@@ -135,6 +135,9 @@ export default function FarmROI() {
                     O CDB renderia {formatCurrency(result.cdiReturn - result.profit, 0)} a mais que a safra.
                   </p>
                 )}
+                <p className="text-xs text-gray-400 mt-1">
+                  CDB mostrado como rendimento bruto. O rendimento líquido é menor após IR (15–22,5% conforme prazo).
+                </p>
               </div>
             </div>
 

@@ -72,13 +72,15 @@ function calculate(inputs: Inputs): Result | null {
     const plants = parseFloat(inputs.plantsPerMeter)
     const pods = parseFloat(inputs.podsPerPlant)
     const grains = parseFloat(inputs.grainsPerPod)
-    // plants/m ÷ spacing = plants/m², × 10000 = plants/ha, × grains × PMG/1e6 = kg/ha
-    yieldKgHa = (plants * pods * grains * pmg) / (spacing * 100)
+    // plants/m ÷ (spacing_cm/100) = plants/m², × pods × grains × PMG/1e6 × 10000 = kg/ha
+    const plantsPerM2 = plants / (spacing / 100)
+    yieldKgHa = plantsPerM2 * pods * grains * (pmg / 1000)
   } else {
     const ears = parseFloat(inputs.earsPerMeter)
     const rows = parseFloat(inputs.rowsPerEar)
     const grains = parseFloat(inputs.grainsPerRow)
-    yieldKgHa = (ears * rows * grains * pmg) / (spacing * 100)
+    const earsPerM2 = ears / (spacing / 100)
+    yieldKgHa = earsPerM2 * rows * grains * (pmg / 1000)
   }
 
   const yieldScHa = yieldKgHa / 60
@@ -255,7 +257,7 @@ export default function PreHarvestYield() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.rowSpacing || !inputs.thousandGrainWeight || !inputs.plantsPerMeter} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.rowSpacing || !inputs.thousandGrainWeight || !(inputs.crop === 'soybean' ? inputs.plantsPerMeter : inputs.earsPerMeter)} />
     </CalculatorLayout>
   )
 }

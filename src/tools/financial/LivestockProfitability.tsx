@@ -313,7 +313,9 @@ export default function LivestockProfitability() {
         value={inputs.mortalityRate}
         onChange={(v) => updateInput('mortalityRate', v)}
         placeholder="ex: 2"
-        hint="Percentual esperado de perda do lote"
+        max="100"
+        min="0"
+        hint="Percentual esperado de perda do lote (0-100%)"
       />
 
       {error && <AlertBanner variant="error" message={error} />}

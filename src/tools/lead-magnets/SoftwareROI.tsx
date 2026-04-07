@@ -116,7 +116,7 @@ function calculate(inputs: Inputs): Result | null {
 
   const totalAnnual = savings.reduce((s, r) => s + r.annual, 0)
   const softwareAnnual = swCost * 12
-  const roi = softwareAnnual > 0 ? (totalAnnual / softwareAnnual) * 100 : 0
+  const roi = softwareAnnual > 0 ? ((totalAnnual - softwareAnnual) / softwareAnnual) * 100 : 0
   const paybackMonths = totalAnnual > 0 ? softwareAnnual / (totalAnnual / 12) : 0
 
   return { savings, totalAnnual, softwareAnnual, roi, paybackMonths }
@@ -147,7 +147,7 @@ export default function SoftwareROI() {
               <ResultCard
                 label="Economia anual estimada"
                 value={formatCurrency(result.totalAnnual)}
-                prefix="R$" mask="currency" unit="R$/ano"
+                prefix="R$" unit="R$/ano"
                 highlight
                 variant="success"
               />

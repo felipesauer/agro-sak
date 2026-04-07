@@ -92,7 +92,9 @@ function calculate(inputs: Inputs): Result | null {
     if (discountedPayback === Infinity && cumulativeDiscounted >= 0) {
       // Interpolate exact year
       const prevCum = cumulativeDiscounted - discountedCF
-      discountedPayback = y - 1 + Math.abs(prevCum) / discountedCF
+      discountedPayback = discountedCF > 0
+        ? y - 1 + Math.abs(prevCum) / discountedCF
+        : y
     }
 
     yearRows.push({

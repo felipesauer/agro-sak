@@ -108,6 +108,7 @@ function calculate(inputs: Inputs, rates: CbsRates): Result | null {
 export default function TaxReform() {
   const [rates, setRates] = useState<CbsRates | null>(null)
   const [loadingRates, setLoadingRates] = useState(true)
+  const [rateError, setRateError] = useState(false)
   const [rateYear, setRateYear] = useState('2033-01-01')
 
   const validateWithRates = useCallback(
@@ -143,13 +144,32 @@ export default function TaxReform() {
   // Fetch CBS/IBS rates when state or year changes
   useEffect(() => {
     let cancelled = false
-    fetchCbsRates(inputs.state, rateYear).then(r => {
+    setRateError(false)
+    const timeout = setTimeout(() => {
       if (!cancelled) {
-        setRates(r)
+        setRates({ cbsRate: 8.8, ibsRate: 17.7, source: 'fallback' } as CbsRates)
         setLoadingRates(false)
+        setRateError(true)
       }
-    })
-    return () => { cancelled = true }
+    }, 10_000)
+
+    fetchCbsRates(inputs.state, rateYear)
+      .then(r => {
+        if (!cancelled) {
+          clearTimeout(timeout)
+          setRates(r)
+          setLoadingRates(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          clearTimeout(timeout)
+          setRates({ cbsRate: 8.8, ibsRate: 17.7, source: 'fallback' } as CbsRates)
+          setLoadingRates(false)
+          setRateError(true)
+        }
+      })
+    return () => { cancelled = true; clearTimeout(timeout) }
   }, [inputs.state, rateYear])
 
   return (
@@ -165,13 +185,13 @@ export default function TaxReform() {
               <ResultCard
                 label="Carga tributária atual"
                 value={formatCurrency(result.currentTotal)}
-                prefix="R$" mask="currency" unit="R$/ano"
+                prefix="R$" unit="R$/ano"
                 variant="warning"
               />
               <ResultCard
                 label="Carga tributária nova (líquida)"
                 value={formatCurrency(result.newNetTotal)}
-                prefix="R$" mask="currency" unit="R$/ano"
+                prefix="R$" unit="R$/ano"
                 highlight
                 variant="warning"
               />
@@ -204,6 +224,12 @@ export default function TaxReform() {
         <div className="text-xs px-3 py-2 rounded-lg mb-2 bg-gray-50 text-gray-500 animate-pulse">
           Carregando alíquotas CBS/IBS...
         </div>
+      )}
+      {rateError && (
+        <AlertBanner
+          variant="warning"
+          message="Não foi possível obter alíquotas atualizadas da API. Usando valores de referência (CBS: 8,8%, IBS: 17,7%)."
+        />
       )}
       {rates && (
         <div className={`text-xs px-3 py-2 rounded-lg mb-2 ${rates.source === 'api' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>

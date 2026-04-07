@@ -32,7 +32,11 @@ export async function seedDatabase(): Promise<void> {
 
 async function seedCropPrices() {
   const count = await db.cropPrices.count()
-  if (count > 0) return
+  const expected = Object.keys(CROP_PRICE_REF).length
+  if (count >= expected) return
+
+  // Clear partial seed and re-insert
+  if (count > 0) await db.cropPrices.clear()
 
   const rows = Object.entries(CROP_PRICE_REF).map(([crop, { min, avg, max }]) => ({
     crop,

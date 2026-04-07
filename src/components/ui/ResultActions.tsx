@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type RefObject } from 'react'
+import { useState, useCallback, useRef, useEffect, type RefObject } from 'react'
 import { Share2, Copy, Printer, Check, Link } from '../icons'
 
 interface ResultActionsProps {
@@ -8,7 +8,8 @@ interface ResultActionsProps {
 
 type CopiedState = 'idle' | 'link' | 'text'
 
-function extractTextFromElement(el: HTMLElement): string {
+function extractTextFromElement(el: HTMLElement | null): string {
+  if (!el) return ''
   const lines: string[] = []
   const cards = el.querySelectorAll('[data-result-card]')
   if (cards.length > 0) {
@@ -56,30 +57,34 @@ function extractTextFromElement(el: HTMLElement): string {
 export default function ResultActions({ title, resultRef }: ResultActionsProps) {
   const [copied, setCopied] = useState<CopiedState>('idle')
   const [showShareMenu, setShowShareMenu] = useState(false)
+  const [shareError, setShareError] = useState(false)
   const shareMenuRef = useRef<HTMLDivElement>(null)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   const currentUrl = window.location.href
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
+
+  const setCopiedWithTimer = useCallback((state: CopiedState) => {
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    setCopied(state)
+    copiedTimerRef.current = setTimeout(() => setCopied('idle'), 2000)
+  }, [])
 
   const handleCopyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(currentUrl)
-      setCopied('link')
-      setTimeout(() => setCopied('idle'), 2000)
+      setCopiedWithTimer('link')
     } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea')
-      textarea.value = currentUrl
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-      setCopied('link')
-      setTimeout(() => setCopied('idle'), 2000)
+      // clipboard API unavailable — silently fail
     }
     setShowShareMenu(false)
-  }, [currentUrl])
+  }, [currentUrl, setCopiedWithTimer])
 
   const handleCopyText = useCallback(async () => {
     if (!resultRef.current) return
@@ -88,21 +93,11 @@ export default function ResultActions({ title, resultRef }: ResultActionsProps) 
 
     try {
       await navigator.clipboard.writeText(text)
-      setCopied('text')
-      setTimeout(() => setCopied('idle'), 2000)
+      setCopiedWithTimer('text')
     } catch {
-      const textarea = document.createElement('textarea')
-      textarea.value = text
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-      setCopied('text')
-      setTimeout(() => setCopied('idle'), 2000)
+      // clipboard API unavailable — silently fail
     }
-  }, [title, resultRef, currentUrl])
+  }, [title, resultRef, currentUrl, setCopiedWithTimer])
 
   const handleNativeShare = useCallback(async () => {
     if (!resultRef.current) return
@@ -115,8 +110,11 @@ export default function ResultActions({ title, resultRef }: ResultActionsProps) 
         text: `${title}\n${text}`,
         url: currentUrl,
       })
-    } catch {
-      // User cancelled or API not available — ignore
+    } catch (err) {
+      // Only show error if it wasn't a user cancellation
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      setShareError(true)
+      setTimeout(() => setShareError(false), 3000)
     }
     setShowShareMenu(false)
   }, [title, resultRef, currentUrl])
@@ -136,11 +134,12 @@ export default function ResultActions({ title, resultRef }: ResultActionsProps) 
 
   // Close share menu on outside click
   const handleBlur = useCallback(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (shareMenuRef.current && !shareMenuRef.current.contains(document.activeElement)) {
         setShowShareMenu(false)
       }
     }, 150)
+    return () => clearTimeout(timer)
   }, [])
 
   return (
@@ -216,6 +215,12 @@ export default function ResultActions({ title, resultRef }: ResultActionsProps) 
         <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium animate-fade-in">
           <Check className="w-3.5 h-3.5" />
           Link copiado!
+        </span>
+      )}
+
+      {shareError && (
+        <span className="flex items-center gap-1 text-xs text-red-600 font-medium animate-fade-in">
+          Não foi possível compartilhar
         </span>
       )}
     </div>

@@ -245,7 +245,7 @@ export default function CropProfitability() {
         </div>
       )}
 
-      <ActionButtons onCalculate={calculate} onClear={clear} disabled={!inputs.revenue || !inputs.cost} />
+      <ActionButtons onCalculate={calculate} onClear={clear} disabled={crops.filter(c => c.productivity && c.price && c.cost).length < 2} />
     </CalculatorLayout>
   )
 }

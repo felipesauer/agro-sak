@@ -172,6 +172,7 @@ function validate(inputs: Inputs): string | null {
   if (isNaN(yield_) || yield_ <= 0) return 'A produtividade deve ser maior que zero'
   const price = parseFloat(inputs.pricePerBag)
   if (isNaN(price) || price <= 0) return 'O preço deve ser maior que zero'
+  if (price < 50 || price > 2000) return 'Preço por saca fora do intervalo usual (R$ 50–R$ 2.000) — verifique o valor'
   if ((inputs.insuranceType === 'proagro' || inputs.insuranceType === 'proagro_mais') && !inputs.financedValue) {
     return 'Informe o valor financiado para o Proagro'
   }

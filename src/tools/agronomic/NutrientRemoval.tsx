@@ -57,8 +57,20 @@ const INITIAL: Inputs = {
 
 const PART_OPTIONS = [
   { value: 'grain', label: 'Apenas grão' },
-  { value: 'grain_straw', label: 'Grão + palhada (+30%)' },
+  { value: 'grain_straw', label: 'Grão + palhada' },
 ]
+
+// Straw/residue factors by crop (grain+straw : grain-only ratio)
+const STRAW_FACTOR: Record<string, number> = {
+  soybean: 1.30,
+  corn: 1.50,
+  wheat: 1.40,
+  cotton: 1.20,
+  coffee: 1.15,
+  rice: 1.60,
+  sugarcane: 1.00,
+  bean: 1.30,
+}
 
 // ── Calculation ──
 
@@ -74,7 +86,7 @@ function calculate(inputs: Inputs, nutrientData: NutrientData): Result | null {
     : nutrientData[inputs.crop]
   if (!removal) return null
 
-  const strawFactor = inputs.part === 'grain_straw' ? 1.3 : 1
+  const strawFactor = inputs.part === 'grain_straw' ? (STRAW_FACTOR[inputs.crop] ?? 1.3) : 1
   const area = parseFloat(inputs.area) || 0
 
   const nutrients: { key: keyof typeof removal; label: string }[] = [

@@ -96,7 +96,8 @@ function calculate(inputs: Inputs): Result | null {
   const fuelL = parseFloat(inputs.fuelConsumption)
   const diesel = parseFloat(inputs.dieselPrice)
   const salary = parseFloat(inputs.operatorSalary)
-  const capOp = parseFloat(inputs.operationalCapacity) || 1
+  const capOp = parseFloat(inputs.operationalCapacity)
+  if (!capOp || capOp <= 0) return null
   const vr = RESIDUAL_VALUE[inputs.machineType] ?? 0.2
 
   const depreciation = (price * (1 - vr)) / (life * hpy)
@@ -152,6 +153,8 @@ function validate(inputs: Inputs): string | null {
     return 'Informe o valor de compra'
   if (!inputs.hoursPerYear || parseFloat(inputs.hoursPerYear) <= 0)
     return 'Informe as horas de uso por ano'
+  if (!inputs.operationalCapacity || parseFloat(inputs.operationalCapacity) <= 0)
+    return 'Informe a capacidade operacional (ha/h)'
   return null
 }
 

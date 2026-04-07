@@ -115,6 +115,8 @@ export class AgroDatabase extends Dexie {
       nutrientRemoval: '++id, &crop',
       syncMeta: '++id, &table',
     })
+
+    // Future schema changes: add this.version(2).stores({...}).upgrade(tx => {...})
   }
 }
 

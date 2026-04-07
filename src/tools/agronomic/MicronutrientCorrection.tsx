@@ -204,6 +204,11 @@ export default function MicronutrientCorrection() {
                 message="Todos os micronutrientes estão em nível adequado. Não é necessário corrigir."
               />
             )}
+
+            <AlertBanner
+              variant="info"
+              message="As faixas de classificação assumem extração por DTPA (Zn, Cu, Mn) e água quente (B). Se o laudo usar Mehlich-1, os valores de referência podem diferir."
+            />
           </div>
         )
       }

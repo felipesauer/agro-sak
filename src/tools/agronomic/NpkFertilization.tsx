@@ -62,7 +62,7 @@ function classifyLevel(value: number, limits: number[]): number {
   for (let i = 0; i < limits.length; i++) {
     if (value < limits[i]) return i
   }
-  return limits.length
+  return limits.length - 1
 }
 
 // ── Types ──

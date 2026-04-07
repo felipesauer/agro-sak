@@ -85,6 +85,35 @@ function perimeterFromCoords(coords: Array<[number, number]>): number {
 
 let _pointId = 0
 
+// Check if two line segments (p1-p2) and (p3-p4) intersect
+function segmentsIntersect(
+  p1: [number, number], p2: [number, number],
+  p3: [number, number], p4: [number, number],
+): boolean {
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+  const d1 = cross(p3, p4, p1)
+  const d2 = cross(p3, p4, p2)
+  const d3 = cross(p1, p2, p3)
+  const d4 = cross(p1, p2, p4)
+  if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+      ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true
+  return false
+}
+
+function isSelfIntersecting(coords: Array<[number, number]>): boolean {
+  const n = coords.length
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue // skip adjacent closing edge
+      if (segmentsIntersect(coords[i], coords[(i + 1) % n], coords[j], coords[(j + 1) % n])) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
 // ── Component ──
 
 export default function GpsArea() {
@@ -96,6 +125,7 @@ export default function GpsArea() {
   const [alqType, setAlqType] = useState('mt')
   const [result, setResult] = useState<Result | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [selfIntersects, setSelfIntersects] = useState(false)
   const [gpsLoading, setGpsLoading] = useState(false)
 
   function updatePoint(idx: number, key: 'lat' | 'lng', val: string) {
@@ -161,12 +191,14 @@ export default function GpsArea() {
     const perimeter = perimeterFromCoords(coords)
 
     setError(null)
+    setSelfIntersects(isSelfIntersecting(coords))
     setResult({ areaM2, areaHa, areaAlq, perimeter })
   }
 
   function clear() {
     setPoints([{ id: crypto.randomUUID(), lat: '', lng: '' }, { id: crypto.randomUUID(), lat: '', lng: '' }, { id: crypto.randomUUID(), lat: '', lng: '' }])
     setResult(null)
+    setSelfIntersects(false)
     setError(null)
   }
 
@@ -189,6 +221,12 @@ export default function GpsArea() {
               variant="info"
               message="Precisão estimada: ±2-5% dependendo da qualidade do GPS. Para medições oficiais, utilize topografia profissional."
             />
+            {selfIntersects && (
+              <AlertBanner
+                variant="warning"
+                message="Polígono auto-intersectante detectado — as arestas se cruzam. O cálculo de área pode estar incorreto. Verifique a ordem dos pontos."
+              />
+            )}
           </div>
         )
       }

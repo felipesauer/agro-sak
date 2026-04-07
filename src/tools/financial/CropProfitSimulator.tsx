@@ -90,6 +90,13 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área plantada'
   if (!inputs.yieldReal || !inputs.priceReal || !inputs.costReal)
     return 'Preencha pelo menos o cenário realista'
+  const yP = parseFloat(inputs.yieldPess)
+  const yR = parseFloat(inputs.yieldReal)
+  const yO = parseFloat(inputs.yieldOpt)
+  if (!isNaN(yP) && !isNaN(yR) && yP > yR)
+    return 'Produtividade pessimista deve ser ≤ realista'
+  if (!isNaN(yR) && !isNaN(yO) && yR > yO)
+    return 'Produtividade realista deve ser ≤ otimista'
   return null
 }
 

@@ -48,6 +48,7 @@ export default function FieldCostRanking() {
   const [fields, setFields] = useState<FieldEntry[]>([emptyField(1), emptyField(2)])
   const [pricePerSc, setPricePerSc] = useState<string>(String(defaultPrice))
   const [results, setResults] = useState<FieldResult[] | null>(null)
+  const [excludedCount, setExcludedCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   function updateField(id: number, key: keyof FieldEntry, val: string) {
@@ -69,7 +70,9 @@ export default function FieldCostRanking() {
   function run() {
     const price = parseFloat(pricePerSc) || PRICE_PER_SC
     const valid = fields.filter((f) => parseFloat(f.area) > 0 && parseFloat(f.productivity) > 0)
+    const excluded = fields.filter((f) => (parseFloat(f.area) > 0 || parseFloat(f.productivity) > 0) && !(parseFloat(f.area) > 0 && parseFloat(f.productivity) > 0))
     if (valid.length === 0) { setError('Informe ao menos 1 talhão com área e produtividade'); return }
+    setExcludedCount(excluded.length)
 
     const results: FieldResult[] = valid.map((f) => {
       const area = parseFloat(f.area)
@@ -140,6 +143,13 @@ export default function FieldCostRanking() {
               <AlertBanner
                 variant="warning"
                 message="Talhões em vermelho operam com prejuízo. Avalie intensificação, arrendamento ou mudança de cultura."
+              />
+            )}
+
+            {excludedCount > 0 && (
+              <AlertBanner
+                variant="info"
+                message={`${excludedCount} talhão(ões) excluído(s) do ranking por falta de área ou produtividade.`}
               />
             )}
           </div>

@@ -271,9 +271,9 @@ function calculate(inputs: Inputs): Result {
     const h = parseFloat(inputs.height)
     volumeGross = l * w * h
   } else {
-    // Silo bolsa
+    // Silo bolsa — cross section already includes 85% fill factor
     const l = parseFloat(inputs.length)
-    volumeGross = BAG_CROSS_SECTION_M2 * l / FILL_FACTOR // will multiply by FILL_FACTOR below
+    volumeGross = BAG_CROSS_SECTION_M2 * l
   }
 
   const volumeM3 = volumeGross * FILL_FACTOR

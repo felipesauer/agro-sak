@@ -8,6 +8,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency } from '../../utils/formatters'
+import { exportToCsv } from '../../utils/export-csv'
 
 // ── Types ──
 
@@ -162,6 +163,21 @@ export default function RuralFinancing() {
     return rows
   }, [result])
 
+  const handleExportCsv = () => {
+    if (!result) return
+    exportToCsv(
+      ['Mês', 'Parcela (R$)', 'Amortização (R$)', 'Juros (R$)', 'Saldo (R$)'],
+      result.installments.map((i) => [
+        i.month,
+        i.payment.toFixed(2),
+        i.principal.toFixed(2),
+        i.interest.toFixed(2),
+        i.balance.toFixed(2),
+      ]),
+      `amortizacao-${inputs.system}-${inputs.creditLine}.csv`,
+    )
+  }
+
   return (
     <CalculatorLayout
       title="Simulador de Financiamento Rural"
@@ -204,9 +220,18 @@ export default function RuralFinancing() {
 
             {/* Amortization summary table */}
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 overflow-x-auto">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                Tabela de amortização ({inputs.system.toUpperCase()})
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Tabela de amortização ({inputs.system.toUpperCase()})
+                </p>
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                >
+                  ↓ Exportar CSV
+                </button>
+              </div>
               <ComparisonTable
                 columns={[
                   { key: 'month' as never, label: 'Mês' },

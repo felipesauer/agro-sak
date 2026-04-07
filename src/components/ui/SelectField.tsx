@@ -12,6 +12,7 @@ interface SelectFieldProps {
   hint?: string
   placeholder?: string
   icon?: string
+  id?: string
 }
 
 export default function SelectField({
@@ -23,19 +24,24 @@ export default function SelectField({
   hint,
   placeholder = 'Selecione...',
   icon,
+  id: selectId,
 }: SelectFieldProps) {
+  const hintId = hint && selectId ? `${selectId}-hint` : undefined
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={selectId}>
         {icon && <span className="mr-1">{icon}</span>}
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <div className="relative">
         <select
+          id={selectId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2.5 pr-8 border border-gray-300 rounded-xl text-sm bg-white hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600 appearance-none cursor-pointer"
+          aria-describedby={hintId}
+          aria-required={required || undefined}
         >
           <option value="">{placeholder}</option>
           {options.map((opt) => (
@@ -54,7 +60,7 @@ export default function SelectField({
         </svg>
       </div>
       {hint && (
-        <p className="mt-1 text-xs text-gray-400">{hint}</p>
+        <p id={hintId} className="mt-1 text-xs text-gray-400">{hint}</p>
       )}
     </div>
   )

@@ -124,4 +124,23 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+
+  /* Tables: allow page breaks between rows on long tables */
+  table {
+    font-size: 10pt;
+  }
+
+  table thead {
+    display: table-header-group;
+  }
+
+  table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Comparison table overflow wrappers */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
 }

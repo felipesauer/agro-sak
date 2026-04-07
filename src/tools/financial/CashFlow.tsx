@@ -61,6 +61,14 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
+function validate(inputs: Inputs): string | null {
+  const hasAnyData = inputs.months.some(m =>
+    Object.values(m).some(v => v !== '' && parseFloat(v) > 0)
+  )
+  if (!hasAnyData) return 'Preencha ao menos 1 mês com dados de receita ou despesa'
+  return null
+}
+
 function calculate(inputs: Inputs): Result | null {
   const initial = parseFloat(inputs.initialBalance) || 0
   let accumulated = initial
@@ -94,7 +102,7 @@ function calculate(inputs: Inputs): Result | null {
 export default function CashFlow() {
   const [activeMonth, setActiveMonth] = useState(0)
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate })
+    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
 
   const updateMonth = (monthIdx: number, field: keyof MonthData, value: string) => {
     const newMonths = [...inputs.months] as [MonthData, MonthData, MonthData]

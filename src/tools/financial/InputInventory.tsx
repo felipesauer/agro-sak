@@ -233,7 +233,7 @@ export default function InputInventory() {
           value={inputs.fertilizerPrice}
           onChange={(v) => updateInput('fertilizerPrice', v)}
           placeholder="ex: 3200"
-          hint="Preço por tonelada de fertilizante"
+          hint="Preço por tonelada (R$/t) — conversão para kg/ha é automática"
         />
       </div>
 
@@ -300,7 +300,9 @@ export default function InputInventory() {
         value={inputs.safetyMargin}
         onChange={(v) => updateInput('safetyMargin', v)}
         placeholder="ex: 10"
-        hint="Percentual extra para imprevistos e perdas"
+        min="0"
+        max="100"
+        hint="Percentual extra para imprevistos e perdas (0-100%)"
       />
 
       {error && <AlertBanner variant="error" message={error} />}

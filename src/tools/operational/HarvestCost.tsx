@@ -4,7 +4,7 @@ import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
-import { formatNumber, formatCurrency, formatPercent } from '../../utils/formatters'
+import { formatNumber, formatCurrency } from '../../utils/formatters'
 
 // ── Types ──
 
@@ -64,7 +64,6 @@ function calculate(inputs: Inputs): Result | null {
 
   // Capacity: assume ~3 ha/h for harvester
   const haPerHour = area / hoursYear || 1
-  const hoursNeeded = area / haPerHour
 
   // Annual depreciation
   const annualDepreciation = price / life

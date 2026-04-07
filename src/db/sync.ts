@@ -55,8 +55,11 @@ async function syncCropPrices(): Promise<boolean> {
 async function syncExchangeRates(): Promise<boolean> {
   // USD/BRL exchange rate — BCB series 1
   const usdBrl = await fetchBcbSeries(1)
-  // Sanity check: USD/BRL should be between 3 and 10
-  if (usdBrl === null || usdBrl < 3 || usdBrl > 10) return false
+  // Sanity check: USD/BRL should be between 2 and 15
+  if (usdBrl === null || usdBrl < 2 || usdBrl > 15) {
+    console.warn(`[sync] Exchange rate rejected: USD/BRL = ${usdBrl}`)
+    return false
+  }
 
   // Store as a special entry in taxRates for reference
   const existing = await db.taxRates.where('key').equals('USD_BRL').first()

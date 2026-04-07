@@ -113,14 +113,14 @@ export default function ITR() {
               <ResultCard
                 label="ITR anual estimado"
                 value={formatCurrency(result.itrAnnual)}
-                prefix="R$" mask="currency" unit="R$/ano"
+                prefix="R$" unit="R$/ano"
                 highlight
                 variant="danger"
               />
               <ResultCard
                 label="ITR por hectare"
                 value={formatCurrency(result.itrPerHa)}
-                prefix="R$" mask="currency" unit="R$/ha"
+                prefix="R$" unit="R$/ha"
                 variant="warning"
               />
             </div>
@@ -146,7 +146,7 @@ export default function ITR() {
             </div>
             <AlertBanner
               variant="info"
-              message="Valores estimados. O cálculo oficial depende de declaração DIAT/DITR na Receita Federal."
+              message="Valores estimados com base na Lei 9.393/1996 (alíquotas vigentes). O cálculo oficial depende de declaração DIAT/DITR na Receita Federal."
             />
           </div>
         )

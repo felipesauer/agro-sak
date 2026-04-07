@@ -25,7 +25,7 @@ const FALLBACK_RATES: CbsRates = {
   cbsRate: 8.8,
   ibsRate: 17.7,
   totalRate: 26.5,
-  date: '2033-01-01',
+  date: '2026-01-01',
   source: 'fallback',
 }
 
@@ -42,14 +42,15 @@ function buildCbsUrl(endpoint: string, params: Record<string, string>): string {
  * Fetch CBS (federal) and IBS (state) reference rates from the pilot API.
  * Falls back to hardcoded rates if the API is unreachable.
  */
-export async function fetchCbsRates(uf: string, date: string = '2033-01-01'): Promise<CbsRates> {
+export async function fetchCbsRates(uf: string, date?: string): Promise<CbsRates> {
+  const effectiveDate = date ?? new Date().toISOString().slice(0, 10)
   const ufCode = UF_CODES[uf]
   if (!ufCode) return FALLBACK_RATES
 
   try {
     const [cbsRes, ibsRes] = await Promise.all([
-      fetch(buildCbsUrl('aliquota-uniao', { data: date }), { signal: AbortSignal.timeout(8000) }),
-      fetch(buildCbsUrl('aliquota-uf', { data: date, codigoUf: String(ufCode) }), { signal: AbortSignal.timeout(8000) }),
+      fetch(buildCbsUrl('aliquota-uniao', { data: effectiveDate }), { signal: AbortSignal.timeout(8000) }),
+      fetch(buildCbsUrl('aliquota-uf', { data: effectiveDate, codigoUf: String(ufCode) }), { signal: AbortSignal.timeout(8000) }),
     ])
 
     if (!cbsRes.ok || !ibsRes.ok) return FALLBACK_RATES
@@ -64,7 +65,7 @@ export async function fetchCbsRates(uf: string, date: string = '2033-01-01'): Pr
       cbsRate,
       ibsRate,
       totalRate: cbsRate + ibsRate,
-      date,
+      date: effectiveDate,
       source: 'api',
     }
   } catch {

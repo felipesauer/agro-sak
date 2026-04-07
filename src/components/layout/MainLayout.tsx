@@ -21,6 +21,15 @@ const CATEGORY_ORDER: ToolCategory[] = [
   'lead-magnet',
 ]
 
+/** Scroll to element after a navigation — uses double rAF to wait for React render. */
+function scrollAfterNav(id: string) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  })
+}
+
 export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -48,10 +57,7 @@ function Header() {
     } else {
       // Navigate to homepage, then scroll after render
       navigate('/')
-      setTimeout(() => {
-        const el = document.getElementById(cat)
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
+      scrollAfterNav(cat)
     }
   }
 
@@ -96,6 +102,8 @@ function Header() {
           onClick={() => setMenuOpen(!menuOpen)}
           className="lg:hidden p-2 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
           aria-label="Menu"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
           {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -103,7 +111,7 @@ function Header() {
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="lg:hidden border-t border-agro-600 bg-agro-800/95 backdrop-blur">
+        <div id="mobile-menu" className="lg:hidden border-t border-agro-600 bg-agro-800/95 backdrop-blur">
           <nav className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
             <Link
               to="/"
@@ -150,10 +158,7 @@ function Breadcrumb() {
 
   const handleCategoryClick = () => {
     navigate('/')
-    setTimeout(() => {
-      const el = document.getElementById(tool.category)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
+    scrollAfterNav(tool.category)
   }
 
   return (
@@ -183,10 +188,7 @@ function Footer() {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } else {
       navigate('/')
-      setTimeout(() => {
-        const el = document.getElementById(cat)
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
+      scrollAfterNav(cat)
     }
   }
 
