@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { TOOLS, type ToolCategory } from '../data/tools'
 import {
@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Star,
   Wheat,
+  ChevronUp,
 } from '../components/icons'
 
 const CATEGORY_ORDER: ToolCategory[] = [
@@ -37,6 +38,34 @@ const PRIORITY_BADGE: Record<string, { label: string; className: string }> = {
 
 export default function HomePage() {
   const [search, setSearch] = useState('')
+  const [showTop, setShowTop] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 600)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Prefetch gold-priority tool chunks on idle
+  useEffect(() => {
+    const prefetch = () => {
+      const goldImports = [
+        () => import('../tools/grain/StorageViability'),
+        () => import('../tools/lead-magnets/FarmDiagnostics'),
+        () => import('../tools/lead-magnets/CropSimulator'),
+        () => import('../tools/financial/FieldCostRanking'),
+        () => import('../tools/lead-magnets/CropComparer'),
+      ]
+      goldImports.forEach((fn) => fn().catch(() => {}))
+    }
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(prefetch, { timeout: 3000 })
+      return () => cancelIdleCallback(id)
+    } else {
+      const id = setTimeout(prefetch, 2000)
+      return () => clearTimeout(id)
+    }
+  }, [])
 
   const filtered = search.trim()
     ? TOOLS.filter(
@@ -118,8 +147,8 @@ export default function HomePage() {
             <p className="text-gray-500">Nenhuma ferramenta encontrada. Tente outro termo.</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
+              {filtered.map((tool, i) => (
+                <ToolCard key={tool.id} tool={tool} index={i} />
               ))}
             </div>
           )}
@@ -173,8 +202,8 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {tools.map((tool) => (
-                    <ToolCard key={tool.id} tool={tool} />
+                  {tools.map((tool, i) => (
+                    <ToolCard key={tool.id} tool={tool} index={i} />
                   ))}
                 </div>
               </section>
@@ -182,17 +211,33 @@ export default function HomePage() {
           })}
         </div>
       )}
+
+      {/* Back to top */}
+      <button
+        type="button"
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className={`fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-agro-700 text-white shadow-lg hover:bg-agro-800 transition-all cursor-pointer flex items-center justify-center ${
+          showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+        aria-label="Voltar ao topo"
+      >
+        <ChevronUp className="w-5 h-5" />
+      </button>
     </div>
   )
 }
 
-function ToolCard({ tool }: { tool: (typeof TOOLS)[number] }) {
+function ToolCard({ tool, index = 0 }: { tool: (typeof TOOLS)[number]; index?: number }) {
   const badge = PRIORITY_BADGE[tool.priority]
   const gradient = CATEGORY_GRADIENT[tool.category]
+  const delay = `${Math.min(index * 50, 300)}ms`
 
   if (!tool.ready) {
     return (
-      <div className="border border-gray-200 bg-gray-50 rounded-2xl p-4 opacity-60">
+      <div
+        className="border border-gray-200 bg-gray-50 rounded-2xl p-4 opacity-60 tool-card-enter"
+        style={{ animationDelay: delay }}
+      >
         <p className="font-semibold text-gray-600 text-sm">{tool.name}</p>
         <p className="text-xs text-gray-400 mt-1">{tool.description}</p>
         <span className="inline-block mt-2 text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
@@ -205,7 +250,8 @@ function ToolCard({ tool }: { tool: (typeof TOOLS)[number] }) {
   return (
     <Link
       to={`/tools/${tool.slug}`}
-      className="group relative border border-gray-200 bg-white hover:border-agro-300 hover:shadow-lg hover:-translate-y-0.5 rounded-2xl p-4 transition-all duration-200 block overflow-hidden"
+      className="group relative border border-gray-200 bg-white hover:border-agro-300 hover:shadow-lg hover:-translate-y-1 rounded-2xl p-4 transition-all duration-200 block overflow-hidden tool-card-enter"
+      style={{ animationDelay: delay }}
     >
       {/* Top accent bar */}
       <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />

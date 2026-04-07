@@ -1,4 +1,4 @@
-import { useState, useRef, type ReactNode } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import { ChevronRight, Info, BookOpen, BarChart3 } from 'lucide-react'
 import { useSEO } from '../../hooks/useSEO'
 import ResultActions from '../ui/ResultActions'
@@ -22,7 +22,16 @@ export default function CalculatorLayout({
 }: CalculatorLayoutProps) {
   const [showInfo, setShowInfo] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
+  const prevResult = useRef<ReactNode>(null)
   useSEO({ title, description })
+
+  // Auto-scroll to result when it first appears
+  useEffect(() => {
+    if (result && !prevResult.current && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    prevResult.current = result
+  }, [result])
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">

@@ -1,7 +1,14 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import MainLayout from './components/layout/MainLayout'
 import HomePage from './pages/HomePage'
+
+/** Scroll to top on every route change */
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 
 // Lazy-loaded tools for code-splitting
 const UnitConverter = lazy(() => import('./tools/utilities/UnitConverter'))
@@ -79,17 +86,20 @@ function LazyFallback() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/tools/*" element={
-          <Suspense fallback={<LazyFallback />}>
-            <ToolRoutes />
-          </Suspense>
-        } />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/tools/*" element={
+            <Suspense fallback={<LazyFallback />}>
+              <ToolRoutes />
+            </Suspense>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </>
   )
 }
 
