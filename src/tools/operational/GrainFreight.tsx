@@ -7,6 +7,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
+import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
 import { useFreightRates } from '../../db/hooks'
 
@@ -78,13 +79,12 @@ function validate(inputs: Inputs): string | null {
 
 export default function GrainFreight() {
   const dbFreight = useFreightRates()
-  const currentInitial = useMemo<Inputs>(() => {
-    if (!dbFreight?.length) return INITIAL
-    const avg = dbFreight.find(r => r.key === 'avgPerTonKm')
-    return { ...INITIAL, freightPerKm: avg ? String(avg.value) : INITIAL.freightPerKm }
+  const anttRefPerTonKm = useMemo(() => {
+    if (!dbFreight?.length) return null
+    return dbFreight.find(r => r.key === 'avgPerTonKm')?.value ?? null
   }, [dbFreight])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: currentInitial, calculate, validate })
+    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
 
   const handleVehicle = (v: string) => {
     updateInput('vehicleType', v)
@@ -152,13 +152,14 @@ export default function GrainFreight() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <InputField label="Distância ida e volta" unit="km" value={inputs.distance} onChange={(v) => updateInput('distance', v)} required hint="Distância total ida + volta até o destino" />
-        <InputField label="Valor do frete" prefix="R$" unit="R$/km" value={inputs.freightPerKm} onChange={(v) => updateInput('freightPerKm', v)} step="0.50" required hint="Valor cobrado por km rodado pelo transportador" />
+        <InputField label="Valor do frete" prefix="R$" mask="currency" unit="R$/km" value={inputs.freightPerKm} onChange={(v) => updateInput('freightPerKm', v)} step="0.50" required hint={anttRefPerTonKm ? `Cobrado por km. Ref. ANTT: ${formatCurrency(anttRefPerTonKm)}/t·km` : 'Valor cobrado por km rodado pelo transportador'} />
         <InputField label="Carga" unit="toneladas" value={inputs.loadTons} onChange={(v) => updateInput('loadTons', v)} required hint="Peso total transportado por viagem" />
-        <InputField label="Preço da saca (referência)" prefix="R$" unit="R$/sc" value={inputs.sacPrice} onChange={(v) => updateInput('sacPrice', v)} step="0.50" hint="Para calcular o impacto do frete no preço do grão" />
+        <InputField label="Preço da saca (referência)" prefix="R$" mask="currency" unit="R$/sc" value={inputs.sacPrice} onChange={(v) => updateInput('sacPrice', v)} step="0.50" hint="Para calcular o impacto do frete no preço do grão" />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
       <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.distance || !inputs.freightPerKm || !inputs.loadTons} />
+      <DataFreshness table="freightRates" />
     </CalculatorLayout>
   )
 }

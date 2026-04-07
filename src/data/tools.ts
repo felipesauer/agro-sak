@@ -109,4 +109,12 @@ export const TOOLS: ToolInfo[] = [
   { id: 55, slug: 'rain-volume', name: 'Volume de Chuva', description: 'Converta mm de chuva para litros/ha e custo equivalente', category: 'utility', priority: 'medium', phase: 11, ready: true },
   { id: 56, slug: 'silo-dimensioning', name: 'Dimensionamento de Silo', description: 'Capacidade de silos cilíndricos, graneleiros e bolsa', category: 'grain', priority: 'high', phase: 11, ready: true },
   { id: 57, slug: 'crop-rotation', name: 'Rotação de Culturas', description: 'Compare rotação × monocultura e veja o benefício econômico', category: 'agronomic', priority: 'high', phase: 11, ready: true },
+
+  // ── Phase 12: Expansion ──
+  { id: 58, slug: 'harvest-cost', name: 'Custo de Colheita', description: 'Compare colheita própria vs terceirizada e descubra a área mínima', category: 'operational', priority: 'high', phase: 12, ready: true },
+  { id: 59, slug: 'micronutrient-correction', name: 'Correção de Micronutrientes', description: 'Recomendação de Zn, B, Cu e Mn conforme análise de solo', category: 'agronomic', priority: 'high', phase: 12, ready: true },
+  { id: 60, slug: 'aerial-application', name: 'Aplicação Aérea', description: 'Compare custo de pulverização aérea vs terrestre', category: 'operational', priority: 'high', phase: 12, ready: true },
+  { id: 61, slug: 'input-inventory', name: 'Estoque de Insumos', description: 'Planeje a compra de insumos para a safra', category: 'financial', priority: 'high', phase: 12, ready: true },
+  { id: 62, slug: 'livestock-profitability', name: 'Rentabilidade de Pecuária', description: 'Lucro, margem e ROI da engorda de bovinos', category: 'financial', priority: 'high', phase: 12, ready: true },
+  { id: 63, slug: 'water-consumption', name: 'Consumo de Água', description: 'Volume de água e custo energético de irrigação', category: 'operational', priority: 'high', phase: 12, ready: true },
 ]

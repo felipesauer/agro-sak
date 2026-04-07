@@ -148,7 +148,7 @@ export default function FieldCostRanking() {
     >
       <InputField
         label="Preço de venda"
-        prefix="R$" unit="R$/sc"
+        prefix="R$" mask="currency" unit="R$/sc"
         value={pricePerSc}
         onChange={(v) => setPricePerSc(v as string)}
         placeholder="ex: 115"
@@ -179,12 +179,12 @@ export default function FieldCostRanking() {
             <div className="grid gap-3 sm:grid-cols-3">
               <InputField label="Área" unit="ha" value={f.area} onChange={(v) => updateField(f.id, 'area', v as string)} min="0" required hint="Área do talhão em hectares" />
               <InputField label="Produtividade" unit="sc/ha" value={f.productivity} onChange={(v) => updateField(f.id, 'productivity', v as string)} min="0" required hint="Produtividade estimada do talhão" />
-              <InputField label="Custo insumos" prefix="R$" unit="R$/ha" value={f.inputCost} onChange={(v) => updateField(f.id, 'inputCost', v as string)} min="0" hint="Sementes, fertilizantes e defensivos" />
+              <InputField label="Custo insumos" prefix="R$" mask="currency" unit="R$/ha" value={f.inputCost} onChange={(v) => updateField(f.id, 'inputCost', v as string)} min="0" hint="Sementes, fertilizantes e defensivos" />
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <InputField label="Custo operações" prefix="R$" unit="R$/ha" value={f.operationCost} onChange={(v) => updateField(f.id, 'operationCost', v as string)} min="0" hint="Plantio, pulverização e colheita" />
-              <InputField label="Arrendamento" prefix="R$" unit="R$/ha" value={f.leaseCost} onChange={(v) => updateField(f.id, 'leaseCost', v as string)} min="0" hint="Custo do arrendamento por hectare" />
-              <InputField label="Outros custos" prefix="R$" unit="R$/ha" value={f.otherCost} onChange={(v) => updateField(f.id, 'otherCost', v as string)} min="0" hint="Custos fixos, administrativos e outros" />
+              <InputField label="Custo operações" prefix="R$" mask="currency" unit="R$/ha" value={f.operationCost} onChange={(v) => updateField(f.id, 'operationCost', v as string)} min="0" hint="Plantio, pulverização e colheita" />
+              <InputField label="Arrendamento" prefix="R$" mask="currency" unit="R$/ha" value={f.leaseCost} onChange={(v) => updateField(f.id, 'leaseCost', v as string)} min="0" hint="Custo do arrendamento por hectare" />
+              <InputField label="Outros custos" prefix="R$" mask="currency" unit="R$/ha" value={f.otherCost} onChange={(v) => updateField(f.id, 'otherCost', v as string)} min="0" hint="Custos fixos, administrativos e outros" />
             </div>
           </div>
         ))}

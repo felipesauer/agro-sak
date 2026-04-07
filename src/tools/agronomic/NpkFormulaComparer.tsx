@@ -196,7 +196,7 @@ export default function NpkFormulaComparer() {
           <div className="grid gap-3 sm:grid-cols-2">
             <InputField
               label="Preço por saco 50kg"
-              prefix="R$" unit="R$"
+              prefix="R$" mask="currency" unit="R$"
               value={entry.price}
               onChange={(v) => updateEntry(idx, 'price', v)}
               placeholder="145"

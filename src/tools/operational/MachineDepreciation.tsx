@@ -172,7 +172,7 @@ export default function MachineDepreciation() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 mt-3">
-        <InputField label="Valor de aquisição" prefix="R$" unit="R$" value={inputs.purchasePrice} onChange={(v) => updateInput('purchasePrice', v)} step="10000" required hint="Preço pago na compra (nota fiscal)" />
+        <InputField label="Valor de aquisição" prefix="R$" mask="currency" unit="R$" value={inputs.purchasePrice} onChange={(v) => updateInput('purchasePrice', v)} step="10000" required hint="Preço pago na compra (nota fiscal)" />
         <InputField label="Valor residual estimado" unit="%" value={inputs.residualPercent} onChange={(v) => updateInput('residualPercent', v)} step="5" hint="Percentual do valor original ao final da vida útil (10-20%)" />
         <InputField label="Vida útil" unit="anos" value={inputs.lifeYears} onChange={(v) => updateInput('lifeYears', v)} required hint="Vida útil contábil ou esperada da máquina" />
         <InputField label="Vida útil total" unit="horas" value={inputs.totalLifeHours} onChange={(v) => updateInput('totalLifeHours', v)} hint="Horas totais estimadas (consulte o fabricante)" />

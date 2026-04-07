@@ -1,7 +1,8 @@
 // ── CBS/IBS API client (Reforma Tributária piloto) ──
-// API: https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api
+// Uses Vercel proxy in production to bypass CORS restrictions.
+// Direct API: https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api
 
-const BASE_URL = 'https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/dados-abertos'
+const DIRECT_URL = 'https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/dados-abertos'
 
 export interface CbsRates {
   cbsRate: number  // Federal (CBS)
@@ -28,6 +29,15 @@ const FALLBACK_RATES: CbsRates = {
   source: 'fallback',
 }
 
+function buildCbsUrl(endpoint: string, params: Record<string, string>): string {
+  if (import.meta.env.PROD) {
+    const qs = new URLSearchParams({ endpoint, ...params })
+    return `/api/cbs-proxy?${qs}`
+  }
+  const qs = new URLSearchParams(params)
+  return `${DIRECT_URL}/${endpoint}?${qs}`
+}
+
 /**
  * Fetch CBS (federal) and IBS (state) reference rates from the pilot API.
  * Falls back to hardcoded rates if the API is unreachable.
@@ -38,8 +48,8 @@ export async function fetchCbsRates(uf: string, date: string = '2033-01-01'): Pr
 
   try {
     const [cbsRes, ibsRes] = await Promise.all([
-      fetch(`${BASE_URL}/aliquota-uniao?data=${date}`, { signal: AbortSignal.timeout(8000) }),
-      fetch(`${BASE_URL}/aliquota-uf?data=${date}&codigoUf=${ufCode}`, { signal: AbortSignal.timeout(8000) }),
+      fetch(buildCbsUrl('aliquota-uniao', { data: date }), { signal: AbortSignal.timeout(8000) }),
+      fetch(buildCbsUrl('aliquota-uf', { data: date, codigoUf: String(ufCode) }), { signal: AbortSignal.timeout(8000) }),
     ])
 
     if (!cbsRes.ok || !ibsRes.ok) return FALLBACK_RATES

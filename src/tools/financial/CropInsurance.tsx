@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
+import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
 import { CROP_INSURANCE_REF, CROP_PRICE_REF, cropOptionsFrom } from '../../data/reference-data'
 import { useCropPrices } from '../../db/hooks'
@@ -67,7 +68,7 @@ const INITIAL: Inputs = {
   crop: 'soybean',
   area: '',
   yield: '',
-  pricePerBag: '',
+  pricePerBag: String(CROP_PRICE_REF['soybean']?.avg ?? ''),
   coverageLevel: '70',
   riskLevel: 'medium',
   insuranceType: 'psr',
@@ -374,6 +375,7 @@ export default function CropInsurance() {
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
       <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area || !inputs.yield || !inputs.pricePerBag} />
+      <DataFreshness table="cropPrices" label="Preços" />
     </CalculatorLayout>
   )
 }

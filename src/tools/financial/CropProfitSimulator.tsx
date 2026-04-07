@@ -200,7 +200,7 @@ export default function CropProfitSimulator() {
             />
             <InputField
               label="Preço de venda"
-              prefix="R$" unit="R$/sc"
+              prefix="R$" mask="currency" unit="R$/sc"
               value={inputs[sc.pKey]}
               onChange={(v) => updateInput(sc.pKey, v)}
               step="0.50"
@@ -208,7 +208,7 @@ export default function CropProfitSimulator() {
             />
             <InputField
               label="Custo de produção"
-              prefix="R$" unit="R$/ha"
+              prefix="R$" mask="currency" unit="R$/ha"
               value={inputs[sc.cKey]}
               onChange={(v) => updateInput(sc.cKey, v)}
               step="10"

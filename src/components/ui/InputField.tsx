@@ -1,3 +1,22 @@
+import { useState, useCallback } from 'react'
+
+// ── Brazilian number formatting helpers ──
+
+function formatBrNumber(raw: string, decimals: number): string {
+  if (!raw && raw !== '0') return ''
+  const num = parseFloat(raw)
+  if (isNaN(num)) return raw
+  return num.toLocaleString('pt-BR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+}
+
+function stripBrFormat(display: string): string {
+  // Remove thousand separators (.) and convert decimal comma to dot
+  return display.replace(/\./g, '').replace(',', '.')
+}
+
 interface InputFieldProps {
   label: string
   unit?: string
@@ -13,6 +32,7 @@ interface InputFieldProps {
   error?: string
   prefix?: string
   inputMode?: 'numeric' | 'decimal' | 'text'
+  mask?: 'currency' | 'decimal'
 }
 
 export default function InputField({
@@ -30,8 +50,34 @@ export default function InputField({
   error,
   prefix,
   inputMode,
+  mask,
 }: InputFieldProps) {
-  const resolvedInputMode = inputMode ?? (type === 'number' ? 'decimal' : undefined)
+  const [focused, setFocused] = useState(false)
+
+  const isMasked = !!mask
+  const decimals = mask === 'currency' ? 2 : 1
+  const resolvedType = isMasked ? 'text' : type
+  const resolvedInputMode = inputMode ?? (isMasked || type === 'number' ? 'decimal' : undefined)
+
+  // Display value: formatted when not focused, raw when focused (for editing)
+  const displayValue = isMasked && !focused
+    ? formatBrNumber(String(value), decimals)
+    : value
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isMasked) {
+      // Accept digits, comma, dot, minus
+      const cleaned = e.target.value.replace(/[^0-9.,-]/g, '')
+      // Convert to raw number string for upstream
+      const raw = stripBrFormat(cleaned)
+      onChange(raw)
+    } else {
+      onChange(e.target.value)
+    }
+  }, [isMasked, onChange])
+
+  const handleFocus = useCallback(() => setFocused(true), [])
+  const handleBlur = useCallback(() => setFocused(false), [])
 
   return (
     <div>
@@ -47,14 +93,16 @@ export default function InputField({
           </span>
         )}
         <input
-          type={type}
+          type={resolvedType}
           inputMode={resolvedInputMode}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={displayValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder={placeholder}
-          step={step}
-          min={min}
-          max={max}
+          step={isMasked ? undefined : step}
+          min={isMasked ? undefined : min}
+          max={isMasked ? undefined : max}
           className={`w-full py-2.5 border rounded-xl text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600 ${
             prefix ? 'pl-10 pr-3' : 'px-3'
           } ${

@@ -165,13 +165,13 @@ export default function TaxReform() {
               <ResultCard
                 label="Carga tributária atual"
                 value={formatCurrency(result.currentTotal)}
-                prefix="R$" unit="R$/ano"
+                prefix="R$" mask="currency" unit="R$/ano"
                 variant="warning"
               />
               <ResultCard
                 label="Carga tributária nova (líquida)"
                 value={formatCurrency(result.newNetTotal)}
-                prefix="R$" unit="R$/ano"
+                prefix="R$" mask="currency" unit="R$/ano"
                 highlight
                 variant="warning"
               />
@@ -200,6 +200,11 @@ export default function TaxReform() {
         )
       }
     >
+      {!rates && loadingRates && (
+        <div className="text-xs px-3 py-2 rounded-lg mb-2 bg-gray-50 text-gray-500 animate-pulse">
+          Carregando alíquotas CBS/IBS...
+        </div>
+      )}
       {rates && (
         <div className={`text-xs px-3 py-2 rounded-lg mb-2 ${rates.source === 'api' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
           {rates.source === 'api' ? 'Alíquotas do CBS Piloto (API oficial)' : 'Usando alíquotas de referência (API indisponível)'}
@@ -232,7 +237,7 @@ export default function TaxReform() {
 
       <InputField
         label="Faturamento anual bruto"
-        prefix="R$" unit="R$"
+        prefix="R$" mask="currency" unit="R$"
         value={inputs.annualRevenue}
         onChange={(v) => updateInput('annualRevenue', v)}
         placeholder="ex: 5000000"
@@ -274,7 +279,7 @@ export default function TaxReform() {
 
       <InputField
         label="Compra de insumos anual (para calcular créditos)"
-        prefix="R$" unit="R$"
+        prefix="R$" mask="currency" unit="R$"
         value={inputs.inputCost}
         onChange={(v) => updateInput('inputCost', v)}
         placeholder="ex: 2200000"

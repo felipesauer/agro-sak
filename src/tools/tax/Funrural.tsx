@@ -177,7 +177,7 @@ export default function Funrural() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Receita bruta"
-          prefix="R$" unit="R$"
+          prefix="R$" mask="currency" unit="R$"
           value={inputs.grossRevenue}
           onChange={(v) => updateInput('grossRevenue', v)}
           placeholder="ex: 500000"

@@ -165,7 +165,7 @@ export default function BreakEven() {
 
       <InputField
         label="Custo total de produção"
-        prefix="R$" unit="R$/ha"
+        prefix="R$" mask="currency" unit="R$/ha"
         value={inputs.costPerHa}
         onChange={(v) => updateInput('costPerHa', v)}
         placeholder="ex: 4200"
@@ -177,7 +177,7 @@ export default function BreakEven() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Preço de venda da saca"
-          prefix="R$" unit="R$/sc"
+          prefix="R$" mask="currency" unit="R$/sc"
           value={inputs.sacPrice}
           onChange={(v) => updateInput('sacPrice', v)}
           placeholder="ex: 115"

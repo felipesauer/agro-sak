@@ -150,7 +150,7 @@ export default function FarmROI() {
     >
       <InputField
         label="Investimento total"
-        prefix="R$" unit="R$"
+        prefix="R$" mask="currency" unit="R$"
         value={inputs.investment}
         onChange={(v) => updateInput('investment', v)}
         placeholder="ex: 4200000"
@@ -162,7 +162,7 @@ export default function FarmROI() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Receita bruta projetada"
-          prefix="R$" unit="R$"
+          prefix="R$" mask="currency" unit="R$"
           value={inputs.grossRevenue}
           onChange={(v) => updateInput('grossRevenue', v)}
           placeholder="ex: 5980000"
@@ -172,7 +172,7 @@ export default function FarmROI() {
         />
         <InputField
           label="Custo total"
-          prefix="R$" unit="R$"
+          prefix="R$" mask="currency" unit="R$"
           value={inputs.totalCost}
           onChange={(v) => updateInput('totalCost', v)}
           placeholder="ex: 4200000"

@@ -6,6 +6,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import DataFreshness from '../../components/ui/DataFreshness'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { MOISTURE_STANDARD, cropOptionsFrom } from '../../data/reference-data'
 import { useMoistureStandards } from '../../db/hooks'
@@ -24,6 +25,7 @@ interface Inputs {
 interface Result {
   finalWeightKg: number
   lossKg: number
+  lossPercent: number
   lossBags: number
   dryingCost: number
   financialLoss: number
@@ -59,6 +61,7 @@ function calculate(inputs: Inputs): Result | null {
   return {
     finalWeightKg,
     lossKg,
+    lossPercent: initialWeight > 0 ? (lossKg / initialWeight) * 100 : 0,
     lossBags,
     dryingCost: totalDryingCost,
     financialLoss,
@@ -206,7 +209,7 @@ export default function DryingLoss() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Custo de secagem"
-          prefix="R$" unit="R$/sc"
+          prefix="R$" mask="currency" unit="R$/sc"
           value={inputs.dryingCostPerBag}
           onChange={(v) => updateInput('dryingCostPerBag', v)}
           placeholder="ex: 8.00"
@@ -215,7 +218,7 @@ export default function DryingLoss() {
         />
         <InputField
           label="Preço da saca"
-          prefix="R$" unit="R$/sc"
+          prefix="R$" mask="currency" unit="R$/sc"
           value={inputs.pricePerBag}
           onChange={(v) => updateInput('pricePerBag', v)}
           placeholder="ex: 115"
@@ -231,6 +234,7 @@ export default function DryingLoss() {
       )}
 
       <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.initialWeight || !inputs.initialMoisture || !inputs.targetMoisture} />
+      <DataFreshness table="moistureStandards" label="Padrões de umidade" />
     </CalculatorLayout>
   )
 }

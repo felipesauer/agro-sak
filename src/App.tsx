@@ -61,6 +61,12 @@ const PaybackPeriod = lazy(() => import('./tools/financial/PaybackPeriod'))
 const RainVolume = lazy(() => import('./tools/utilities/RainVolume'))
 const SiloDimensioning = lazy(() => import('./tools/grain/SiloDimensioning'))
 const CropRotation = lazy(() => import('./tools/agronomic/CropRotation'))
+const HarvestCost = lazy(() => import('./tools/operational/HarvestCost'))
+const MicronutrientCorrection = lazy(() => import('./tools/agronomic/MicronutrientCorrection'))
+const AerialApplication = lazy(() => import('./tools/operational/AerialApplication'))
+const InputInventory = lazy(() => import('./tools/financial/InputInventory'))
+const LivestockProfitability = lazy(() => import('./tools/financial/LivestockProfitability'))
+const WaterConsumption = lazy(() => import('./tools/operational/WaterConsumption'))
 
 function LazyFallback() {
   return (
@@ -147,6 +153,12 @@ function ToolRoutes() {
       <Route path="rain-volume" element={<RainVolume />} />
       <Route path="silo-dimensioning" element={<SiloDimensioning />} />
       <Route path="crop-rotation" element={<CropRotation />} />
+      <Route path="harvest-cost" element={<HarvestCost />} />
+      <Route path="micronutrient-correction" element={<MicronutrientCorrection />} />
+      <Route path="aerial-application" element={<AerialApplication />} />
+      <Route path="input-inventory" element={<InputInventory />} />
+      <Route path="livestock-profitability" element={<LivestockProfitability />} />
+      <Route path="water-consumption" element={<WaterConsumption />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

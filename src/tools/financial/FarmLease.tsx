@@ -176,7 +176,7 @@ export default function FarmLease() {
         />
         <InputField
           label="Preço da saca"
-          prefix="R$" unit="R$"
+          prefix="R$" mask="currency" unit="R$"
           value={inputs.sacPrice}
           onChange={(v) => updateInput('sacPrice', v)}
           placeholder="ex: 115"
@@ -206,7 +206,7 @@ export default function FarmLease() {
         />
         <InputField
           label="Custo (sem arrendamento)"
-          prefix="R$" unit="R$/ha"
+          prefix="R$" mask="currency" unit="R$/ha"
           value={inputs.costWithoutLease}
           onChange={(v) => updateInput('costWithoutLease', v)}
           placeholder="ex: 3500"

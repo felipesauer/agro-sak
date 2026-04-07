@@ -242,7 +242,7 @@ export default function RuralFinancing() {
 
       <InputField
         label="Valor financiado"
-        prefix="R$" unit="R$"
+        prefix="R$" mask="currency" unit="R$"
         value={inputs.amount}
         onChange={(v) => updateInput('amount', v)}
         placeholder="ex: 500000"

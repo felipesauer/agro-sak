@@ -15,12 +15,19 @@ interface SyncConfig {
 }
 
 // ── BCB API (Banco Central do Brasil) ──
+// Uses Vercel proxy in production to bypass CORS restrictions.
 // Series codes: 1 = USD/BRL, 432 = Selic
+
+function buildBcbUrl(seriesCode: number): string {
+  if (import.meta.env.PROD) {
+    return `/api/bcb-proxy?series=${seriesCode}`
+  }
+  return `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${seriesCode}/dados/ultimos/1?formato=json`
+}
 
 async function fetchBcbSeries(seriesCode: number): Promise<number | null> {
   try {
-    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${seriesCode}/dados/ultimos/1?formato=json`
-    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) })
+    const res = await fetch(buildBcbUrl(seriesCode), { signal: AbortSignal.timeout(8_000) })
     if (!res.ok) return null
     const data = await res.json()
     return data?.[0]?.valor ? parseFloat(data[0].valor) : null

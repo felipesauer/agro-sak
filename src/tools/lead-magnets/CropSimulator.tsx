@@ -255,7 +255,7 @@ export default function CropSimulator() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Custo de produção"
-          prefix="R$" unit="R$/ha"
+          prefix="R$" mask="currency" unit="R$/ha"
           value={inputs.productionCost}
           onChange={(v) => updateInput('productionCost', v as string)}
           placeholder="ex: 3500"
@@ -278,7 +278,7 @@ export default function CropSimulator() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Preço mínimo"
-          prefix="R$" unit="R$/sc"
+          prefix="R$" mask="currency" unit="R$/sc"
           value={inputs.priceMin}
           onChange={(v) => updateInput('priceMin', v as string)}
           placeholder="ex: 90"
@@ -288,7 +288,7 @@ export default function CropSimulator() {
         />
         <InputField
           label="Preço máximo"
-          prefix="R$" unit="R$/sc"
+          prefix="R$" mask="currency" unit="R$/sc"
           value={inputs.priceMax}
           onChange={(v) => updateInput('priceMax', v as string)}
           placeholder="ex: 140"

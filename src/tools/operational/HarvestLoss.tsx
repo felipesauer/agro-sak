@@ -230,7 +230,7 @@ export default function HarvestLoss() {
         />
         <InputField
           label="Preço da saca"
-          prefix="R$" unit="R$"
+          prefix="R$" mask="currency" unit="R$"
           value={inputs.sacPrice}
           onChange={(v) => updateInput('sacPrice', v)}
           placeholder="ex: 115"

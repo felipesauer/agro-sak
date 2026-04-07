@@ -209,7 +209,7 @@ export default function FuelConsumption() {
       <div className="grid gap-4 sm:grid-cols-2">
         <InputField
           label="Preço do diesel"
-          prefix="R$" unit="R$/L"
+          prefix="R$" mask="currency" unit="R$/L"
           value={inputs.dieselPrice}
           onChange={(v) => updateInput('dieselPrice', v)}
           placeholder="ex: 6.20"

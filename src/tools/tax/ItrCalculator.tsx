@@ -113,14 +113,14 @@ export default function ITR() {
               <ResultCard
                 label="ITR anual estimado"
                 value={formatCurrency(result.itrAnnual)}
-                prefix="R$" unit="R$/ano"
+                prefix="R$" mask="currency" unit="R$/ano"
                 highlight
                 variant="danger"
               />
               <ResultCard
                 label="ITR por hectare"
                 value={formatCurrency(result.itrPerHa)}
-                prefix="R$" unit="R$/ha"
+                prefix="R$" mask="currency" unit="R$/ha"
                 variant="warning"
               />
             </div>
@@ -177,7 +177,7 @@ export default function ITR() {
 
       <InputField
         label="Valor da Terra Nua (VTN)"
-        prefix="R$" unit="R$/ha"
+        prefix="R$" mask="currency" unit="R$/ha"
         value={inputs.vtnPerHa}
         onChange={(v) => updateInput('vtnPerHa', v as never)}
         placeholder="ex: 25000"

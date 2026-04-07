@@ -218,7 +218,7 @@ export default function CropProfitability() {
             />
             <InputField
               label="Custo de produção"
-              prefix="R$" unit="R$/ha"
+              prefix="R$" mask="currency" unit="R$/ha"
               value={crop.cost}
               onChange={(v) => updateCrop(idx, 'cost', v)}
               placeholder="ex: 3200"

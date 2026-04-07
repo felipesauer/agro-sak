@@ -183,8 +183,8 @@ export default function CropComparer() {
             {c.enabled && (
               <div className="grid gap-3 sm:grid-cols-3">
                 <InputField label="Produtividade" unit="sc/ha" value={c.productivity} onChange={(v) => updateCrop(c.id, 'productivity', v as string)} min="0" hint="Produtividade média esperada" />
-                <InputField label="Preço de venda" prefix="R$" unit="R$/sc" value={c.price} onChange={(v) => updateCrop(c.id, 'price', v as string)} min="0" hint="Preço de mercado ou contrato" />
-                <InputField label="Custo de produção" prefix="R$" unit="R$/ha" value={c.productionCost} onChange={(v) => updateCrop(c.id, 'productionCost', v as string)} min="0" hint="Custo total por hectare" />
+                <InputField label="Preço de venda" prefix="R$" mask="currency" unit="R$/sc" value={c.price} onChange={(v) => updateCrop(c.id, 'price', v as string)} min="0" hint="Preço de mercado ou contrato" />
+                <InputField label="Custo de produção" prefix="R$" mask="currency" unit="R$/ha" value={c.productionCost} onChange={(v) => updateCrop(c.id, 'productionCost', v as string)} min="0" hint="Custo total por hectare" />
               </div>
             )}
           </div>

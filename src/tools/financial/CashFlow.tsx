@@ -166,7 +166,7 @@ export default function CashFlow() {
     >
       <InputField
         label="Saldo inicial em caixa"
-        prefix="R$" unit="R$"
+        prefix="R$" mask="currency" unit="R$"
         value={inputs.initialBalance}
         onChange={(v) => updateInput('initialBalance', v)}
         placeholder="ex: 50000"
@@ -200,7 +200,7 @@ export default function CashFlow() {
             <InputField
               key={f.key}
               label={f.label}
-              prefix="R$" unit="R$"
+              prefix="R$" mask="currency" unit="R$"
               value={inputs.months[activeMonth][f.key]}
               onChange={(v) => updateMonth(activeMonth, f.key, v)}
               placeholder="0"
@@ -216,7 +216,7 @@ export default function CashFlow() {
             <InputField
               key={f.key}
               label={f.label}
-              prefix="R$" unit="R$"
+              prefix="R$" mask="currency" unit="R$"
               value={inputs.months[activeMonth][f.key]}
               onChange={(v) => updateMonth(activeMonth, f.key, v)}
               placeholder="0"

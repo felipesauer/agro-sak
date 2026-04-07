@@ -147,7 +147,7 @@ export default function SoftwareROI() {
               <ResultCard
                 label="Economia anual estimada"
                 value={formatCurrency(result.totalAnnual)}
-                prefix="R$" unit="R$/ano"
+                prefix="R$" mask="currency" unit="R$/ano"
                 highlight
                 variant="success"
               />
@@ -250,7 +250,7 @@ export default function SoftwareROI() {
 
       <InputField
         label="Custo mensal do software"
-        prefix="R$" unit="R$/mês"
+        prefix="R$" mask="currency" unit="R$/mês"
         value={inputs.softwareCostMonth}
         onChange={(v) => updateInput('softwareCostMonth', v as never)}
         placeholder="ex: 290"

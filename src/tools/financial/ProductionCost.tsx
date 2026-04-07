@@ -240,7 +240,7 @@ export default function ProductionCost() {
         />
         <InputField
           label="Preço da saca (referência)"
-          prefix="R$" unit="R$/sc"
+          prefix="R$" mask="currency" unit="R$/sc"
           value={inputs.sacPrice}
           onChange={(v) => updateInput('sacPrice', v)}
           placeholder="ex: 115"
@@ -267,7 +267,7 @@ export default function ProductionCost() {
                 <InputField
                   key={item.key}
                   label={item.label}
-                  prefix="R$" unit="R$/ha"
+                  prefix="R$" mask="currency" unit="R$/ha"
                   value={inputs[item.key]}
                   onChange={(v) => updateInput(item.key, v)}
                   placeholder="0"

@@ -6,6 +6,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
+import DataFreshness from '../../components/ui/DataFreshness'
 import { formatNumber } from '../../utils/formatters'
 import { SEEDING_DEFAULTS, cropOptionsFrom } from '../../data/reference-data'
 import { useAllSeedingDefaults } from '../../db/hooks'
@@ -269,6 +270,7 @@ export default function SeedingRate() {
       )}
 
       <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.population || !inputs.germination || !inputs.tsw} />
+      <DataFreshness table="seedingDefaults" label="Padrões de semeadura" />
     </CalculatorLayout>
   )
 }

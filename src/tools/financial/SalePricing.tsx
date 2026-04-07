@@ -147,7 +147,7 @@ export default function SalePricing() {
     >
       <InputField
         label="Custo de produção"
-        prefix="R$" unit="R$/sc"
+        prefix="R$" mask="currency" unit="R$/sc"
         value={inputs.costPerSc}
         onChange={(v) => updateInput('costPerSc', v)}
         placeholder="ex: 68"
@@ -195,7 +195,7 @@ export default function SalePricing() {
 
       <InputField
         label="Preço atual no mercado"
-        prefix="R$" unit="R$/sc"
+        prefix="R$" mask="currency" unit="R$/sc"
         value={inputs.marketPrice}
         onChange={(v) => updateInput('marketPrice', v)}
         placeholder="ex: 120 (opcional)"

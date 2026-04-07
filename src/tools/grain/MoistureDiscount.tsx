@@ -258,7 +258,7 @@ export default function MoistureDiscount() {
 
       <InputField
         label="Preço de referência"
-        prefix="R$" unit="R$/sc"
+        prefix="R$" mask="currency" unit="R$/sc"
         value={inputs.pricePerBag}
         onChange={(v) => updateInput('pricePerBag', v)}
         placeholder="ex: 115"
