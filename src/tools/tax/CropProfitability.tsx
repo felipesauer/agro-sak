@@ -159,6 +159,10 @@ export default function CropProfitability() {
                 )
               })}
             </div>
+            <AlertBanner
+              variant="info"
+              message="O Funrural incide sobre a receita bruta. Compare o impacto entre PF e PJ para otimizar a tributação da sua produção."
+            />
           </div>
         )
       }
@@ -201,6 +205,7 @@ export default function CropProfitability() {
               onChange={(v) => updateCrop(idx, 'productivity', v)}
               placeholder="ex: 65"
               min="0"
+              hint="Produtividade média da cultura"
             />
             <InputField
               label="Preço de venda"
@@ -209,6 +214,7 @@ export default function CropProfitability() {
               onChange={(v) => updateCrop(idx, 'price', v)}
               placeholder="ex: 115"
               min="0"
+              hint="Preço de venda no mercado ou contrato"
             />
             <InputField
               label="Custo de produção"
@@ -217,6 +223,7 @@ export default function CropProfitability() {
               onChange={(v) => updateCrop(idx, 'cost', v)}
               placeholder="ex: 3200"
               min="0"
+              hint="Custo total por hectare"
             />
           </div>
         </div>
@@ -238,7 +245,7 @@ export default function CropProfitability() {
         </div>
       )}
 
-      <ActionButtons onCalculate={calculate} onClear={clear} />
+      <ActionButtons onCalculate={calculate} onClear={clear} disabled={!inputs.revenue || !inputs.cost} />
     </CalculatorLayout>
   )
 }

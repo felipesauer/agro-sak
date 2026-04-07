@@ -178,6 +178,7 @@ export default function PreHarvestYield() {
             placeholder="ex: 14"
             step="0.1"
             required
+            hint="Conte em 1 metro linear de linha (média de 5 pontos)"
           />
           <InputField
             label="Vagens por planta"
@@ -186,6 +187,7 @@ export default function PreHarvestYield() {
             placeholder="ex: 32"
             step="0.1"
             required
+            hint="Média de vagens em 5 plantas representativas"
           />
           <InputField
             label="Grãos por vagem"
@@ -194,6 +196,7 @@ export default function PreHarvestYield() {
             placeholder="ex: 2.4"
             step="0.1"
             required
+            hint="Média de grãos por vagem (normalmente 2 a 3)"
           />
         </div>
       ) : (
@@ -205,6 +208,7 @@ export default function PreHarvestYield() {
             placeholder="ex: 3.5"
             step="0.1"
             required
+            hint="Conte em 1 metro linear de linha (média de 5 pontos)"
           />
           <InputField
             label="Fileiras por espiga"
@@ -213,6 +217,7 @@ export default function PreHarvestYield() {
             placeholder="ex: 16"
             step="1"
             required
+            hint="Conte as fileiras de grãos na espiga"
           />
           <InputField
             label="Grãos por fileira"
@@ -221,6 +226,7 @@ export default function PreHarvestYield() {
             placeholder="ex: 34"
             step="1"
             required
+            hint="Conte os grãos em uma fileira completa"
           />
         </div>
       )}
@@ -234,6 +240,7 @@ export default function PreHarvestYield() {
           placeholder={crop === 'soybean' ? 'ex: 145' : 'ex: 290'}
           step="1"
           required
+          hint="Consulte a ficha da cultivar ou pese 100 grãos e multiplique por 10"
         />
         <InputField
           label="Espaçamento entre linhas"
@@ -243,11 +250,12 @@ export default function PreHarvestYield() {
           placeholder="ex: 0.50"
           step="0.01"
           required
+          hint="Distância entre linhas de plantio, em metros"
         />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.rowSpacing || !inputs.thousandGrainWeight || !inputs.plantsPerMeter} />
     </CalculatorLayout>
   )
 }

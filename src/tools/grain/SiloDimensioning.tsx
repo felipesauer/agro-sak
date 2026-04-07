@@ -150,6 +150,7 @@ export default function SiloDimensioning() {
             min="1"
             step="0.1"
             required
+            hint="Diâmetro interno do silo"
           />
           <InputField
             label="Altura útil"
@@ -160,6 +161,7 @@ export default function SiloDimensioning() {
             min="1"
             step="0.1"
             required
+            hint="Altura útil até a boca de saída"
           />
         </div>
       )}
@@ -175,6 +177,7 @@ export default function SiloDimensioning() {
             min="1"
             step="0.1"
             required
+            hint="Comprimento interno do graneleiro"
           />
           <InputField
             label="Largura"
@@ -185,6 +188,7 @@ export default function SiloDimensioning() {
             min="1"
             step="0.1"
             required
+            hint="Largura interna do graneleiro"
           />
           <InputField
             label="Altura útil"
@@ -195,6 +199,7 @@ export default function SiloDimensioning() {
             min="1"
             step="0.1"
             required
+            hint="Altura até o nível máximo de grão"
           />
         </div>
       )}
@@ -218,6 +223,7 @@ export default function SiloDimensioning() {
       <ActionButtons
         onCalculate={run}
         onClear={clear}
+        disabled={!inputs.diameter}
       />
     </CalculatorLayout>
   )

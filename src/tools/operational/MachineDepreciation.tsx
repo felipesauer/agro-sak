@@ -172,15 +172,15 @@ export default function MachineDepreciation() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 mt-3">
-        <InputField label="Valor de aquisição" prefix="R$" unit="R$" value={inputs.purchasePrice} onChange={(v) => updateInput('purchasePrice', v)} step="10000" required />
-        <InputField label="Valor residual estimado" unit="%" value={inputs.residualPercent} onChange={(v) => updateInput('residualPercent', v)} step="5" />
-        <InputField label="Vida útil" unit="anos" value={inputs.lifeYears} onChange={(v) => updateInput('lifeYears', v)} required />
-        <InputField label="Vida útil total" unit="horas" value={inputs.totalLifeHours} onChange={(v) => updateInput('totalLifeHours', v)} />
-        <InputField label="Horas trabalhadas por ano" unit="h/ano" value={inputs.hoursPerYear} onChange={(v) => updateInput('hoursPerYear', v)} />
+        <InputField label="Valor de aquisição" prefix="R$" unit="R$" value={inputs.purchasePrice} onChange={(v) => updateInput('purchasePrice', v)} step="10000" required hint="Preço pago na compra (nota fiscal)" />
+        <InputField label="Valor residual estimado" unit="%" value={inputs.residualPercent} onChange={(v) => updateInput('residualPercent', v)} step="5" hint="Percentual do valor original ao final da vida útil (10-20%)" />
+        <InputField label="Vida útil" unit="anos" value={inputs.lifeYears} onChange={(v) => updateInput('lifeYears', v)} required hint="Vida útil contábil ou esperada da máquina" />
+        <InputField label="Vida útil total" unit="horas" value={inputs.totalLifeHours} onChange={(v) => updateInput('totalLifeHours', v)} hint="Horas totais estimadas (consulte o fabricante)" />
+        <InputField label="Horas trabalhadas por ano" unit="h/ano" value={inputs.hoursPerYear} onChange={(v) => updateInput('hoursPerYear', v)} hint="Média de horas registradas no horímetro por ano" />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.purchasePrice || !inputs.lifeYears} />
     </CalculatorLayout>
   )
 }

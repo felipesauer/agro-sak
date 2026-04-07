@@ -303,6 +303,7 @@ export default function CropInsurance() {
           min="0"
           max="100000"
           required
+          hint="Área total segurada em hectares"
         />
         <InputField
           label="Produtividade esperada"
@@ -313,6 +314,7 @@ export default function CropInsurance() {
           min="0"
           max="500"
           required
+          hint="Produtividade média da lavoura segurada"
         />
         <InputField
           label="Preço por saca"
@@ -323,6 +325,7 @@ export default function CropInsurance() {
           min="0"
           max="5000"
           required
+          hint="Preço usado para calcular a receita esperada"
         />
       </div>
 
@@ -370,7 +373,7 @@ export default function CropInsurance() {
       )}
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area || !inputs.yield || !inputs.pricePerBag} />
     </CalculatorLayout>
   )
 }

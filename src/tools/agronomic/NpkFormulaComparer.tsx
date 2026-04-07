@@ -169,6 +169,7 @@ export default function NpkFormulaComparer() {
               placeholder="8"
               min="0"
               max="50"
+              hint="Teor de nitrogênio da fórmula"
             />
             <InputField
               label="P₂O₅"
@@ -178,6 +179,7 @@ export default function NpkFormulaComparer() {
               placeholder="28"
               min="0"
               max="60"
+              hint="Teor de fósforo da fórmula"
             />
             <InputField
               label="K₂O"
@@ -187,6 +189,7 @@ export default function NpkFormulaComparer() {
               placeholder="16"
               min="0"
               max="70"
+              hint="Teor de potássio da fórmula"
             />
           </div>
 
@@ -198,12 +201,14 @@ export default function NpkFormulaComparer() {
               onChange={(v) => updateEntry(idx, 'price', v)}
               placeholder="145"
               min="0"
+              hint="Preço pago no fornecedor pelo saco de 50 kg"
             />
             <InputField
               label="Fornecedor (opcional)"
               value={entry.supplier}
               onChange={(v) => updateEntry(idx, 'supplier', v)}
               placeholder="ex: Cooperativa X"
+              hint="Identificação para facilitar a comparação"
             />
           </div>
         </div>
@@ -225,7 +230,7 @@ export default function NpkFormulaComparer() {
         </div>
       )}
 
-      <ActionButtons onCalculate={calculate} onClear={clear} />
+      <ActionButtons onCalculate={calculate} onClear={clear} disabled={entries.filter(e => e.n && e.p && e.k && e.price).length < 2} />
     </CalculatorLayout>
   )
 }

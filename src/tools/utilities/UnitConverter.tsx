@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
+import InputField from '../../components/ui/InputField'
+import SelectField from '../../components/ui/SelectField'
 import {
   AREA_TO_HECTARES,
   BAG_WEIGHT_KG,
@@ -144,42 +146,27 @@ export default function UnitConverter() {
       </div>
 
       {/* Input value */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Valor
-        </label>
-        <input
-          type="number"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Digite o valor..."
-          min="0"
-          step="any"
-          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600"
-        />
-      </div>
+      <InputField
+        label="Valor"
+        value={inputValue}
+        onChange={setInputValue}
+        placeholder="Digite o valor..."
+        min="0"
+        step="any"
+        hint="Informe o valor numérico a converter"
+      />
 
       {/* From / Swap / To row */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
         {/* From unit */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            De
-          </label>
-          <select
-            value={fromUnit[activeTab]}
-            onChange={(e) =>
-              setFromUnit((prev) => ({ ...prev, [activeTab]: e.target.value }))
-            }
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600"
-          >
-            {currentUnits.map((u) => (
-              <option key={u.value} value={u.value}>
-                {u.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="De"
+          options={currentUnits.map((u) => ({ value: u.value, label: u.label }))}
+          value={fromUnit[activeTab]}
+          onChange={(v) =>
+            setFromUnit((prev) => ({ ...prev, [activeTab]: v }))
+          }
+        />
 
         {/* Swap button */}
         <button
@@ -192,24 +179,14 @@ export default function UnitConverter() {
         </button>
 
         {/* To unit */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Para
-          </label>
-          <select
-            value={toUnit[activeTab]}
-            onChange={(e) =>
-              setToUnit((prev) => ({ ...prev, [activeTab]: e.target.value }))
-            }
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600"
-          >
-            {currentUnits.map((u) => (
-              <option key={u.value} value={u.value}>
-                {u.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Para"
+          options={currentUnits.map((u) => ({ value: u.value, label: u.label }))}
+          value={toUnit[activeTab]}
+          onChange={(v) =>
+            setToUnit((prev) => ({ ...prev, [activeTab]: v }))
+          }
+        />
       </div>
     </CalculatorLayout>
   )

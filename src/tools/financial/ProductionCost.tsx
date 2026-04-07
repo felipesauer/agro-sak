@@ -11,7 +11,7 @@ import { formatNumber, formatCurrency } from '../../utils/formatters'
 
 interface CostGroup {
   label: string
-  items: { key: string; label: string; default: string }[]
+  items: { key: string; label: string; default: string; hint?: string }[]
 }
 
 interface Inputs {
@@ -32,43 +32,43 @@ const COST_GROUPS: CostGroup[] = [
   {
     label: 'Insumos',
     items: [
-      { key: 'seeds', label: 'Sementes', default: '320' },
-      { key: 'fertPlanting', label: 'Fertilizantes (plantio)', default: '680' },
-      { key: 'fertCover', label: 'Fertilizantes (cobertura)', default: '420' },
-      { key: 'herbicides', label: 'Herbicidas', default: '185' },
-      { key: 'fungicides', label: 'Fungicidas', default: '240' },
-      { key: 'insecticides', label: 'Inseticidas', default: '90' },
-      { key: 'inoculant', label: 'Inoculante / Co-inoc.', default: '25' },
-      { key: 'micro', label: 'Micronutrientes', default: '35' },
+      { key: 'seeds', label: 'Sementes', default: '320', hint: 'Custo das sementes por hectare' },
+      { key: 'fertPlanting', label: 'Fertilizantes (plantio)', default: '680', hint: 'Adubo de base aplicado no sulco de plantio' },
+      { key: 'fertCover', label: 'Fertilizantes (cobertura)', default: '420', hint: 'Adubação de cobertura (ex: ureia, KCl)' },
+      { key: 'herbicides', label: 'Herbicidas', default: '185', hint: 'Dessecação e controle de plantas daninhas' },
+      { key: 'fungicides', label: 'Fungicidas', default: '240', hint: 'Controle de doenças foliares e de solo' },
+      { key: 'insecticides', label: 'Inseticidas', default: '90', hint: 'Controle de pragas como lagartas e percevejos' },
+      { key: 'inoculant', label: 'Inoculante / Co-inoc.', default: '25', hint: 'Inoculação e co-inoculação de sementes' },
+      { key: 'micro', label: 'Micronutrientes', default: '35', hint: 'Aplicação foliar ou via solo de micronutrientes' },
     ],
   },
   {
     label: 'Operações',
     items: [
-      { key: 'soilPrep', label: 'Preparo do solo', default: '120' },
-      { key: 'planting', label: 'Plantio', default: '85' },
-      { key: 'spraying', label: 'Pulverizações', default: '180' },
-      { key: 'harvesting', label: 'Colheita', default: '145' },
-      { key: 'internalTransport', label: 'Transporte interno', default: '40' },
+      { key: 'soilPrep', label: 'Preparo do solo', default: '120', hint: 'Gradagem, subsolagem ou plantio direto' },
+      { key: 'planting', label: 'Plantio', default: '85', hint: 'Custo operacional da semeadura' },
+      { key: 'spraying', label: 'Pulverizações', default: '180', hint: 'Aplicações terrestres ou aéreas de defensivos' },
+      { key: 'harvesting', label: 'Colheita', default: '145', hint: 'Custo da operação de colhedora' },
+      { key: 'internalTransport', label: 'Transporte interno', default: '40', hint: 'Movimentação de grãos dentro da fazenda' },
     ],
   },
   {
     label: 'Custos Fixos',
     items: [
-      { key: 'lease', label: 'Arrendamento', default: '420' },
-      { key: 'depreciation', label: 'Depreciação de máquinas', default: '180' },
-      { key: 'labor', label: 'Mão de obra fixa', default: '95' },
-      { key: 'admin', label: 'Administração / gestão', default: '50' },
-      { key: 'insurance', label: 'Seguro rural', default: '30' },
-      { key: 'ater', label: 'Assistência técnica', default: '20' },
+      { key: 'lease', label: 'Arrendamento', default: '420', hint: 'Valor pago pelo uso da terra de terceiros' },
+      { key: 'depreciation', label: 'Depreciação de máquinas', default: '180', hint: 'Perda de valor anual de máquinas e equipamentos' },
+      { key: 'labor', label: 'Mão de obra fixa', default: '95', hint: 'Funcionários permanentes da propriedade' },
+      { key: 'admin', label: 'Administração / gestão', default: '50', hint: 'Custos administrativos e de gestão' },
+      { key: 'insurance', label: 'Seguro rural', default: '30', hint: 'Prêmio do seguro agrícola da safra' },
+      { key: 'ater', label: 'Assistência técnica', default: '20', hint: 'Custos com agrônomos e consultoria técnica' },
     ],
   },
   {
     label: 'Pós-colheita',
     items: [
-      { key: 'freight', label: 'Frete', default: '95' },
-      { key: 'storage', label: 'Armazenagem', default: '45' },
-      { key: 'drying', label: 'Secagem', default: '30' },
+      { key: 'freight', label: 'Frete', default: '95', hint: 'Transporte do grão da fazenda ao destino' },
+      { key: 'storage', label: 'Armazenagem', default: '45', hint: 'Custo de armazém ou silo terceirizado' },
+      { key: 'drying', label: 'Secagem', default: '30', hint: 'Secagem do grão até a umidade padrão' },
     ],
   },
 ]
@@ -220,6 +220,10 @@ export default function ProductionCost() {
                 </div>
               ))}
             </div>
+            <AlertBanner
+              variant="info"
+              message="Inclua todos os custos variáveis e fixos para um retrato fiel. Custos financeiros (juros) e depreciação são frequentemente esquecidos."
+            />
           </div>
         )
       }
@@ -232,6 +236,7 @@ export default function ProductionCost() {
           onChange={(v) => updateInput('expectedYield', v)}
           placeholder="ex: 65"
           required
+          hint="Meta de sacas por hectare para a safra atual"
         />
         <InputField
           label="Preço da saca (referência)"
@@ -267,6 +272,7 @@ export default function ProductionCost() {
                   onChange={(v) => updateInput(item.key, v)}
                   placeholder="0"
                   step="1"
+                  hint={item.hint}
                 />
               ))}
             </div>
@@ -275,7 +281,7 @@ export default function ProductionCost() {
       ))}
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.expectedYield} />
     </CalculatorLayout>
   )
 }

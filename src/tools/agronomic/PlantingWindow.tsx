@@ -192,6 +192,8 @@ export default function PlantingWindow() {
     <CalculatorLayout
       title="Janela de Plantio"
       description="Consulte as datas ideais de plantio por cultura, região e grupo de maturação, baseado no Zoneamento Agrícola (ZARC)."
+      about="A janela de plantio define o período em que a semeadura tem menor risco climático para cada cultura. Plantar dentro da janela é requisito para acesso ao crédito rural e seguro agrícola do governo (PROAGRO/PROAGRO Mais)."
+      methodology="Datas de referência simplificadas a partir do Zoneamento Agrícola de Risco Climático (ZARC) publicado pelo MAPA. O ZARC considera solo, clima e ciclo da cultivar para definir janelas com até 20% de risco. Consulte sempre o ZARC vigente para dados oficiais do seu município."
       result={null}
     >
       <div className="grid gap-4 sm:grid-cols-2">

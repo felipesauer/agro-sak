@@ -191,6 +191,7 @@ export default function SoilSampling() {
           min="0"
           max="100000"
           required
+          hint="Área total da propriedade ou talhão"
         />
         <SelectField
           label="Metodologia"
@@ -228,7 +229,7 @@ export default function SoilSampling() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area} />
     </CalculatorLayout>
   )
 }

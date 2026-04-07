@@ -153,6 +153,7 @@ export default function FieldCostRanking() {
         onChange={(v) => setPricePerSc(v as string)}
         placeholder="ex: 115"
         min="0"
+        hint="Preço de referência para calcular rentabilidade"
       />
 
       <div className="space-y-4">
@@ -163,6 +164,7 @@ export default function FieldCostRanking() {
                 label="Nome do talhão"
                 value={f.name}
                 onChange={(v) => updateField(f.id, 'name', v as string)}
+                hint="Identificação do talhão na fazenda"
               />
               {fields.length > 1 && (
                 <button
@@ -175,14 +177,14 @@ export default function FieldCostRanking() {
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <InputField label="Área" unit="ha" value={f.area} onChange={(v) => updateField(f.id, 'area', v as string)} min="0" required />
-              <InputField label="Produtividade" unit="sc/ha" value={f.productivity} onChange={(v) => updateField(f.id, 'productivity', v as string)} min="0" required />
-              <InputField label="Custo insumos" prefix="R$" unit="R$/ha" value={f.inputCost} onChange={(v) => updateField(f.id, 'inputCost', v as string)} min="0" />
+              <InputField label="Área" unit="ha" value={f.area} onChange={(v) => updateField(f.id, 'area', v as string)} min="0" required hint="Área do talhão em hectares" />
+              <InputField label="Produtividade" unit="sc/ha" value={f.productivity} onChange={(v) => updateField(f.id, 'productivity', v as string)} min="0" required hint="Produtividade estimada do talhão" />
+              <InputField label="Custo insumos" prefix="R$" unit="R$/ha" value={f.inputCost} onChange={(v) => updateField(f.id, 'inputCost', v as string)} min="0" hint="Sementes, fertilizantes e defensivos" />
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <InputField label="Custo operações" prefix="R$" unit="R$/ha" value={f.operationCost} onChange={(v) => updateField(f.id, 'operationCost', v as string)} min="0" />
-              <InputField label="Arrendamento" prefix="R$" unit="R$/ha" value={f.leaseCost} onChange={(v) => updateField(f.id, 'leaseCost', v as string)} min="0" />
-              <InputField label="Outros custos" prefix="R$" unit="R$/ha" value={f.otherCost} onChange={(v) => updateField(f.id, 'otherCost', v as string)} min="0" />
+              <InputField label="Custo operações" prefix="R$" unit="R$/ha" value={f.operationCost} onChange={(v) => updateField(f.id, 'operationCost', v as string)} min="0" hint="Plantio, pulverização e colheita" />
+              <InputField label="Arrendamento" prefix="R$" unit="R$/ha" value={f.leaseCost} onChange={(v) => updateField(f.id, 'leaseCost', v as string)} min="0" hint="Custo do arrendamento por hectare" />
+              <InputField label="Outros custos" prefix="R$" unit="R$/ha" value={f.otherCost} onChange={(v) => updateField(f.id, 'otherCost', v as string)} min="0" hint="Custos fixos, administrativos e outros" />
             </div>
           </div>
         ))}
@@ -201,7 +203,7 @@ export default function FieldCostRanking() {
       {error && <AlertBanner variant="error" message={error} />}
 
       <DataFreshness table="cropPrices" label="Preços" />
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={fields.filter(f => f.area && f.productivity).length < 1} />
     </CalculatorLayout>
   )
 }

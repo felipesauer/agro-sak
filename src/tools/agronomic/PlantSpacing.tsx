@@ -79,6 +79,8 @@ export default function PlantSpacing() {
     <CalculatorLayout
       title="Espaçamento de Plantio"
       description="Calcule a população de plantas ou o espaçamento necessário para atingir uma população-alvo."
+      about="O espaçamento de plantio determina a população final de plantas e influencia diretamente o potencial produtivo, a competição por luz e a arquitetura do dossel. Populações adequadas variam por cultura, cultivar e região."
+      methodology="População (pl/ha) = 10.000 m² / (espaçamento entre linhas em m × espaçamento entre plantas em m). No modo inverso: espaçamento entre plantas = 10.000 / (população × espaçamento entre linhas em m)."
       result={
         current.result && (
           <div className="space-y-4">
@@ -112,6 +114,10 @@ export default function PlantSpacing() {
                 variant="default"
               />
             )}
+            <AlertBanner
+              variant="info"
+              message="Populações recomendadas variam de 200 a 360 mil pl/ha para soja e 55 a 80 mil pl/ha para milho, dependendo da cultivar e região."
+            />
           </div>
         )
       }
@@ -153,6 +159,7 @@ export default function PlantSpacing() {
             min="10"
             max="200"
             required
+            hint="Distância entre as linhas de plantio (soja: 45-50 cm, milho: 70-90 cm)"
           />
           <InputField
             label="Espaçamento entre plantas"
@@ -163,6 +170,7 @@ export default function PlantSpacing() {
             min="1"
             max="200"
             required
+            hint="Distância entre plantas na linha de plantio"
           />
         </div>
       ) : (
@@ -176,6 +184,7 @@ export default function PlantSpacing() {
             min="10"
             max="200"
             required
+            hint="Distância entre as linhas de plantio"
           />
           <InputField
             label="População desejada"
@@ -185,6 +194,7 @@ export default function PlantSpacing() {
             placeholder="ex: 320000"
             min="1000"
             required
+            hint="Recomendação da cultivar — soja: 200-360 mil, milho: 55-80 mil"
           />
         </div>
       )}
@@ -195,7 +205,7 @@ export default function PlantSpacing() {
         </div>
       )}
 
-      <ActionButtons onCalculate={current.run} onClear={current.clear} />
+      <ActionButtons onCalculate={current.run} onClear={current.clear} disabled={mode === 'population' ? (!calcPop.inputs.rowSpacing || !calcPop.inputs.plantSpacing) : (!calcSpacing.inputs.rowSpacing || !calcSpacing.inputs.population)} />
     </CalculatorLayout>
   )
 }

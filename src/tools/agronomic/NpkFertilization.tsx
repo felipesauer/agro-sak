@@ -220,6 +220,8 @@ export default function NpkFertilization() {
     <CalculatorLayout
       title="Adubação NPK"
       description="Recomendação de N, P₂O₅ e K₂O com base no laudo de solo e cultura. Simplificado a partir de tabelas EMBRAPA/Cerrado."
+      about="A adubação NPK repõe os nutrientes essenciais do solo — nitrogênio (N), fósforo (P₂O₅) e potássio (K₂O) — de acordo com a demanda da cultura e a disponibilidade no solo. A recomendação é baseada na classificação dos teores de P e K do laudo de análise de solo em faixas (muito baixo a muito alto)."
+      methodology="Classificação de P por textura do solo e K por faixas universais (EMBRAPA Cerrados). Dose de N conforme cultura e inoculação. Formulações comerciais sugeridas por otimização de atendimento à demanda de P₂O₅ e K₂O. Fontes: Boletim Técnico EMBRAPA Cerrados, CFSEMG."
       result={
         result && (
           <div className="space-y-4">
@@ -292,6 +294,7 @@ export default function NpkFertilization() {
             onChange={(v) => updateInput('customN', v as never)}
             placeholder="ex: 120"
             min="0"
+            hint="Dose desejada de nitrogênio"
           />
           <InputField
             label="P₂O₅ alvo"
@@ -300,6 +303,7 @@ export default function NpkFertilization() {
             onChange={(v) => updateInput('customP', v as never)}
             placeholder="ex: 90"
             min="0"
+            hint="Dose desejada de fósforo"
           />
           <InputField
             label="K₂O alvo"
@@ -308,6 +312,7 @@ export default function NpkFertilization() {
             onChange={(v) => updateInput('customK', v as never)}
             placeholder="ex: 60"
             min="0"
+            hint="Dose desejada de potássio"
           />
         </div>
       ) : (
@@ -347,6 +352,7 @@ export default function NpkFertilization() {
           min="0"
           max="15"
           step="0.1"
+          hint="Dados do laudo de solo"
         />
         {(inputs.crop === 'soybean' || inputs.crop === 'bean') && (
           <SelectField
@@ -366,7 +372,7 @@ export default function NpkFertilization() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={inputs.crop !== 'custom' ? (!inputs.pSoil || !inputs.kSoil) : (!inputs.customN && !inputs.customP && !inputs.customK)} />
     </CalculatorLayout>
   )
 }

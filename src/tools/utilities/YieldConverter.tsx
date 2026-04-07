@@ -160,6 +160,10 @@ export default function YieldConverter() {
                 </div>
               </div>
             )}
+            <AlertBanner
+              variant="info"
+              message="A conversão bushel/acre usa o peso padrão CBOT para cada grão. Para peso diferente, ajuste a cultura personalizada."
+            />
           </div>
         )
       }
@@ -182,6 +186,7 @@ export default function YieldConverter() {
           placeholder="ex: 60"
           min="1"
           required
+          hint="Peso em kg de uma saca da cultura"
         />
       )}
 
@@ -194,6 +199,7 @@ export default function YieldConverter() {
           step="0.1"
           min="0"
           required
+          hint="Produtividade medida ou esperada"
         />
         <SelectField
           label="Unidade"
@@ -210,7 +216,7 @@ export default function YieldConverter() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.value} />
     </CalculatorLayout>
   )
 }

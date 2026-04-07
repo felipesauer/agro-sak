@@ -171,6 +171,7 @@ export default function SprayerCalibration() {
           value={inputs.nozzleCount}
           onChange={(v) => updateInput('nozzleCount', v)}
           placeholder="ex: 36"
+          hint="Quantidade total de bicos na barra"
         />
         <InputField
           label="Vazão por bico"
@@ -180,6 +181,7 @@ export default function SprayerCalibration() {
           placeholder="ex: 0.80"
           step="0.01"
           required
+          hint="Vazão medida em teste de bancada"
         />
       </div>
 
@@ -192,6 +194,7 @@ export default function SprayerCalibration() {
           placeholder="ex: 18"
           step="0.5"
           required
+          hint="Velocidade durante a pulverização"
         />
         <InputField
           label="Espaçamento entre bicos"
@@ -201,6 +204,7 @@ export default function SprayerCalibration() {
           placeholder="ex: 0.50"
           step="0.01"
           required
+          hint="Distância entre bicos na barra"
         />
       </div>
 
@@ -211,6 +215,7 @@ export default function SprayerCalibration() {
         onChange={(v) => updateInput('tankCapacity', v)}
         placeholder="ex: 3000"
         required
+        hint="Volume total do tanque do pulverizador"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -232,7 +237,7 @@ export default function SprayerCalibration() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.flowPerNozzle || !inputs.speed || !inputs.nozzleSpacing} />
     </CalculatorLayout>
   )
 }

@@ -98,6 +98,7 @@ export default function RainVolume() {
           min="0"
           step="0.1"
           required
+          hint="Chuva medida no pluviômetro"
         />
         <InputField
           label="Área"
@@ -108,6 +109,7 @@ export default function RainVolume() {
           min="0"
           step="0.1"
           required
+          hint="Área do talhão ou propriedade"
         />
       </div>
 

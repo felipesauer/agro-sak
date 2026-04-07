@@ -109,6 +109,8 @@ export default function LimingCalculator() {
     <CalculatorLayout
       title="Calagem — Correção de Solo"
       description="Calcule a necessidade de calcário (t/ha) pelo método da saturação por bases."
+      about="A calagem é a prática de aplicar calcário para corrigir a acidez do solo e elevar a saturação por bases (V%) ao nível ideal para a cultura. É a correção mais importante e econômica para solos ácidos, comuns no Brasil. Solos com V% abaixo do recomendado limitam a absorção de nutrientes e reduzem a produtividade."
+      methodology="NC (t/ha) = (V2 − V1) × CTC / (10 × PRNT/100), onde V2 = saturação desejada, V1 = saturação atual, CTC = capacidade de troca catiônica a pH 7 e PRNT = poder relativo de neutralização total do calcário. Para 0-40 cm aplica-se fator ×2. Fonte: Raij et al. — Boletim 100 (IAC)."
       result={
         result && (
           <div className="space-y-4">
@@ -236,6 +238,7 @@ export default function LimingCalculator() {
         onChange={(v) => updateInput('limePrice', v as never)}
         placeholder="ex: 180"
         min="0"
+        hint="Custo CIF do calcário na fazenda"
       />
 
       {error && (
@@ -244,7 +247,7 @@ export default function LimingCalculator() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.ctc || !inputs.v1} />
     </CalculatorLayout>
   )
 }

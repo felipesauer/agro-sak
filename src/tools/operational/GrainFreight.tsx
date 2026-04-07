@@ -151,14 +151,14 @@ export default function GrainFreight() {
       <SelectField label="Tipo de veículo" options={VEHICLE_OPTIONS} value={inputs.vehicleType} onChange={handleVehicle} />
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <InputField label="Distância ida e volta" unit="km" value={inputs.distance} onChange={(v) => updateInput('distance', v)} required />
-        <InputField label="Valor do frete" prefix="R$" unit="R$/km" value={inputs.freightPerKm} onChange={(v) => updateInput('freightPerKm', v)} step="0.50" required />
-        <InputField label="Carga" unit="toneladas" value={inputs.loadTons} onChange={(v) => updateInput('loadTons', v)} required />
-        <InputField label="Preço da saca (referência)" prefix="R$" unit="R$/sc" value={inputs.sacPrice} onChange={(v) => updateInput('sacPrice', v)} step="0.50" />
+        <InputField label="Distância ida e volta" unit="km" value={inputs.distance} onChange={(v) => updateInput('distance', v)} required hint="Distância total ida + volta até o destino" />
+        <InputField label="Valor do frete" prefix="R$" unit="R$/km" value={inputs.freightPerKm} onChange={(v) => updateInput('freightPerKm', v)} step="0.50" required hint="Valor cobrado por km rodado pelo transportador" />
+        <InputField label="Carga" unit="toneladas" value={inputs.loadTons} onChange={(v) => updateInput('loadTons', v)} required hint="Peso total transportado por viagem" />
+        <InputField label="Preço da saca (referência)" prefix="R$" unit="R$/sc" value={inputs.sacPrice} onChange={(v) => updateInput('sacPrice', v)} step="0.50" hint="Para calcular o impacto do frete no preço do grão" />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.distance || !inputs.freightPerKm || !inputs.loadTons} />
     </CalculatorLayout>
   )
 }

@@ -160,6 +160,7 @@ export default function CropRotation() {
         placeholder="Ex: 500"
         min="0"
         required
+        hint="Área total do sistema de rotação"
       />
 
       {/* Soybean inputs */}
@@ -174,6 +175,7 @@ export default function CropRotation() {
             placeholder="Ex: 60"
             min="0"
             required
+            hint="Produtividade média esperada da soja"
           />
           <InputField
             label="Preço da saca"
@@ -183,6 +185,7 @@ export default function CropRotation() {
             placeholder="Ex: 120"
             min="0"
             required
+            hint="Cotação atual da saca de soja"
           />
           <InputField
             label="Custo de produção"
@@ -192,6 +195,7 @@ export default function CropRotation() {
             placeholder="Ex: 4500"
             min="0"
             required
+            hint="Soma dos custos por hectare"
           />
         </div>
       </div>
@@ -209,6 +213,7 @@ export default function CropRotation() {
               placeholder="Ex: 90"
               min="0"
               required
+              hint="Produtividade esperada da safrinha"
             />
             <InputField
               label="Preço da saca"
@@ -218,6 +223,7 @@ export default function CropRotation() {
               placeholder="Ex: 55"
               min="0"
               required
+              hint="Cotação da saca (milho ou trigo)"
             />
             <InputField
               label="Custo de produção"
@@ -227,6 +233,7 @@ export default function CropRotation() {
               placeholder="Ex: 3200"
               min="0"
               required
+              hint="Custo do cultivo da segunda safra"
             />
           </div>
         </div>
@@ -237,6 +244,7 @@ export default function CropRotation() {
       <ActionButtons
         onCalculate={run}
         onClear={clear}
+        disabled={!inputs.area || !inputs.soybeanYield || !inputs.soybeanPrice}
       />
     </CalculatorLayout>
   )

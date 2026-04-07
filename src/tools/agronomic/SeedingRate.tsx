@@ -129,6 +129,8 @@ export default function SeedingRate() {
     <CalculatorLayout
       title="Taxa de Semeadura"
       description="Calcule a quantidade de sementes (kg/ha) com base na população desejada, espaçamento e qualidade da semente."
+      about="A taxa de semeadura ajustada garante que a população final desejada seja atingida no campo, compensando a germinação e o vigor da semente. É essencial para regular a plantadeira corretamente e evitar desperdício ou falhas de estande."
+      methodology="Sementes/ha ajustadas = População desejada / (Germinação × Vigor). kg/ha = (Sementes ajustadas × PMG) / 1.000.000. Sementes/metro linear = População × espaçamento entre linhas / 10.000. PMG = Peso de Mil Grãos (g). Sacas = kg/ha / 40."
       result={
         result && (
           <div className="space-y-4">
@@ -174,6 +176,10 @@ export default function SeedingRate() {
                 variant="warning"
               />
             )}
+            <AlertBanner
+              variant="info"
+              message="Reavalie a germinação e o vigor das sementes periodicamente — lotes armazenados podem perder qualidade ao longo da safra."
+            />
           </div>
         )
       }
@@ -206,6 +212,7 @@ export default function SeedingRate() {
           min="25"
           max="90"
           required
+          hint="Soja: 45–50 cm, milho: 70–90 cm"
         />
       </div>
 
@@ -252,6 +259,7 @@ export default function SeedingRate() {
         onChange={(v) => updateInput('seedPrice', v as never)}
         placeholder="ex: 350"
         min="0"
+        hint="Para estimar o custo com sementes"
       />
 
       {error && (
@@ -260,7 +268,7 @@ export default function SeedingRate() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.population || !inputs.germination || !inputs.tsw} />
     </CalculatorLayout>
   )
 }

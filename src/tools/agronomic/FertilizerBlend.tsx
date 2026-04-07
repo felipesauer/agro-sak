@@ -331,6 +331,7 @@ export default function FertilizerBlend() {
           placeholder="ex: 20"
           min="0"
           max="500"
+          hint="Necessidade conforme laudo e cultura"
         />
         <InputField
           label="Fósforo (P₂O₅)"
@@ -340,6 +341,7 @@ export default function FertilizerBlend() {
           placeholder="ex: 90"
           min="0"
           max="500"
+          hint="Necessidade conforme laudo e cultura"
         />
         <InputField
           label="Potássio (K₂O)"
@@ -349,6 +351,7 @@ export default function FertilizerBlend() {
           placeholder="ex: 60"
           min="0"
           max="500"
+          hint="Necessidade conforme laudo e cultura"
         />
         <InputField
           label="Área"
@@ -359,6 +362,7 @@ export default function FertilizerBlend() {
           min="0"
           max="100000"
           required
+          hint="Área total para cálculo de quantidade"
         />
       </div>
 
@@ -414,7 +418,7 @@ export default function FertilizerBlend() {
       </div>
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area} />
     </CalculatorLayout>
   )
 }

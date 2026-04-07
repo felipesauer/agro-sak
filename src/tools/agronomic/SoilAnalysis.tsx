@@ -285,6 +285,7 @@ export default function SoilAnalysis() {
           min="0"
           max="14"
           step="0.1"
+          hint="Valor do laudo de solo"
         />
         <InputField
           label="Matéria Orgânica"
@@ -294,6 +295,7 @@ export default function SoilAnalysis() {
           placeholder="ex: 28"
           min="0"
           max="200"
+          hint="Informar em g/dm³ conforme laudo"
         />
         <InputField
           label="Fósforo (P resina)"
@@ -303,6 +305,7 @@ export default function SoilAnalysis() {
           placeholder="ex: 15"
           min="0"
           max="500"
+          hint="P extraído por resina trocadora"
         />
       </div>
 
@@ -316,6 +319,7 @@ export default function SoilAnalysis() {
           min="0"
           max="50"
           step="0.1"
+          hint="Valor em mmolc/dm³ do laudo"
         />
         <InputField
           label="Cálcio (Ca)"
@@ -325,6 +329,7 @@ export default function SoilAnalysis() {
           placeholder="ex: 30"
           min="0"
           max="200"
+          hint="Valor em mmolc/dm³ do laudo"
         />
         <InputField
           label="Magnésio (Mg)"
@@ -334,6 +339,7 @@ export default function SoilAnalysis() {
           placeholder="ex: 10"
           min="0"
           max="100"
+          hint="Valor em mmolc/dm³ do laudo"
         />
         <InputField
           label="H+Al (Acidez)"
@@ -357,6 +363,7 @@ export default function SoilAnalysis() {
           placeholder="ex: 8"
           min="0"
           max="200"
+          hint="Se disponível no laudo"
         />
         <InputField
           label="Boro (B)"
@@ -367,6 +374,7 @@ export default function SoilAnalysis() {
           min="0"
           max="10"
           step="0.1"
+          hint="Se disponível no laudo"
         />
         <InputField
           label="Cobre (Cu)"
@@ -377,6 +385,7 @@ export default function SoilAnalysis() {
           min="0"
           max="50"
           step="0.1"
+          hint="Se disponível no laudo"
         />
         <InputField
           label="Manganês (Mn)"
@@ -386,6 +395,7 @@ export default function SoilAnalysis() {
           placeholder="ex: 5.0"
           min="0"
           max="100"
+          hint="Se disponível no laudo"
         />
         <InputField
           label="Zinco (Zn)"
@@ -396,11 +406,12 @@ export default function SoilAnalysis() {
           min="0"
           max="50"
           step="0.1"
+          hint="Se disponível no laudo"
         />
       </div>
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={Object.values(inputs).filter(v => v !== '').length < 3} />
     </CalculatorLayout>
   )
 }

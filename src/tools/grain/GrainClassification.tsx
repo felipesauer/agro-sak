@@ -249,6 +249,7 @@ export default function GrainClassification() {
           min="0"
           max="40"
           required
+          hint="Umidade medida na recepção do grão"
         />
         <InputField
           label="Impurezas"
@@ -260,6 +261,7 @@ export default function GrainClassification() {
           min="0"
           max="20"
           required
+          hint="Matérias estranhas + impurezas do laudo"
         />
       </div>
 
@@ -274,6 +276,7 @@ export default function GrainClassification() {
           min="0"
           max="100"
           required
+          hint="Grãos partidos ou amassados no laudo"
         />
         <InputField
           label="Avariados/Verdes"
@@ -285,6 +288,7 @@ export default function GrainClassification() {
           min="0"
           max="100"
           required
+          hint="Grãos verdes, mofados ou fermentados"
         />
         <InputField
           label="Ardidos/Queimados"
@@ -296,11 +300,12 @@ export default function GrainClassification() {
           min="0"
           max="100"
           required
+          hint="Grãos com alteração de cor por secagem excessiva"
         />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.moisture || !inputs.impurities} />
     </CalculatorLayout>
   )
 }

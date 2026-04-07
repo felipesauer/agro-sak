@@ -122,6 +122,8 @@ export default function NutrientRemoval() {
     <CalculatorLayout
       title="Exportação de Nutrientes"
       description="Calcule a quantidade de nutrientes removidos do solo pela colheita e planeje a adubação de reposição."
+      about="Cada tonelada de grão colhida remove do solo quantidades específicas de N, P₂O₅, K₂O e S. Conhecer essa exportação é fundamental para planejar a adubação de reposição e manter a fertilidade do solo ao longo das safras."
+      methodology="Exportação (kg/ha) = Produtividade (t/ha) × coeficiente de extração (kg/t de grão). Coeficientes baseados em EMBRAPA e literatura técnica. Opção grão + palhada aplica fator de +30% para estimar a extração total da planta."
       result={
         result && (
           <div className="space-y-4">
@@ -170,11 +172,11 @@ export default function NutrientRemoval() {
 
       {inputs.crop === 'custom' && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <InputField label="Peso da saca" unit="kg" value={inputs.customBagKg} onChange={(v) => updateInput('customBagKg', v as never)} placeholder="ex: 60" />
-          <InputField label="N exportado" unit="kg/t" value={inputs.customN} onChange={(v) => updateInput('customN', v as never)} placeholder="ex: 15" />
-          <InputField label="P₂O₅ exportado" unit="kg/t" value={inputs.customP} onChange={(v) => updateInput('customP', v as never)} placeholder="ex: 8" />
-          <InputField label="K₂O exportado" unit="kg/t" value={inputs.customK} onChange={(v) => updateInput('customK', v as never)} placeholder="ex: 5" />
-          <InputField label="S exportado" unit="kg/t" value={inputs.customS} onChange={(v) => updateInput('customS', v as never)} placeholder="ex: 2" />
+          <InputField label="Peso da saca" unit="kg" value={inputs.customBagKg} onChange={(v) => updateInput('customBagKg', v as never)} placeholder="ex: 60" hint="Peso padrão da saca da cultura" />
+          <InputField label="N exportado" unit="kg/t" value={inputs.customN} onChange={(v) => updateInput('customN', v as never)} placeholder="ex: 15" hint="Nitrogênio removido por tonelada de grão" />
+          <InputField label="P₂O₅ exportado" unit="kg/t" value={inputs.customP} onChange={(v) => updateInput('customP', v as never)} placeholder="ex: 8" hint="Fósforo removido por tonelada de grão" />
+          <InputField label="K₂O exportado" unit="kg/t" value={inputs.customK} onChange={(v) => updateInput('customK', v as never)} placeholder="ex: 5" hint="Potássio removido por tonelada de grão" />
+          <InputField label="S exportado" unit="kg/t" value={inputs.customS} onChange={(v) => updateInput('customS', v as never)} placeholder="ex: 2" hint="Enxofre removido por tonelada de grão" />
         </div>
       )}
 
@@ -187,6 +189,7 @@ export default function NutrientRemoval() {
           placeholder="ex: 65"
           min="0"
           required
+          hint="Produtividade colhida ou esperada"
         />
         <InputField
           label="Área total (opcional)"
@@ -206,7 +209,7 @@ export default function NutrientRemoval() {
       )}
 
       <DataFreshness table="nutrientRemoval" label="Nutrientes" />
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.productivity} />
     </CalculatorLayout>
   )
 }

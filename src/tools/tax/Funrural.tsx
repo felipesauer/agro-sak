@@ -183,6 +183,7 @@ export default function Funrural() {
           placeholder="ex: 500000"
           step="100"
           required
+          hint="Soma de todas as vendas de produção rural no período"
         />
         <SelectField
           label="Período"
@@ -193,7 +194,7 @@ export default function Funrural() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.grossRevenue} />
     </CalculatorLayout>
   )
 }

@@ -261,6 +261,7 @@ export default function DryingCost() {
           min="0"
           max="100000"
           required
+          hint="Peso total do lote a ser secado"
         />
       </div>
 
@@ -274,6 +275,7 @@ export default function DryingCost() {
           min="1"
           max="50"
           required
+          hint="Umidade medida na colheita"
         />
         <InputField
           label="Umidade final"
@@ -284,6 +286,7 @@ export default function DryingCost() {
           min="1"
           max="50"
           required
+          hint="Padrão comercial da cultura"
         />
       </div>
 
@@ -325,7 +328,7 @@ export default function DryingCost() {
       />
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.grainWeight || !inputs.initialMoisture || !inputs.targetMoisture} />
     </CalculatorLayout>
   )
 }

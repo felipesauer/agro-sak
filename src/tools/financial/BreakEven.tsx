@@ -171,6 +171,7 @@ export default function BreakEven() {
         placeholder="ex: 4200"
         step="10"
         required
+        hint="Soma de todos os gastos para produzir um hectare"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -196,7 +197,7 @@ export default function BreakEven() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.costPerHa} />
     </CalculatorLayout>
   )
 }

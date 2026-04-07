@@ -240,6 +240,7 @@ export default function TankMix() {
           placeholder="ex: 3000"
           min="0"
           required
+          hint="Capacidade total do tanque do pulverizador"
         />
         <InputField
           label="Volume de calda"
@@ -249,6 +250,7 @@ export default function TankMix() {
           placeholder="ex: 120"
           min="0"
           required
+          hint="Volume recomendado para a aplicação"
         />
         <InputField
           label="Área a aplicar"
@@ -258,6 +260,7 @@ export default function TankMix() {
           placeholder="ex: 25"
           min="0"
           required
+          hint="Área total do talhão a ser pulverizado"
         />
       </div>
 
@@ -301,6 +304,7 @@ export default function TankMix() {
                 value={product.name}
                 onChange={(v) => updateProduct(index, 'name', v)}
                 placeholder="ex: Priori Xtra"
+                hint="Nome comercial do produto"
               />
               <SelectField
                 label="Formulação"
@@ -315,6 +319,7 @@ export default function TankMix() {
                 onChange={(v) => updateProduct(index, 'dosePerHa', v)}
                 placeholder="ex: 0.30"
                 step="0.01"
+                hint="Dose recomendada na bula"
               />
               <SelectField
                 label="Unidade"
@@ -333,7 +338,7 @@ export default function TankMix() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.tankVolume || !inputs.sprayVolume} />
     </CalculatorLayout>
   )
 }

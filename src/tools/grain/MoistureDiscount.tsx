@@ -214,6 +214,7 @@ export default function MoistureDiscount() {
         placeholder="ex: 27000"
         min="0"
         required
+        hint="Peso total da carga na balança"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -252,6 +253,7 @@ export default function MoistureDiscount() {
         step="0.1"
         min="0"
         max="20"
+        hint="Percentual de grãos com alteração de cor"
       />
 
       <InputField
@@ -289,7 +291,7 @@ export default function MoistureDiscount() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.grossWeight || !inputs.moistureMeasured} />
     </CalculatorLayout>
   )
 }

@@ -153,6 +153,7 @@ export default function SalePricing() {
         placeholder="ex: 68"
         step="0.01"
         required
+        hint="Custo total dividido pela produtividade em sacas"
       />
 
       <SelectField
@@ -179,6 +180,7 @@ export default function SalePricing() {
           onChange={(v) => updateInput('desiredMargin', v)}
           placeholder="ex: 20"
           step="1"
+          hint="Percentual de lucro que deseja obter sobre a venda"
         />
         <InputField
           label="Comissão (corretor/trading)"
@@ -187,6 +189,7 @@ export default function SalePricing() {
           onChange={(v) => updateInput('brokerFee', v)}
           placeholder="ex: 1"
           step="0.1"
+          hint="Taxa cobrada pelo intermediário na comercialização"
         />
       </div>
 
@@ -201,7 +204,7 @@ export default function SalePricing() {
       />
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.costPerSc} />
     </CalculatorLayout>
   )
 }

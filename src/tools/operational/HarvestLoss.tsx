@@ -226,6 +226,7 @@ export default function HarvestLoss() {
           onChange={(v) => updateInput('expectedYield', v)}
           placeholder="ex: 65"
           required
+          hint="Produtividade média do talhão"
         />
         <InputField
           label="Preço da saca"
@@ -235,6 +236,7 @@ export default function HarvestLoss() {
           placeholder="ex: 115"
           step="0.01"
           required
+          hint="Preço de referência para cálculo da perda"
         />
       </div>
 
@@ -246,6 +248,7 @@ export default function HarvestLoss() {
           onChange={(v) => updateInput('preHarvestGrains', v)}
           placeholder="ex: 4"
           required
+          hint="Colete antes da colheitadeira passar"
         />
         <InputField
           label="Grãos — Plataforma"
@@ -254,6 +257,7 @@ export default function HarvestLoss() {
           onChange={(v) => updateInput('platformGrains', v)}
           placeholder="ex: 8"
           required
+          hint="Colete atrás da plataforma de corte"
         />
         <InputField
           label="Grãos — Trilha"
@@ -262,6 +266,7 @@ export default function HarvestLoss() {
           onChange={(v) => updateInput('threshingGrains', v)}
           placeholder="ex: 6"
           required
+          hint="Colete atrás da colheitadeira"
         />
       </div>
 
@@ -275,7 +280,7 @@ export default function HarvestLoss() {
       />
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.expectedYield || !inputs.preHarvestGrains || !inputs.platformGrains} />
     </CalculatorLayout>
   )
 }

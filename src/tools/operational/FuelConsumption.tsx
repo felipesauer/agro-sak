@@ -168,6 +168,10 @@ export default function FuelConsumption() {
                 rows={CONSUMPTION_REFERENCE}
               />
             </div>
+            <AlertBanner
+              variant="info"
+              message="O consumo real varia com o tipo de solo, relevo e implemento. Use o horímetro e abastecimentos reais para calibrar este cálculo."
+            />
           </div>
         )
       }
@@ -188,6 +192,7 @@ export default function FuelConsumption() {
           placeholder="ex: 28"
           step="0.5"
           required
+          hint="Consumo médio de diesel por hora"
         />
         <InputField
           label="Capacidade operacional"
@@ -197,6 +202,7 @@ export default function FuelConsumption() {
           placeholder="ex: 5.5"
           step="0.1"
           required
+          hint="Hectares trabalhados por hora efetiva"
         />
       </div>
 
@@ -209,6 +215,7 @@ export default function FuelConsumption() {
           placeholder="ex: 6.20"
           step="0.01"
           required
+          hint="Preço atual do diesel na região"
         />
         <InputField
           label="Área total"
@@ -222,7 +229,7 @@ export default function FuelConsumption() {
 
       {error && <AlertBanner variant="error" message={error} />}
       <DataFreshness table="fuelPrices" label="Diesel" />
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.consumptionPerHour || !inputs.operationalCapacity || !inputs.dieselPrice} />
     </CalculatorLayout>
   )
 }

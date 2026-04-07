@@ -261,30 +261,30 @@ export default function MachineryCost() {
 
       <p className="text-sm font-medium text-gray-700 mt-4 mb-2">Máquina Própria</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <InputField label="Valor de compra" prefix="R$" unit="R$" value={inputs.purchasePrice} onChange={(v) => updateInput('purchasePrice', v)} step="10000" required />
-        <InputField label="Vida útil" unit="anos" value={inputs.lifeYears} onChange={(v) => updateInput('lifeYears', v)} />
-        <InputField label="Horas de uso por ano" unit="h/ano" value={inputs.hoursPerYear} onChange={(v) => updateInput('hoursPerYear', v)} required />
-        <InputField label="Custo de capital" unit="% a.a." value={inputs.capitalRate} onChange={(v) => updateInput('capitalRate', v)} step="0.5" />
-        <InputField label="Seguro" unit="% do valor/ano" value={inputs.insuranceRate} onChange={(v) => updateInput('insuranceRate', v)} step="0.1" />
-        <InputField label="Manutenção" unit="% do valor/ano" value={inputs.maintenanceRate} onChange={(v) => updateInput('maintenanceRate', v)} step="0.5" />
-        <InputField label="Consumo de combustível" unit="L/h" value={inputs.fuelConsumption} onChange={(v) => updateInput('fuelConsumption', v)} />
-        <InputField label="Preço do diesel" prefix="R$" unit="R$/L" value={inputs.dieselPrice} onChange={(v) => updateInput('dieselPrice', v)} step="0.10" />
-        <InputField label="Salário do operador" prefix="R$" unit="R$/mês" value={inputs.operatorSalary} onChange={(v) => updateInput('operatorSalary', v)} />
-        <InputField label="Capacidade operacional" unit="ha/h" value={inputs.operationalCapacity} onChange={(v) => updateInput('operationalCapacity', v)} />
+        <InputField label="Valor de compra" prefix="R$" unit="R$" value={inputs.purchasePrice} onChange={(v) => updateInput('purchasePrice', v)} step="10000" required hint="Preço de aquisição da máquina" />
+        <InputField label="Vida útil" unit="anos" value={inputs.lifeYears} onChange={(v) => updateInput('lifeYears', v)} hint="Vida útil esperada em anos" />
+        <InputField label="Horas de uso por ano" unit="h/ano" value={inputs.hoursPerYear} onChange={(v) => updateInput('hoursPerYear', v)} required hint="Horas anuais registradas no horímetro" />
+        <InputField label="Custo de capital" unit="% a.a." value={inputs.capitalRate} onChange={(v) => updateInput('capitalRate', v)} step="0.5" hint="Taxa de oportunidade do capital investido" />
+        <InputField label="Seguro" unit="% do valor/ano" value={inputs.insuranceRate} onChange={(v) => updateInput('insuranceRate', v)} step="0.1" hint="Prêmio anual de seguro como % do valor" />
+        <InputField label="Manutenção" unit="% do valor/ano" value={inputs.maintenanceRate} onChange={(v) => updateInput('maintenanceRate', v)} step="0.5" hint="Custo anual de manutenção preventiva e corretiva" />
+        <InputField label="Consumo de combustível" unit="L/h" value={inputs.fuelConsumption} onChange={(v) => updateInput('fuelConsumption', v)} hint="Consumo médio de diesel por hora" />
+        <InputField label="Preço do diesel" prefix="R$" unit="R$/L" value={inputs.dieselPrice} onChange={(v) => updateInput('dieselPrice', v)} step="0.10" hint="Preço atual do diesel na região" />
+        <InputField label="Salário do operador" prefix="R$" unit="R$/mês" value={inputs.operatorSalary} onChange={(v) => updateInput('operatorSalary', v)} hint="Salário bruto + encargos do operador" />
+        <InputField label="Capacidade operacional" unit="ha/h" value={inputs.operationalCapacity} onChange={(v) => updateInput('operationalCapacity', v)} hint="Hectares trabalhados por hora efetiva" />
       </div>
 
       <p className="text-sm font-medium text-gray-700 mt-4 mb-2">Aluguel (hora-máquina)</p>
       <div className="grid gap-3 sm:grid-cols-3">
-        <InputField label="Valor cobrado" prefix="R$" unit="R$/h" value={inputs.rentalHourly} onChange={(v) => updateInput('rentalHourly', v)} />
+        <InputField label="Valor cobrado" prefix="R$" unit="R$/h" value={inputs.rentalHourly} onChange={(v) => updateInput('rentalHourly', v)} hint="Valor cobrado por hora-máquina" />
         <SelectField label="Inclui operador?" options={[{value:'yes',label:'Sim'},{value:'no',label:'Não'}]} value={inputs.rentalIncludesOperator} onChange={(v) => updateInput('rentalIncludesOperator', v)} />
         <SelectField label="Inclui combustível?" options={[{value:'yes',label:'Sim'},{value:'no',label:'Não'}]} value={inputs.rentalIncludesFuel} onChange={(v) => updateInput('rentalIncludesFuel', v)} />
       </div>
 
       <p className="text-sm font-medium text-gray-700 mt-4 mb-2">Terceirização</p>
-      <InputField label="Valor cobrado" prefix="R$" unit="R$/ha" value={inputs.outsourceHa} onChange={(v) => updateInput('outsourceHa', v)} />
+      <InputField label="Valor cobrado" prefix="R$" unit="R$/ha" value={inputs.outsourceHa} onChange={(v) => updateInput('outsourceHa', v)} hint="Valor cobrado por hectare terceirizado" />
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.purchasePrice || !inputs.hoursPerYear} />
       <DataFreshness table="fuelPrices" />
     </CalculatorLayout>
   )

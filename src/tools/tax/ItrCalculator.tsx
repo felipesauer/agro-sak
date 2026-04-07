@@ -161,6 +161,7 @@ export default function ITR() {
           placeholder="ex: 1200"
           min="0"
           required
+          hint="Área total registrada no imóvel rural"
         />
         <InputField
           label="Área efetivamente utilizada"
@@ -191,7 +192,7 @@ export default function ITR() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.totalArea || !inputs.usedArea || !inputs.vtnPerHa} />
     </CalculatorLayout>
   )
 }

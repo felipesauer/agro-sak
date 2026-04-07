@@ -102,19 +102,19 @@ export default function CashFlow() {
     updateInput('months', newMonths as never)
   }
 
-  const incomeFields: { key: keyof MonthData; label: string }[] = [
-    { key: 'salesRevenue', label: 'Venda de grãos' },
-    { key: 'financingIncome', label: 'Recebimento de financiamento' },
-    { key: 'otherIncome', label: 'Outras receitas' },
+  const incomeFields: { key: keyof MonthData; label: string; hint?: string }[] = [
+    { key: 'salesRevenue', label: 'Venda de grãos', hint: 'Receita com comercialização da produção' },
+    { key: 'financingIncome', label: 'Recebimento de financiamento', hint: 'Liberação de crédito rural ou custeio' },
+    { key: 'otherIncome', label: 'Outras receitas', hint: 'Arrendamento recebido, serviços, etc.' },
   ]
 
-  const expenseFields: { key: keyof MonthData; label: string }[] = [
-    { key: 'inputsPurchase', label: 'Compra de insumos' },
-    { key: 'leasePay', label: 'Arrendamento' },
-    { key: 'financingPay', label: 'Parcelas de financiamento' },
-    { key: 'laborPay', label: 'Mão de obra' },
-    { key: 'fuelMaint', label: 'Combustível e manutenção' },
-    { key: 'otherExpenses', label: 'Outras saídas' },
+  const expenseFields: { key: keyof MonthData; label: string; hint?: string }[] = [
+    { key: 'inputsPurchase', label: 'Compra de insumos', hint: 'Sementes, fertilizantes e defensivos' },
+    { key: 'leasePay', label: 'Arrendamento', hint: 'Pagamento mensal ao proprietário da terra' },
+    { key: 'financingPay', label: 'Parcelas de financiamento', hint: 'Amortização e juros de crédito rural' },
+    { key: 'laborPay', label: 'Mão de obra', hint: 'Salários, encargos e diaristas' },
+    { key: 'fuelMaint', label: 'Combustível e manutenção', hint: 'Diesel, peças e manutenção de máquinas' },
+    { key: 'otherExpenses', label: 'Outras saídas', hint: 'Impostos, seguros e despesas administrativas' },
   ]
 
   return (
@@ -171,6 +171,7 @@ export default function CashFlow() {
         onChange={(v) => updateInput('initialBalance', v)}
         placeholder="ex: 50000"
         step="1000"
+        hint="Saldo disponível no início do período (conta corrente + aplicações)"
       />
 
       {/* Month tabs */}
@@ -204,6 +205,7 @@ export default function CashFlow() {
               onChange={(v) => updateMonth(activeMonth, f.key, v)}
               placeholder="0"
               step="100"
+              hint={f.hint}
             />
           ))}
         </div>
@@ -219,13 +221,14 @@ export default function CashFlow() {
               onChange={(v) => updateMonth(activeMonth, f.key, v)}
               placeholder="0"
               step="100"
+              hint={f.hint}
             />
           ))}
         </div>
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.months.some(m => Object.values(m).some(v => v !== ''))} />
     </CalculatorLayout>
   )
 }

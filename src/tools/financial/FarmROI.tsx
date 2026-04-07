@@ -156,6 +156,7 @@ export default function FarmROI() {
         placeholder="ex: 4200000"
         step="10000"
         required
+        hint="Capital aplicado na safra (terra, insumos, operações)"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -167,6 +168,7 @@ export default function FarmROI() {
           placeholder="ex: 5980000"
           step="10000"
           required
+          hint="Faturamento esperado com a venda da produção"
         />
         <InputField
           label="Custo total"
@@ -176,6 +178,7 @@ export default function FarmROI() {
           placeholder="ex: 4200000"
           step="10000"
           required
+          hint="Soma de todos os gastos diretos e indiretos da safra"
         />
       </div>
 
@@ -187,6 +190,7 @@ export default function FarmROI() {
           onChange={(v) => updateInput('months', v)}
           placeholder="ex: 8"
           required
+          hint="Duração do ciclo completo, do plantio à venda"
         />
         <InputField
           label="Taxa CDI anual (referência)"
@@ -200,7 +204,7 @@ export default function FarmROI() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.investment || !inputs.grossRevenue || !inputs.totalCost} />
     </CalculatorLayout>
   )
 }

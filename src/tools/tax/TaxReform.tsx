@@ -238,6 +238,7 @@ export default function TaxReform() {
         placeholder="ex: 5000000"
         min="0"
         required
+        hint="Receita total da atividade rural no ano"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -253,6 +254,7 @@ export default function TaxReform() {
           placeholder="ex: 70"
           min="0"
           max="100"
+          hint="Percentual vendido no mercado nacional"
         />
         <InputField
           label="Exportação"
@@ -266,6 +268,7 @@ export default function TaxReform() {
           placeholder="ex: 30"
           min="0"
           max="100"
+          hint="Percentual vendido para exportação"
         />
       </div>
 
@@ -285,7 +288,7 @@ export default function TaxReform() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.annualRevenue} />
     </CalculatorLayout>
   )
 }

@@ -93,6 +93,10 @@ export default function SprayMix() {
                 variant="default"
               />
             </div>
+            <AlertBanner
+              variant="warning"
+              message="Sempre calibre o pulverizador em campo antes da aplicação e siga as recomendações do fabricante do defensivo."
+            />
           </div>
         )
       }
@@ -106,6 +110,7 @@ export default function SprayMix() {
           placeholder="ex: 3000"
           min="0"
           required
+          hint="Capacidade total do tanque do pulverizador"
         />
         <InputField
           label="Volume de calda desejado"
@@ -115,6 +120,7 @@ export default function SprayMix() {
           placeholder="ex: 120"
           min="0"
           required
+          hint="Volume recomendado na bula do produto"
         />
       </div>
 
@@ -127,6 +133,7 @@ export default function SprayMix() {
         step="0.01"
         min="0"
         required
+        hint="Consulte a bula para a dose por hectare"
       />
 
       <div className="flex gap-4 mt-1">
@@ -158,7 +165,7 @@ export default function SprayMix() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.tankVolume || !inputs.sprayVolume || !inputs.dosePerHa} />
     </CalculatorLayout>
   )
 }

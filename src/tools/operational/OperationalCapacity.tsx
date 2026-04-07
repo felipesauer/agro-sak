@@ -128,6 +128,10 @@ export default function OperationalCapacity() {
                 rows={EFFICIENCY_REFERENCE}
               />
             </div>
+            <AlertBanner
+              variant="info"
+              message="A eficiência operacional real é reduzida por manobras, abastecimento e clima. Considere 70-80% para planejamento conservador."
+            />
           </div>
         )
       }
@@ -141,6 +145,7 @@ export default function OperationalCapacity() {
           placeholder="ex: 12"
           step="0.5"
           required
+          hint="Largura efetiva do implemento"
         />
         <InputField
           label="Velocidade de trabalho"
@@ -150,6 +155,7 @@ export default function OperationalCapacity() {
           placeholder="ex: 6"
           step="0.5"
           required
+          hint="Velocidade média de operação em campo"
         />
         <InputField
           label="Eficiência operacional"
@@ -185,7 +191,7 @@ export default function OperationalCapacity() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.workWidth || !inputs.speed} />
     </CalculatorLayout>
   )
 }

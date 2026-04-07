@@ -245,19 +245,19 @@ export default function WaterBalance() {
       <SelectField label="Textura do solo" options={SOIL_OPTIONS} value={inputs.soilTexture} onChange={(v) => updateInput('soilTexture', v as never)} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <InputField label="Precipitação da semana" unit="mm" value={inputs.precipWeek} onChange={(v) => updateInput('precipWeek', v as never)} min="0" placeholder="ex: 45" />
-        <InputField label="Precipitação acumulada no mês" unit="mm" value={inputs.precipMonth} onChange={(v) => updateInput('precipMonth', v as never)} min="0" placeholder="ex: 120" />
+        <InputField label="Precipitação da semana" unit="mm" value={inputs.precipWeek} onChange={(v) => updateInput('precipWeek', v as never)} min="0" placeholder="ex: 45" hint="Chuva acumulada nos últimos 7 dias" />
+        <InputField label="Precipitação acumulada no mês" unit="mm" value={inputs.precipMonth} onChange={(v) => updateInput('precipMonth', v as never)} min="0" placeholder="ex: 120" hint="Chuva acumulada no mês corrente" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <InputField label="Temp. média" unit="°C" value={inputs.tempMean} onChange={(v) => updateInput('tempMean', v as never)} />
-        <InputField label="Temp. máxima" unit="°C" value={inputs.tempMax} onChange={(v) => updateInput('tempMax', v as never)} />
-        <InputField label="Temp. mínima" unit="°C" value={inputs.tempMin} onChange={(v) => updateInput('tempMin', v as never)} />
+        <InputField label="Temp. média" unit="°C" value={inputs.tempMean} onChange={(v) => updateInput('tempMean', v as never)} hint="Temperatura média diária" />
+        <InputField label="Temp. máxima" unit="°C" value={inputs.tempMax} onChange={(v) => updateInput('tempMax', v as never)} hint="Temperatura máxima do dia" />
+        <InputField label="Temp. mínima" unit="°C" value={inputs.tempMin} onChange={(v) => updateInput('tempMin', v as never)} hint="Temperatura mínima do dia" />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.tempMean || !inputs.tempMax || !inputs.tempMin} />
     </CalculatorLayout>
   )
 }

@@ -259,6 +259,7 @@ export default function PaybackPeriod() {
           min="1"
           max="50"
           required
+          hint="Tempo estimado de uso do equipamento ou benfeitoria"
         />
       </div>
 
@@ -285,7 +286,7 @@ export default function PaybackPeriod() {
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.investmentValue || !inputs.annualNetGain} />
     </CalculatorLayout>
   )
 }

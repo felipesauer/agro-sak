@@ -244,6 +244,7 @@ export default function SeedTreatment() {
           min="0"
           max="100000"
           required
+          hint="Área total de plantio"
         />
         <InputField
           label="Taxa de semeadura"
@@ -320,7 +321,7 @@ export default function SeedTreatment() {
       </div>
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area || !inputs.seedRate} />
     </CalculatorLayout>
   )
 }

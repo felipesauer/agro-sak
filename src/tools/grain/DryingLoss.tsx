@@ -148,8 +148,12 @@ export default function DryingLoss() {
                   </ResultCard>
                 )}
               </div>
-            )}
-          </div>
+            )}            {result.lossPercent > 1.5 && (
+              <AlertBanner
+                variant="warning"
+                message="Perda acima de 1,5% — considere negociar taxa de secagem ou buscar outra unidade armazenadora."
+              />
+            )}          </div>
         )
       }
     >
@@ -169,6 +173,7 @@ export default function DryingLoss() {
         placeholder="ex: 50000"
         min="0"
         required
+        hint="Peso bruto do lote antes da secagem"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -182,6 +187,7 @@ export default function DryingLoss() {
           min="0"
           max="40"
           required
+          hint="Umidade medida na recepção"
         />
         <InputField
           label="Umidade final desejada"
@@ -193,6 +199,7 @@ export default function DryingLoss() {
           min="0"
           max="40"
           required
+          hint="Padrão de comercialização da cultura"
         />
       </div>
 
@@ -223,7 +230,7 @@ export default function DryingLoss() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.initialWeight || !inputs.initialMoisture || !inputs.targetMoisture} />
     </CalculatorLayout>
   )
 }

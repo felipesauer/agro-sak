@@ -235,6 +235,7 @@ export default function CarbonCredit() {
           onChange={(v) => updateInput('area', v as never)}
           placeholder="ex: 500"
           required
+          hint="Área total da propriedade"
         />
       </div>
 
@@ -272,6 +273,7 @@ export default function CarbonCredit() {
           min="1"
           max="50"
           required
+          hint="Horizonte de tempo para a estimativa"
         />
         <InputField
           label="Preço do crédito"
@@ -285,7 +287,7 @@ export default function CarbonCredit() {
       </div>
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area} />
     </CalculatorLayout>
   )
 }

@@ -261,6 +261,7 @@ export default function CropSimulator() {
           placeholder="ex: 3500"
           min="0"
           required
+          hint="Custo total por hectare (insumos + operações + fixos)"
         />
         <InputField
           label="Área total"
@@ -270,6 +271,7 @@ export default function CropSimulator() {
           placeholder="ex: 500"
           min="0"
           required
+          hint="Área total plantada para a simulação"
         />
       </div>
 
@@ -282,6 +284,7 @@ export default function CropSimulator() {
           placeholder="ex: 90"
           min="0"
           required
+          hint="Pior cenário de preço de venda"
         />
         <InputField
           label="Preço máximo"
@@ -291,6 +294,7 @@ export default function CropSimulator() {
           placeholder="ex: 140"
           min="0"
           required
+          hint="Melhor cenário de preço de venda"
         />
       </div>
 
@@ -303,6 +307,7 @@ export default function CropSimulator() {
           placeholder="ex: 40"
           min="0"
           required
+          hint="Pior cenário de produtividade"
         />
         <InputField
           label="Produtividade máxima"
@@ -312,6 +317,7 @@ export default function CropSimulator() {
           placeholder="ex: 70"
           min="0"
           required
+          hint="Melhor cenário de produtividade"
         />
       </div>
 
@@ -328,7 +334,7 @@ export default function CropSimulator() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.productionCost || !inputs.area || !inputs.priceMin} />
     </CalculatorLayout>
   )
 }

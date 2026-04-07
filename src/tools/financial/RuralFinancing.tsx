@@ -248,6 +248,7 @@ export default function RuralFinancing() {
         placeholder="ex: 500000"
         step="1000"
         required
+        hint="Principal do financiamento (sem juros)"
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -258,6 +259,7 @@ export default function RuralFinancing() {
           onChange={(v) => updateInput('totalMonths', v)}
           placeholder="ex: 60"
           required
+          hint="Prazo total incluindo carência"
         />
         <InputField
           label="Carência"
@@ -265,6 +267,7 @@ export default function RuralFinancing() {
           value={inputs.graceMonths}
           onChange={(v) => updateInput('graceMonths', v)}
           placeholder="ex: 12"
+          hint="Período sem amortização (paga apenas juros)"
         />
         <InputField
           label="Taxa de juros"
@@ -274,6 +277,7 @@ export default function RuralFinancing() {
           placeholder="ex: 7.5"
           step="0.1"
           required
+          hint="Taxa nominal anual do contrato"
         />
       </div>
 
@@ -285,7 +289,7 @@ export default function RuralFinancing() {
       />
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.amount || !inputs.totalMonths || !inputs.annualRate} />
     </CalculatorLayout>
   )
 }

@@ -172,6 +172,7 @@ export default function FarmLease() {
           placeholder={inputs.paymentMode === 'sacks' ? 'ex: 15' : 'ex: 1725'}
           step="0.5"
           required
+          hint={inputs.paymentMode === 'sacks' ? 'Quantidade de sacas por hectare combinada com o arrendador' : 'Valor em reais por hectare combinado com o arrendador'}
         />
         <InputField
           label="Preço da saca"
@@ -181,6 +182,7 @@ export default function FarmLease() {
           placeholder="ex: 115"
           step="0.01"
           required
+          hint="Preço de referência para conversão (soja, milho, etc.)"
         />
       </div>
 
@@ -192,6 +194,7 @@ export default function FarmLease() {
           onChange={(v) => updateInput('expectedYield', v)}
           placeholder="ex: 62"
           required
+          hint="Produtividade média da área arrendada"
         />
         <InputField
           label="Área arrendada"
@@ -199,6 +202,7 @@ export default function FarmLease() {
           value={inputs.area}
           onChange={(v) => updateInput('area', v)}
           placeholder="ex: 500"
+          hint="Área total em contrato de arrendamento"
         />
         <InputField
           label="Custo (sem arrendamento)"
@@ -206,11 +210,12 @@ export default function FarmLease() {
           value={inputs.costWithoutLease}
           onChange={(v) => updateInput('costWithoutLease', v)}
           placeholder="ex: 3500"
+          hint="Custo por hectare excluindo o arrendamento"
         />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.leaseValue || !inputs.sacPrice || !inputs.expectedYield} />
     </CalculatorLayout>
   )
 }

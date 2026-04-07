@@ -177,14 +177,14 @@ export default function CropComparer() {
                 Incluir
               </label>
               <div className="flex-1">
-                <InputField label="" value={c.name} onChange={(v) => updateCrop(c.id, 'name', v as string)} placeholder="Nome da cultura" />
+                <InputField label="" value={c.name} onChange={(v) => updateCrop(c.id, 'name', v as string)} placeholder="Nome da cultura" type="text" hint="Ex: Soja, Milho, Algodão" />
               </div>
             </div>
             {c.enabled && (
               <div className="grid gap-3 sm:grid-cols-3">
-                <InputField label="Produtividade" unit="sc/ha" value={c.productivity} onChange={(v) => updateCrop(c.id, 'productivity', v as string)} min="0" />
-                <InputField label="Preço de venda" prefix="R$" unit="R$/sc" value={c.price} onChange={(v) => updateCrop(c.id, 'price', v as string)} min="0" />
-                <InputField label="Custo de produção" prefix="R$" unit="R$/ha" value={c.productionCost} onChange={(v) => updateCrop(c.id, 'productionCost', v as string)} min="0" />
+                <InputField label="Produtividade" unit="sc/ha" value={c.productivity} onChange={(v) => updateCrop(c.id, 'productivity', v as string)} min="0" hint="Produtividade média esperada" />
+                <InputField label="Preço de venda" prefix="R$" unit="R$/sc" value={c.price} onChange={(v) => updateCrop(c.id, 'price', v as string)} min="0" hint="Preço de mercado ou contrato" />
+                <InputField label="Custo de produção" prefix="R$" unit="R$/ha" value={c.productionCost} onChange={(v) => updateCrop(c.id, 'productionCost', v as string)} min="0" hint="Custo total por hectare" />
               </div>
             )}
           </div>
@@ -203,7 +203,7 @@ export default function CropComparer() {
 
       {error && <AlertBanner variant="error" message={error} />}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={crops.filter(c => c.enabled).length < 2} />
     </CalculatorLayout>
   )
 }

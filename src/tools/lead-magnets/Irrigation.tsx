@@ -174,6 +174,10 @@ export default function Irrigation() {
             </div>
 
             {result.alert && <AlertBanner variant="error" message={result.alert} />}
+            <AlertBanner
+              variant="info"
+              message="Acompanhe a precipitação diária e subtraia da lâmina calculada para evitar excesso de irrigação."
+            />
           </div>
         )
       }
@@ -193,15 +197,15 @@ export default function Irrigation() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <InputField label="Capacidade de campo" unit="mm/m" value={inputs.fieldCapacity} onChange={(v) => updateInput('fieldCapacity', v as never)} min="0" />
-        <InputField label="Ponto de murcha" unit="mm/m" value={inputs.wiltingPoint} onChange={(v) => updateInput('wiltingPoint', v as never)} min="0" />
-        <InputField label="Prof. radicular" unit="m" value={inputs.rootDepth} onChange={(v) => updateInput('rootDepth', v as never)} min="0" />
+        <InputField label="Capacidade de campo" unit="mm/m" value={inputs.fieldCapacity} onChange={(v) => updateInput('fieldCapacity', v as never)} min="0" hint="Capacidade de retenção de água do solo" />
+        <InputField label="Ponto de murcha" unit="mm/m" value={inputs.wiltingPoint} onChange={(v) => updateInput('wiltingPoint', v as never)} min="0" hint="Ponto de murcha permanente do solo" />
+        <InputField label="Prof. radicular" unit="m" value={inputs.rootDepth} onChange={(v) => updateInput('rootDepth', v as never)} min="0" hint="Profundidade efetiva das raízes" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <InputField label="Temp. máxima" unit="°C" value={inputs.tempMax} onChange={(v) => updateInput('tempMax', v as never)} />
-        <InputField label="Temp. mínima" unit="°C" value={inputs.tempMin} onChange={(v) => updateInput('tempMin', v as never)} />
-        <InputField label="Temp. média" unit="°C" value={inputs.tempMean} onChange={(v) => updateInput('tempMean', v as never)} />
+        <InputField label="Temp. máxima" unit="°C" value={inputs.tempMax} onChange={(v) => updateInput('tempMax', v as never)} hint="Temperatura máxima do dia" />
+        <InputField label="Temp. mínima" unit="°C" value={inputs.tempMin} onChange={(v) => updateInput('tempMin', v as never)} hint="Temperatura mínima do dia" />
+        <InputField label="Temp. média" unit="°C" value={inputs.tempMean} onChange={(v) => updateInput('tempMean', v as never)} hint="Temperatura média diária" />
       </div>
 
       <InputField
@@ -211,11 +215,12 @@ export default function Irrigation() {
         onChange={(v) => updateInput('precipitation', v as never)}
         min="0"
         placeholder="ex: 12"
+        hint="Chuva acumulada nos últimos 7 dias"
       />
 
       {error && <AlertBanner variant="error" message={error} />}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.tempMax || !inputs.tempMin || !inputs.tempMean} />
     </CalculatorLayout>
   )
 }

@@ -155,6 +155,10 @@ export default function CropProfitSimulator() {
                 )
               })}
             </div>
+            <AlertBanner
+              variant="info"
+              message="A simulação considera cenários estáticos — variações cambiais, climáticas e de mercado podem alterar significativamente os resultados."
+            />
           </div>
         )
       }
@@ -173,6 +177,7 @@ export default function CropProfitSimulator() {
           onChange={(v) => updateInput('area', v)}
           placeholder="ex: 500"
           required
+          hint="Área total cultivada para a simulação"
         />
       </div>
 
@@ -191,6 +196,7 @@ export default function CropProfitSimulator() {
               value={inputs[sc.yKey]}
               onChange={(v) => updateInput(sc.yKey, v)}
               step="1"
+              hint="Sacas colhidas por hectare no cenário"
             />
             <InputField
               label="Preço de venda"
@@ -198,6 +204,7 @@ export default function CropProfitSimulator() {
               value={inputs[sc.pKey]}
               onChange={(v) => updateInput(sc.pKey, v)}
               step="0.50"
+              hint="Cotação esperada da saca no momento da venda"
             />
             <InputField
               label="Custo de produção"
@@ -205,13 +212,14 @@ export default function CropProfitSimulator() {
               value={inputs[sc.cKey]}
               onChange={(v) => updateInput(sc.cKey, v)}
               step="10"
+              hint="Custo total por hectare incluindo insumos e operações"
             />
           </div>
         </div>
       ))}
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area || !inputs.yieldReal || !inputs.priceReal} />
     </CalculatorLayout>
   )
 }

@@ -198,6 +198,7 @@ export default function SoftwareROI() {
         placeholder="ex: 1000"
         min="0"
         required
+        hint="Área total cultivada da propriedade"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -224,6 +225,7 @@ export default function SoftwareROI() {
             onChange={(v) => updateInput('customInputCost', v as never)}
             placeholder="ex: 2800"
             min="0"
+            hint="Custo total de insumos por hectare"
           />
           <InputField
             label="Produtividade média"
@@ -232,6 +234,7 @@ export default function SoftwareROI() {
             onChange={(v) => updateInput('customProd', v as never)}
             placeholder="ex: 55"
             min="0"
+            hint="Produtividade média da cultura"
           />
           <InputField
             label="Preço médio da saca"
@@ -240,6 +243,7 @@ export default function SoftwareROI() {
             onChange={(v) => updateInput('customPrice', v as never)}
             placeholder="ex: 110"
             min="0"
+            hint="Preço de referência da saca"
           />
         </div>
       )}
@@ -251,6 +255,7 @@ export default function SoftwareROI() {
         onChange={(v) => updateInput('softwareCostMonth', v as never)}
         placeholder="ex: 290"
         min="0"
+        hint="Valor da assinatura mensal do sistema"
       />
 
       {error && (
@@ -259,7 +264,7 @@ export default function SoftwareROI() {
         </div>
       )}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.area} />
     </CalculatorLayout>
   )
 }

@@ -255,6 +255,7 @@ export default function ElectricityCost() {
             onChange={(v) => updateInput('power', v as never)}
             placeholder="ex: 75"
             required
+            hint="Potência do motor em CV, HP ou kW"
           />
           <SelectField
             label="Unidade"
@@ -275,6 +276,7 @@ export default function ElectricityCost() {
           min="1"
           max="24"
           required
+          hint="Horas de funcionamento por dia"
         />
         <InputField
           label="Dias por mês"
@@ -285,6 +287,7 @@ export default function ElectricityCost() {
           min="1"
           max="31"
           required
+          hint="Dias de operação no mês"
         />
         <InputField
           label="Meses de uso"
@@ -295,6 +298,7 @@ export default function ElectricityCost() {
           min="1"
           max="12"
           required
+          hint="Meses de uso por ano do equipamento"
         />
       </div>
 
@@ -327,7 +331,7 @@ export default function ElectricityCost() {
       </div>
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.power} />
     </CalculatorLayout>
   )
 }

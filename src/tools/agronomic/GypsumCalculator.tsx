@@ -279,6 +279,7 @@ export default function GypsumCalculator() {
           onChange={(v) => updateInput('clayPercent', v as never)}
           placeholder="ex: 40"
           required={inputs.method !== 'raij'}
+          hint="Teor de argila do laudo de solo"
         />
         <SelectField
           label="Profundidade de correção"
@@ -296,6 +297,7 @@ export default function GypsumCalculator() {
           onChange={(v) => updateInput('area', v as never)}
           placeholder="ex: 200"
           required
+          hint="Área total para aplicação de gesso"
         />
         <InputField
           label="Preço do gesso"
@@ -308,7 +310,7 @@ export default function GypsumCalculator() {
       </div>
 
       {error && <div className="mt-3"><AlertBanner variant="error" message={error} /></div>}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.Ca || !inputs.area} />
     </CalculatorLayout>
   )
 }

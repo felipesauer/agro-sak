@@ -127,21 +127,21 @@ export default function StorageCost() {
     >
       <p className="text-sm font-medium text-gray-700 mb-2">Armazém de Terceiro</p>
       <div className="grid gap-3 sm:grid-cols-3">
-        <InputField label="Taxa cobrada" prefix="R$" unit="R$/sc/mês" value={inputs.thirdPartyFee} onChange={(v) => updateInput('thirdPartyFee', v)} step="0.05" required />
-        <InputField label="Volume anual" unit="sc" value={inputs.volumeAnnual} onChange={(v) => updateInput('volumeAnnual', v)} step="500" required />
-        <InputField label="Prazo médio" unit="meses" value={inputs.avgMonths} onChange={(v) => updateInput('avgMonths', v)} />
+        <InputField label="Taxa cobrada" prefix="R$" unit="R$/sc/mês" value={inputs.thirdPartyFee} onChange={(v) => updateInput('thirdPartyFee', v)} step="0.05" required hint="Valor cobrado pelo armazém terceirizado por saca/mês" />
+        <InputField label="Volume anual" unit="sc" value={inputs.volumeAnnual} onChange={(v) => updateInput('volumeAnnual', v)} step="500" required hint="Produção anual total em sacas" />
+        <InputField label="Prazo médio" unit="meses" value={inputs.avgMonths} onChange={(v) => updateInput('avgMonths', v)} hint="Tempo médio que o grão fica armazenado" />
       </div>
 
       <p className="text-sm font-medium text-gray-700 mt-4 mb-2">Silo Próprio</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <InputField label="Capacidade do silo" unit="sc" value={inputs.siloCapacity} onChange={(v) => updateInput('siloCapacity', v)} step="1000" />
-        <InputField label="Custo de construção" prefix="R$" unit="R$" value={inputs.constructionCost} onChange={(v) => updateInput('constructionCost', v)} step="10000" required />
-        <InputField label="Vida útil" unit="anos" value={inputs.siloLifeYears} onChange={(v) => updateInput('siloLifeYears', v)} />
-        <InputField label="Custo operacional anual" prefix="R$" unit="R$/ano" value={inputs.annualOpCost} onChange={(v) => updateInput('annualOpCost', v)} step="1000" />
+        <InputField label="Capacidade do silo" unit="sc" value={inputs.siloCapacity} onChange={(v) => updateInput('siloCapacity', v)} step="1000" hint="Capacidade total do silo em sacas" />
+        <InputField label="Custo de construção" prefix="R$" unit="R$" value={inputs.constructionCost} onChange={(v) => updateInput('constructionCost', v)} step="10000" required hint="Investimento total na construção do silo" />
+        <InputField label="Vida útil" unit="anos" value={inputs.siloLifeYears} onChange={(v) => updateInput('siloLifeYears', v)} hint="Silos metálicos: 20-25 anos; concreto: 30-40 anos" />
+        <InputField label="Custo operacional anual" prefix="R$" unit="R$/ano" value={inputs.annualOpCost} onChange={(v) => updateInput('annualOpCost', v)} step="1000" hint="Energia, mão de obra, manutenção e fumigação" />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.volumeAnnual || !inputs.constructionCost} />
     </CalculatorLayout>
   )
 }

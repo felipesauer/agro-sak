@@ -150,21 +150,21 @@ export default function StorageViability() {
       }
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <InputField label="Quantidade" unit="sc" value={inputs.quantity} onChange={(v) => updateInput('quantity', v)} step="100" required />
-        <InputField label="Preço atual (colheita)" prefix="R$" unit="R$/sc" value={inputs.currentPrice} onChange={(v) => updateInput('currentPrice', v)} step="0.50" required />
-        <InputField label="Preço futuro esperado" prefix="R$" unit="R$/sc" value={inputs.futurePrice} onChange={(v) => updateInput('futurePrice', v)} step="0.50" required />
-        <InputField label="Prazo de armazenagem" unit="meses" value={inputs.storageMonths} onChange={(v) => updateInput('storageMonths', v)} required />
+        <InputField label="Quantidade" unit="sc" value={inputs.quantity} onChange={(v) => updateInput('quantity', v)} step="100" required hint="Volume de grãos a armazenar" />
+        <InputField label="Preço atual (colheita)" prefix="R$" unit="R$/sc" value={inputs.currentPrice} onChange={(v) => updateInput('currentPrice', v)} step="0.50" required hint="Preço de venda disponível hoje" />
+        <InputField label="Preço futuro esperado" prefix="R$" unit="R$/sc" value={inputs.futurePrice} onChange={(v) => updateInput('futurePrice', v)} step="0.50" required hint="Preço esperado após o período de armazenagem" />
+        <InputField label="Prazo de armazenagem" unit="meses" value={inputs.storageMonths} onChange={(v) => updateInput('storageMonths', v)} required hint="Período que pretende guardar o grão" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 mt-3">
-        <InputField label="Taxa de armazenagem" prefix="R$" unit="R$/sc/mês" value={inputs.storageFee} onChange={(v) => updateInput('storageFee', v)} step="0.05" />
-        <InputField label="Quebra técnica" unit="% ao mês" value={inputs.breakageRate} onChange={(v) => updateInput('breakageRate', v)} step="0.05" />
-        <InputField label="Custo de capital" unit="% ao mês" value={inputs.capitalRate} onChange={(v) => updateInput('capitalRate', v)} step="0.1" />
-        <InputField label="Custo de seguro" unit="% do valor/mês" value={inputs.insuranceRate} onChange={(v) => updateInput('insuranceRate', v)} step="0.01" />
+        <InputField label="Taxa de armazenagem" prefix="R$" unit="R$/sc/mês" value={inputs.storageFee} onChange={(v) => updateInput('storageFee', v)} step="0.05" hint="Custo cobrado pelo armazém por saca/mês" />
+        <InputField label="Quebra técnica" unit="% ao mês" value={inputs.breakageRate} onChange={(v) => updateInput('breakageRate', v)} step="0.05" hint="Perda física esperada (geralmente 0,1-0,3%/mês)" />
+        <InputField label="Custo de capital" unit="% ao mês" value={inputs.capitalRate} onChange={(v) => updateInput('capitalRate', v)} step="0.1" hint="Custo de oportunidade do dinheiro parado (Selic/CDI)" />
+        <InputField label="Custo de seguro" unit="% do valor/mês" value={inputs.insuranceRate} onChange={(v) => updateInput('insuranceRate', v)} step="0.01" hint="Seguro do grão armazenado" />
       </div>
 
       {error && <AlertBanner variant="error" message={error} />}
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={!inputs.quantity || !inputs.currentPrice || !inputs.futurePrice} />
     </CalculatorLayout>
   )
 }

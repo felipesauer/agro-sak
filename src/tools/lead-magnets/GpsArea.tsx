@@ -211,6 +211,7 @@ export default function GpsArea() {
                 value={p.lat}
                 onChange={(v) => updatePoint(i, 'lat', v as string)}
                 placeholder="ex: -15.789456"
+                hint={i === 0 ? 'Formato decimal (ex: -15.789456)' : ''}
               />
             </div>
             <div className="flex-1">
@@ -219,6 +220,7 @@ export default function GpsArea() {
                 value={p.lng}
                 onChange={(v) => updatePoint(i, 'lng', v as string)}
                 placeholder="ex: -47.891234"
+                hint={i === 0 ? 'Formato decimal (ex: -47.891234)' : ''}
               />
             </div>
             <button
@@ -253,7 +255,7 @@ export default function GpsArea() {
 
       {error && <AlertBanner variant="error" message={error} />}
 
-      <ActionButtons onCalculate={run} onClear={clear} />
+      <ActionButtons onCalculate={run} onClear={clear} disabled={points.filter(p => p.lat && p.lng).length < 3} />
     </CalculatorLayout>
   )
 }
