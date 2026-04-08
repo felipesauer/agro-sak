@@ -7,23 +7,11 @@
 
 Tudo roda direto no navegador. Os dados ficam no dispositivo do usuário.
 
----
-
-## Screenshots
-
-| Home | Calculadora |
-|---|---|
-| ![Home](.github/screenshots/home.png) | ![Calculadora](.github/screenshots/tool.png) |
-
----
-
 ## Para quem é
 
 - **Produtores rurais** que querem tomar decisões baseadas em números, não em chute.
 - **Técnicos e consultores** que precisam de cálculos rápidos no campo.
 - **Estudantes de agronomia** que querem entender as fórmulas na prática.
-
----
 
 ## O que você pode calcular
 
@@ -48,15 +36,11 @@ Conversor de medidas agro (ha, alqueires, sacas, bushels), conversor de produtiv
 ### 🧠 Ferramentas Inteligentes
 Diagnóstico de maturidade de gestão da fazenda, ROI de software de gestão, simulador de safra (heatmap preço × produtividade), comparador de culturas (soja × milho × algodão), calculadora de área por GPS, calculadora de irrigação, crédito de carbono rural.
 
----
-
 ## Como usar
 
 Acesse **[agro-sak.com.br](https://agro-sak.com.br)** — não precisa instalar nada.
 
 Para usar offline, adicione o site à tela inicial do celular (PWA). O app funciona sem conexão após o primeiro carregamento.
-
----
 
 ## Rodando Localmente
 
@@ -67,13 +51,9 @@ npm run build   # build de produção
 npm run lint    # verificação de código
 ```
 
----
-
 ## Contribuindo
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md).
-
----
 
 ## Perguntas Frequentes
 
@@ -92,8 +72,6 @@ Não. Todas as calculadoras são gratuitas e não há plano pago.
 **Posso usar no celular?**
 Sim. O app é responsivo e pode ser instalado na tela inicial do celular via "Adicionar à tela inicial" no navegador.
 
----
-
 ## Licença
 
-[MIT](LICENSE)
+[MIT](LICENSE) © Felipe Sauer
