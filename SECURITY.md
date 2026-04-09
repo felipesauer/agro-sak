@@ -8,11 +8,11 @@ Only the latest production deployment is actively maintained.
 
 Please **do not** open a public issue for security vulnerabilities.
 
-Send a report to **security@agro-sak.com.br** with:
+Use the GitHub **Security Advisories** feature to report privately:
 
-- A clear description of the vulnerability.
-- Steps to reproduce.
-- Potential impact.
+1. Go to [github.com/felipesauer/agro-sak/security/advisories/new](https://github.com/felipesauer/agro-sak/security/advisories/new)
+2. Fill in the details: description, steps to reproduce, and potential impact.
+3. Submit the advisory.
 
 You will receive a response within 72 hours. If the issue is confirmed, a fix will be prioritized and you will be credited in the release notes (unless you prefer to remain anonymous).
 
