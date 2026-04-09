@@ -1,5 +1,5 @@
 // ── CBS/IBS API client (Reforma Tributária piloto) ──
-// Uses Vercel proxy in production to bypass CORS restrictions.
+// Uses Cloudflare Worker proxy in production to bypass CORS restrictions.
 // Direct API: https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api
 
 const DIRECT_URL = 'https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/dados-abertos'
@@ -29,10 +29,12 @@ const FALLBACK_RATES: CbsRates = {
   source: 'fallback',
 }
 
+const API_PROXY = import.meta.env.VITE_API_PROXY_URL
+
 function buildCbsUrl(endpoint: string, params: Record<string, string>): string {
-  if (import.meta.env.PROD) {
+  if (API_PROXY) {
     const qs = new URLSearchParams({ endpoint, ...params })
-    return `/api/cbs-proxy?${qs}`
+    return `${API_PROXY}/cbs?${qs}`
   }
   const qs = new URLSearchParams(params)
   return `${DIRECT_URL}/${endpoint}?${qs}`

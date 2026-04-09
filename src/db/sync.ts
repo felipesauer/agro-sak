@@ -15,12 +15,14 @@ interface SyncConfig {
 }
 
 // ── BCB API (Banco Central do Brasil) ──
-// Uses Vercel proxy in production to bypass CORS restrictions.
+// Uses Cloudflare Worker proxy in production to bypass CORS restrictions.
 // Series codes: 1 = USD/BRL, 432 = Selic
 
+const API_PROXY = import.meta.env.VITE_API_PROXY_URL
+
 function buildBcbUrl(seriesCode: number): string {
-  if (import.meta.env.PROD) {
-    return `/api/bcb-proxy?series=${seriesCode}`
+  if (API_PROXY) {
+    return `${API_PROXY}/bcb?series=${seriesCode}`
   }
   return `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${seriesCode}/dados/ultimos/1?formato=json`
 }

@@ -1,15 +1,16 @@
 const CACHE_VERSION = '2'
 const CACHE_NAME = `agro-sak-v${CACHE_VERSION}`
-const PRECACHE = [
-  '/',
-  '/manifest.json',
-  '/favicon.svg',
-  '/robots.txt',
-]
 
 self.addEventListener('install', (event) => {
+  const base = self.registration.scope
+  const precache = [
+    base,
+    `${base}manifest.json`,
+    `${base}favicon.svg`,
+    `${base}robots.txt`,
+  ]
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(precache))
   )
   self.skipWaiting()
 })
@@ -36,7 +37,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
           return response
         })
-        .catch(() => caches.match('/'))
+        .catch(() => caches.match(self.registration.scope))
     )
     return
   }
