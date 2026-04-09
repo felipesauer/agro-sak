@@ -1,5 +1,11 @@
-const CACHE_NAME = 'agro-sak-v1'
-const PRECACHE = ['/', '/manifest.json', '/favicon.svg']
+const CACHE_VERSION = '2'
+const CACHE_NAME = `agro-sak-v${CACHE_VERSION}`
+const PRECACHE = [
+  '/',
+  '/manifest.json',
+  '/favicon.svg',
+  '/robots.txt',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
