@@ -24,3 +24,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test coverage
+coverage/
+
+# Playwright
+test-results/
+
+# Environment files
+.env
+.env.*
+!.env.example

@@ -57,7 +57,6 @@ async function syncExchangeRates(): Promise<boolean> {
   const usdBrl = await fetchBcbSeries(1)
   // Sanity check: USD/BRL should be between 2 and 15
   if (usdBrl === null || usdBrl < 2 || usdBrl > 15) {
-    console.warn(`[sync] Exchange rate rejected: USD/BRL = ${usdBrl}`)
     return false
   }
 
