@@ -47,15 +47,22 @@ export default function CalculatorLayout({
       </div>
 
       {/* Calculator form */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 mb-4 shadow-sm space-y-4 animate-slide-up print:hidden">
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 mb-4 shadow-sm space-y-4 animate-slide-up print:hidden"
+        role="form"
+        aria-label={`Formulário: ${title}`}
+      >
+        <h2 className="sr-only">Dados de entrada</h2>
         {children}
-      </div>
+      </form>
 
       {/* Result */}
       {result && (
         <div
           ref={resultRef}
           id="calculator-result"
+          aria-live="polite"
           className="bg-gradient-to-br from-agro-50 via-emerald-50 to-green-50 border border-agro-200 rounded-2xl p-6 shadow-sm mb-4 animate-scale-in print:shadow-none print:border-gray-300 print:rounded-none print:p-4"
         >
           <div className="flex items-center justify-between gap-2 mb-4">
@@ -77,6 +84,8 @@ export default function CalculatorLayout({
           <button
             type="button"
             onClick={() => setShowInfo(!showInfo)}
+            aria-expanded={showInfo}
+            aria-controls="about-section"
             className="flex items-center gap-2 text-sm font-medium text-agro-700 hover:text-agro-900 transition-colors cursor-pointer"
           >
             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${showInfo ? 'bg-agro-600 border-agro-600' : 'border-agro-400'}`}>
@@ -87,7 +96,7 @@ export default function CalculatorLayout({
             Sobre esta ferramenta
           </button>
           {showInfo && (
-            <div className="mt-3 bg-white border border-gray-200 rounded-2xl p-5 md:p-6 space-y-4 text-sm text-gray-600 leading-relaxed shadow-sm animate-slide-up">
+            <div id="about-section" className="mt-3 bg-white border border-gray-200 rounded-2xl p-5 md:p-6 space-y-4 text-sm text-gray-600 leading-relaxed shadow-sm animate-slide-up">
               {about && (
                 <div>
                   <h3 className="flex items-center gap-1.5 font-bold text-gray-800 mb-1.5">

@@ -6,7 +6,10 @@ import HomePage from './pages/HomePage'
 /** Scroll to top on every route change */
 function ScrollToTop() {
   const { pathname } = useLocation()
-  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    document.getElementById('main-content')?.focus()
+  }, [pathname])
   return null
 }
 
@@ -77,7 +80,7 @@ const WaterConsumption = lazy(() => import('./tools/operational/WaterConsumption
 
 function LazyFallback() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-16 text-center animate-fade-in">
+    <div className="max-w-4xl mx-auto px-4 py-16 text-center animate-fade-in" role="status" aria-label="Carregando">
       <div className="w-8 h-8 border-3 border-agro-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
       <p className="text-sm text-gray-500">Carregando ferramenta...</p>
     </div>

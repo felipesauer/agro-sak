@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useId } from 'react'
 
 // ── Brazilian number formatting helpers ──
 
@@ -53,6 +53,11 @@ export default function InputField({
   mask,
 }: InputFieldProps) {
   const [focused, setFocused] = useState(false)
+  const autoId = useId()
+  const inputId = `input-${autoId}`
+  const hintId = hint ? `${inputId}-hint` : undefined
+  const errorId = error ? `${inputId}-error` : undefined
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined
 
   const isMasked = !!mask
   const decimals = mask === 'currency' ? 2 : 1
@@ -87,7 +92,7 @@ export default function InputField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
         {label}
         {unit && <span className="text-gray-400 font-normal"> ({unit})</span>}
         {required && <span className="text-red-500 ml-0.5">*</span>}
@@ -99,6 +104,7 @@ export default function InputField({
           </span>
         )}
         <input
+          id={inputId}
           type={resolvedType}
           inputMode={resolvedInputMode}
           value={displayValue}
@@ -109,6 +115,9 @@ export default function InputField({
           step={isMasked ? undefined : step}
           min={isMasked ? undefined : min}
           max={isMasked ? undefined : max}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
+          aria-required={required || undefined}
           className={`w-full py-2.5 border rounded-xl text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600 ${
             prefix ? 'pl-10 pr-3' : 'px-3'
           } ${
@@ -119,10 +128,10 @@ export default function InputField({
         />
       </div>
       {hint && !error && (
-        <p className="mt-1 text-xs text-gray-400">{hint}</p>
+        <p id={hintId} className="mt-1 text-xs text-gray-400">{hint}</p>
       )}
       {error && (
-        <p className="mt-1 text-xs text-red-500">{error}</p>
+        <p id={errorId} className="mt-1 text-xs text-red-500" role="alert">{error}</p>
       )}
     </div>
   )

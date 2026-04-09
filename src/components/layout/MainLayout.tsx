@@ -33,9 +33,12 @@ function scrollAfterNav(id: string) {
 export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-agro-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg">
+        Ir para conteúdo principal
+      </a>
       <Header />
       <Breadcrumb />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
         <Outlet />
       </main>
       <Footer />
@@ -72,7 +75,7 @@ function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-0.5 overflow-x-auto">
+        <nav aria-label="Navegação principal" className="hidden lg:flex items-center gap-0.5 overflow-x-auto">
           <Link
             to="/"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium text-agro-200 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
@@ -112,7 +115,7 @@ function Header() {
       {/* Mobile dropdown */}
       {menuOpen && (
         <div id="mobile-menu" className="lg:hidden border-t border-agro-600 bg-agro-800/95 backdrop-blur">
-          <nav className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
+          <nav aria-label="Navegação principal" className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
             <Link
               to="/"
               onClick={() => setMenuOpen(false)}
@@ -164,14 +167,14 @@ function Breadcrumb() {
   return (
     <div className="bg-white border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-2">
-        <nav className="flex items-center gap-1.5 text-sm text-gray-500">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-gray-500">
           <Link to="/" className="hover:text-agro-700 transition-colors">Início</Link>
           <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
           <button type="button" onClick={handleCategoryClick} className="hover:text-agro-700 transition-colors cursor-pointer">
             {categoryLabel}
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-          <span className="text-agro-800 font-medium truncate">{tool.name}</span>
+          <span className="text-agro-800 font-medium truncate" aria-current="page">{tool.name}</span>
         </nav>
       </div>
     </div>

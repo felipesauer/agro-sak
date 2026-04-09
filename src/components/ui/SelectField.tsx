@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 interface SelectOption {
   value: string
   label: string
@@ -26,17 +28,19 @@ export default function SelectField({
   icon,
   id: selectId,
 }: SelectFieldProps) {
-  const hintId = hint && selectId ? `${selectId}-hint` : undefined
+  const autoId = useId()
+  const resolvedId = selectId || `select-${autoId}`
+  const hintId = hint ? `${resolvedId}-hint` : undefined
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={selectId}>
+      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={resolvedId}>
         {icon && <span className="mr-1">{icon}</span>}
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <div className="relative">
         <select
-          id={selectId}
+          id={resolvedId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2.5 pr-8 border border-gray-300 rounded-xl text-sm bg-white hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/40 focus:border-agro-600 appearance-none cursor-pointer"

@@ -8,7 +8,7 @@ import './index.css'
 import('./db/seed').then(({ seedDatabase }) =>
   seedDatabase()
     .then(() => import('./db/sync').then(({ syncAll }) => syncAll()))
-    .catch(console.error)
+    .catch(() => {})
 )
 
 createRoot(document.getElementById('root')!).render(
