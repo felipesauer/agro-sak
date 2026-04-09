@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useCalculator from '../../hooks/useCalculator'
+import { calculateCropRotation, validateCropRotation } from '../../core/agronomic/crop-rotation'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -267,95 +268,49 @@ export default function CropRotation() {
 function validate(inputs: Inputs): string | null {
   const area = parseFloat(inputs.area)
   if (isNaN(area) || area <= 0) return 'Informe a área'
-
-  const sy = parseFloat(inputs.soybeanYield)
-  const sp = parseFloat(inputs.soybeanPrice)
-  const sc = parseFloat(inputs.soybeanCost)
-  if (isNaN(sy) || sy <= 0) return 'Informe a produtividade da soja'
-  if (isNaN(sp) || sp <= 0) return 'Informe o preço da saca de soja'
-  if (isNaN(sc) || sc < 0) return 'Informe o custo de produção da soja'
-
-  if (inputs.system !== 'soy_only') {
-    const cy = parseFloat(inputs.cornYield)
-    const cp = parseFloat(inputs.cornPrice)
-    const cc = parseFloat(inputs.cornCost)
-    if (isNaN(cy) || cy <= 0) return 'Informe a produtividade da segunda cultura'
-    if (isNaN(cp) || cp <= 0) return 'Informe o preço da segunda cultura'
-    if (isNaN(cc) || cc < 0) return 'Informe o custo da segunda cultura'
-  }
-
-  return null
+  return validateCropRotation({
+    system: inputs.system as 'soy_corn' | 'soy_wheat' | 'soy_only',
+    soybeanYield: parseFloat(inputs.soybeanYield),
+    soybeanPrice: parseFloat(inputs.soybeanPrice),
+    soybeanCost: parseFloat(inputs.soybeanCost),
+    rotationBonusPercent: parseFloat(inputs.rotationBonus) || 8,
+    secondCropYield: inputs.cornYield ? parseFloat(inputs.cornYield) : undefined,
+    secondCropPrice: inputs.cornPrice ? parseFloat(inputs.cornPrice) : undefined,
+    secondCropCost: inputs.cornCost ? parseFloat(inputs.cornCost) : undefined,
+  })
 }
 
 function calculate(inputs: Inputs): Result {
-  const system = inputs.system
   const syRaw = parseFloat(inputs.soybeanYield)
-  const sp = parseFloat(inputs.soybeanPrice)
-  const sc = parseFloat(inputs.soybeanCost)
+  const coreResult = calculateCropRotation({
+    system: inputs.system as 'soy_corn' | 'soy_wheat' | 'soy_only',
+    soybeanYield: syRaw,
+    soybeanPrice: parseFloat(inputs.soybeanPrice),
+    soybeanCost: parseFloat(inputs.soybeanCost),
+    rotationBonusPercent: parseFloat(inputs.rotationBonus) || 8,
+    secondCropYield: inputs.cornYield ? parseFloat(inputs.cornYield) : undefined,
+    secondCropPrice: inputs.cornPrice ? parseFloat(inputs.cornPrice) : undefined,
+    secondCropCost: inputs.cornCost ? parseFloat(inputs.cornCost) : undefined,
+  })
 
-  const isRotation = system !== 'soy_only'
-  const rotationBenefit = isRotation ? (parseFloat(inputs.rotationBonus) || 8) / 100 : 0
-
-  // Apply rotation bonus to soybean yield
-  const sy = syRaw * (1 + rotationBenefit)
-  const soyRevenue = sy * sp
-  const soyProfit = soyRevenue - sc
-  const soyMargin = soyRevenue > 0 ? (soyProfit / soyRevenue) * 100 : 0
-
-  const rows: CropRow[] = [
-    {
-      crop: `Soja${isRotation ? ' (com bônus rotação)' : ''}`,
-      yield: sy,
-      revenue: soyRevenue,
-      cost: sc,
-      profit: soyProfit,
-      margin: soyMargin,
-    },
-  ]
-
-  let annualProfit = soyProfit
-
-  if (isRotation) {
-    const cy = parseFloat(inputs.cornYield)
-    const cp = parseFloat(inputs.cornPrice)
-    const cc = parseFloat(inputs.cornCost)
-    const secondRevenue = cy * cp
-    const secondProfit = secondRevenue - cc
-    const secondMargin = secondRevenue > 0 ? (secondProfit / secondRevenue) * 100 : 0
-    const label = system === 'soy_wheat' ? 'Trigo' : 'Milho safrinha'
-
-    rows.push({
-      crop: label,
-      yield: cy,
-      revenue: secondRevenue,
-      cost: cc,
-      profit: secondProfit,
-      margin: secondMargin,
-    })
-
-    annualProfit += secondProfit
-  }
-
-  // Monoculture reference: soy only, without rotation bonus
-  const monocultureProfit = syRaw * sp - sc
-  const profitVsMonoculture = annualProfit - monocultureProfit
-
+  const isRotation = inputs.system !== 'soy_only'
   const alerts: string[] = []
 
-  if (isRotation && rotationBenefit > 0) {
+  if (isRotation && coreResult.rotationBenefit > 0) {
+    const sy = coreResult.rows[0].yield
     const bonusSc = sy - syRaw
     alerts.push(
       `Efeito rotação: +${formatNumber(bonusSc, 1)} sc/ha na soja (de ${formatNumber(syRaw, 1)} para ${formatNumber(sy, 1)} sc/ha).`
     )
   }
 
-  if (soyProfit < 0) {
+  if (coreResult.rows[0].profit < 0) {
     alerts.push('Soja com resultado negativo. Revise custos ou considere aumentar a produtividade.')
   }
 
-  if (isRotation && rows[1].profit < 0) {
+  if (isRotation && coreResult.rows.length > 1 && coreResult.rows[1].profit < 0) {
     alerts.push('Segunda cultura com prejuízo. Avalie se a palhada e os benefícios agronômicos justificam o investimento.')
   }
 
-  return { rows, annualProfit, profitVsMonoculture, rotationBenefit, alerts }
+  return { ...coreResult, alerts }
 }

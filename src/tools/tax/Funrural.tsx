@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateFunrural, validateFunrural, FUNRURAL_RATE_TABLE, type FunruralResult } from '../../core/tax/funrural'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -16,13 +17,7 @@ interface Inputs {
   period: string
 }
 
-interface Result {
-  funrural: number
-  rat: number
-  senar: number
-  total: number
-  annualProjection: number | null
-}
+
 
 const PRODUCER_OPTIONS = [
   { value: 'pf', label: 'Pessoa Física (PF)' },
@@ -34,11 +29,7 @@ const PERIOD_OPTIONS = [
   { value: 'annual', label: 'Anual' },
 ]
 
-// Alíquotas vigentes
-const RATES: Record<string, { funrural: number; rat: number; senar: number }> = {
-  pf: { funrural: 1.2, rat: 0.1, senar: 0.2 },   // Total: 1.5%
-  pj: { funrural: 2.5, rat: 0.1, senar: 0.25 },   // Total: 2.85%
-}
+
 
 const INITIAL: Inputs = {
   producerType: 'pf',
@@ -48,33 +39,31 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const revenue = parseFloat(inputs.grossRevenue)
-  const rates = RATES[inputs.producerType] ?? RATES.pf
-
-  const funrural = revenue * (rates.funrural / 100)
-  const rat = revenue * (rates.rat / 100)
-  const senar = revenue * (rates.senar / 100)
-  const total = funrural + rat + senar
-
-  const annualProjection = inputs.period === 'monthly' ? total * 12 : null
-
-  return { funrural, rat, senar, total, annualProjection }
+function calculate(inputs: Inputs): FunruralResult | null {
+  return calculateFunrural({
+    producerType: (inputs.producerType as 'pf' | 'pj') ?? 'pf',
+    grossRevenue: parseFloat(inputs.grossRevenue),
+    period: (inputs.period as 'monthly' | 'annual') ?? 'monthly',
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.grossRevenue || parseFloat(inputs.grossRevenue) <= 0)
-    return 'Informe a receita bruta'
-  return null
+  const revenue = parseFloat(inputs.grossRevenue)
+  if (!inputs.grossRevenue || isNaN(revenue)) return 'Informe a receita bruta'
+  return validateFunrural({
+    producerType: (inputs.producerType as 'pf' | 'pj') ?? 'pf',
+    grossRevenue: revenue,
+    period: (inputs.period as 'monthly' | 'annual') ?? 'monthly',
+  })
 }
 
 // ── Component ──
 
 export default function Funrural() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, FunruralResult>({ initialInputs: INITIAL, calculate, validate })
 
-  const rates = RATES[inputs.producerType] ?? RATES.pf
+  const rates = FUNRURAL_RATE_TABLE[(inputs.producerType as 'pf' | 'pj') ?? 'pf']
   const totalRate = rates.funrural + rates.rat + rates.senar
 
   return (

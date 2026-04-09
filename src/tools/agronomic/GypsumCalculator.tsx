@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateGypsum, validateGypsum, type GypsumMethod } from '../../core/agronomic/gypsum'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -57,104 +58,44 @@ const DEPTH_OPTIONS = [
   { value: '60', label: '60 cm (café/fruticultura)' },
 ]
 
-// ── Gypsum need criteria (EMBRAPA Cerrados) ──
-// Apply gypsum when ANY of these conditions are met in the 20-40cm layer:
-// - Ca < 0.5 cmolc/dm³
-// - Al > 0.5 cmolc/dm³
-// - Ca/CTC < 25%
-// - (Ca+Mg)/Al saturation is problematic
-
 // ── Calculation ──
 
 function calculate(inputs: Inputs): Result | null {
-  const Ca = parseFloat(inputs.Ca)
-  const Mg = parseFloat(inputs.Mg)
-  const Al = parseFloat(inputs.Al)
-  const ctc = parseFloat(inputs.ctc)
-  const clay = parseFloat(inputs.clayPercent)
-  const area = parseFloat(inputs.area)
-  const price = parseFloat(inputs.gypPrice)
-  const depth = parseFloat(inputs.targetDepth)
-
-  if (isNaN(Ca) || isNaN(area) || area <= 0) return null
-
-  let gypsumNeedKgHa = 0
-  let justified = false
-  let reason = ''
-
-  const lowCa = Ca < 0.5
-  const highAl = !isNaN(Al) && Al > 0.5
-  const lowCaCTC = !isNaN(ctc) && ctc > 0 && (Ca / ctc) * 100 < 25
-  const lowCaMg = !isNaN(Mg) && (Ca + Mg) < 1.0
-
-  if (lowCa || highAl || lowCaCTC || lowCaMg) {
-    justified = true
-    const reasons: string[] = []
-    if (lowCa) reasons.push(`Ca subsuperficial baixo (${formatNumber(Ca, 1)} cmolc/dm³)`)
-    if (highAl) reasons.push(`Al tóxico elevado (${formatNumber(Al, 1)} cmolc/dm³)`)
-    if (lowCaCTC) reasons.push(`Saturação de Ca na CTC < 25%`)
-    if (lowCaMg) reasons.push(`Ca + Mg baixo (${formatNumber(Ca + Mg, 1)} cmolc/dm³)`)
-    reason = reasons.join('; ')
-  } else {
-    reason = 'Indicadores dentro da faixa adequada — gessagem pode ser dispensável'
-  }
-
-  switch (inputs.method) {
-    case 'sousa': {
-      // Sousa et al. (2004) — EMBRAPA Cerrados
-      // NG (kg/ha) = 50 × argila (%)  for 20cm layer
-      if (isNaN(clay) || clay <= 0) return null
-      gypsumNeedKgHa = 50 * clay
-      break
-    }
-    case 'clay': {
-      // EMBRAPA Soja — simplified clay-based
-      // NG (kg/ha) = 75 × argila (%) for 20cm
-      if (isNaN(clay) || clay <= 0) return null
-      gypsumNeedKgHa = 75 * clay
-      break
-    }
-    case 'raij': {
-      // Van Raij (1988) — IAC
-      // NG (kg/ha) = 6 × CTC (mmolc/dm³)
-      // Note: CTC in mmolc/dm³ (1 cmolc = 10 mmolc)
-      if (isNaN(ctc) || ctc <= 0) return null
-      const ctcMmolc = ctc * 10
-      gypsumNeedKgHa = 6 * ctcMmolc
-      break
-    }
-  }
-
-  // Adjust for depth (base is 20cm)
-  const depthFactor = depth / 20
-  gypsumNeedKgHa = gypsumNeedKgHa * depthFactor
-
-  const gypsumNeedTHa = gypsumNeedKgHa / 1000
-  const totalTons = gypsumNeedTHa * area
-  const costPerHa = gypsumNeedTHa * price
-  const totalCost = costPerHa * area
-
+  const coreResult = calculateGypsum({
+    method: inputs.method as GypsumMethod,
+    Ca: parseFloat(inputs.Ca),
+    Mg: inputs.Mg ? parseFloat(inputs.Mg) : undefined,
+    Al: inputs.Al ? parseFloat(inputs.Al) : undefined,
+    ctc: inputs.ctc ? parseFloat(inputs.ctc) : undefined,
+    clayPercent: inputs.clayPercent ? parseFloat(inputs.clayPercent) : undefined,
+    targetDepthCm: parseFloat(inputs.targetDepth),
+    areaHa: parseFloat(inputs.area),
+    gypPricePerTon: parseFloat(inputs.gypPrice),
+  })
+  if (!coreResult) return null
   return {
-    gypsumNeedKgHa,
-    gypsumNeedTHa,
-    totalTons,
-    totalCost,
-    costPerHa,
-    justified,
-    reason,
+    gypsumNeedKgHa: coreResult.gypsumNeedKgHa,
+    gypsumNeedTHa: coreResult.gypsumNeedTHa,
+    totalTons: coreResult.totalTons,
+    totalCost: coreResult.totalCost,
+    costPerHa: coreResult.costPerHa,
+    justified: coreResult.justified,
+    reason: coreResult.reasons.join('; '),
   }
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.Ca) return 'Informe o teor de cálcio (Ca) da camada subsuperficial'
   if (!inputs.area) return 'Informe a área em hectares'
-  const area = parseFloat(inputs.area)
-  if (isNaN(area) || area <= 0) return 'A área deve ser maior que zero'
-  if (inputs.method === 'raij' && !inputs.ctc) return 'O método Van Raij exige o valor da CTC'
-  if ((inputs.method === 'sousa' || inputs.method === 'clay') && !inputs.clayPercent) {
-    return 'Informe o teor de argila (%)'
-  }
-  return null
+  return validateGypsum({
+    method: inputs.method as GypsumMethod,
+    Ca: parseFloat(inputs.Ca),
+    ctc: inputs.ctc ? parseFloat(inputs.ctc) : undefined,
+    clayPercent: inputs.clayPercent ? parseFloat(inputs.clayPercent) : undefined,
+    targetDepthCm: parseFloat(inputs.targetDepth),
+    areaHa: parseFloat(inputs.area),
+    gypPricePerTon: parseFloat(inputs.gypPrice),
+  })
 }
 
 // ── Component ──

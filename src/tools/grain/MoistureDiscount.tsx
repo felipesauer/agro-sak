@@ -9,6 +9,7 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { MOISTURE_STANDARD, IMPURITY_STANDARD, cropOptionsFrom } from '../../data/reference-data'
 import { useMoistureStandards } from '../../db/hooks'
+import { calculateMoistureDiscount, validateMoistureDiscount, type MoistureDiscountResult } from '../../core/grain/moisture-discount'
 
 // ── Types ──
 
@@ -19,18 +20,6 @@ interface Inputs {
   impurityMeasured: string
   damaged: string
   pricePerBag: string
-}
-
-interface Result {
-  moistureStandard: number
-  impurityStandard: number
-  moistureDiscountKg: number
-  impurityDiscountKg: number
-  damagedDiscountKg: number
-  netWeightKg: number
-  netBags: number
-  totalValue: number
-  lossValue: number
 }
 
 const INITIAL: Inputs = {
@@ -44,60 +33,35 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs, moistureStds: Record<string, number>, impurityStds: Record<string, number>): Result | null {
+function calculate(inputs: Inputs, moistureStds: Record<string, number>, impurityStds: Record<string, number>): MoistureDiscountResult | null {
   const grossKg = parseFloat(inputs.grossWeight)
   const moistureMeasured = parseFloat(inputs.moistureMeasured)
   const impurityMeasured = parseFloat(inputs.impurityMeasured)
   const damaged = parseFloat(inputs.damaged) || 0
   const price = parseFloat(inputs.pricePerBag) || 0
-
   const moistureStd = moistureStds[inputs.crop] ?? 14
   const impurityStd = impurityStds[inputs.crop] ?? 1
 
-  // Moisture discount
-  const moistureFactor =
-    moistureMeasured > moistureStd
-      ? (moistureMeasured - moistureStd) / (100 - moistureStd)
-      : 0
-  const moistureDiscountKg = grossKg * moistureFactor
-
-  // Impurity discount
-  const impurityFactor =
-    impurityMeasured > impurityStd
-      ? (impurityMeasured - impurityStd) / 100
-      : 0
-  const impurityDiscountKg = grossKg * impurityFactor
-
-  // Damaged grains discount (direct %)
-  const damagedDiscountKg = grossKg * (damaged / 100)
-
-  const netWeightKg =
-    grossKg - moistureDiscountKg - impurityDiscountKg - damagedDiscountKg
-  const netBags = netWeightKg / 60
-  const grossBags = grossKg / 60
-
-  const totalValue = netBags * price
-  const lossValue = (grossBags - netBags) * price
-
-  return {
+  return calculateMoistureDiscount({
+    grossWeightKg: grossKg,
+    moistureMeasured,
+    impurityMeasured,
+    damagedPercent: damaged,
+    pricePerBag: price,
     moistureStandard: moistureStd,
     impurityStandard: impurityStd,
-    moistureDiscountKg,
-    impurityDiscountKg,
-    damagedDiscountKg,
-    netWeightKg,
-    netBags,
-    totalValue,
-    lossValue,
-  }
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.grossWeight) return 'Informe o peso bruto da carga'
   if (!inputs.moistureMeasured) return 'Informe a umidade medida'
   if (!inputs.impurityMeasured) return 'Informe a impureza medida'
-  if (isNaN(parseFloat(inputs.grossWeight)) || parseFloat(inputs.grossWeight) <= 0) return 'Peso bruto deve ser positivo'
-  return null
+  return validateMoistureDiscount({
+    grossWeightKg: parseFloat(inputs.grossWeight),
+    moistureMeasured: parseFloat(inputs.moistureMeasured),
+    impurityMeasured: parseFloat(inputs.impurityMeasured),
+  })
 }
 
 // ── Component ──
@@ -118,7 +82,7 @@ export default function MoistureDiscount() {
   ], [moistureStds])
   const calcFn = useMemo(() => (inputs: Inputs) => calculate(inputs, moistureStds, impurityStds), [moistureStds, impurityStds])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate: calcFn, validate })
+    useCalculator<Inputs, MoistureDiscountResult>({ initialInputs: INITIAL, calculate: calcFn, validate })
 
   const moistureHigh =
     inputs.crop === 'soybean' && parseFloat(inputs.moistureMeasured) > 18

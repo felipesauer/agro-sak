@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
+import { calculateMachineDepreciation, validateMachineDepreciation, type MachineDepreciationResult } from '../../core/operational/machine-depreciation'
 
 // ── Types ──
 
@@ -18,22 +19,6 @@ interface Inputs {
   totalLifeHours: string
   hoursPerYear: string
   method: string
-}
-
-interface YearRow {
-  [key: string]: unknown
-  year: number
-  depreciation: number
-  maintenance: number
-  marketValue: number
-}
-
-interface Result {
-  depreciationYear: number
-  depreciationHour: number
-  yearTable: YearRow[]
-  totalCostOfOwnership: number
-  alertLifePercent: number
 }
 
 const MACHINE_OPTIONS = [
@@ -58,72 +43,31 @@ const INITIAL: Inputs = {
   method: 'linear',
 }
 
-function maintenanceRate(year: number): number {
-  if (year <= 3) return 0.02
-  if (year <= 6) return 0.035
-  return 0.05
-}
-
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const price = parseFloat(inputs.purchasePrice)
-  const residualPct = parseFloat(inputs.residualPercent) / 100
-  const life = parseInt(inputs.lifeYears)
-  const totalHours = parseFloat(inputs.totalLifeHours)
-  const hpy = parseFloat(inputs.hoursPerYear) || 800
-  const residual = price * residualPct
-  const depreciable = price - residual
-
-  let depreciationYear: number
-  let depreciationHour: number
-
-  if (inputs.method === 'linear') {
-    depreciationYear = depreciable / life
-    depreciationHour = depreciationYear / hpy
-  } else {
-    depreciationHour = depreciable / totalHours
-    depreciationYear = depreciationHour * hpy
-  }
-
-  const yearTable: YearRow[] = []
-  let accumulated = 0
-  let tco = 0
-
-  for (let y = 1; y <= life; y++) {
-    const dep = depreciationYear
-    accumulated += dep
-    const mntRate = maintenanceRate(y)
-    const maintenance = price * mntRate
-    const marketValue = Math.max(price - accumulated, residual)
-    tco += dep + maintenance
-    yearTable.push({ year: y, depreciation: dep, maintenance, marketValue })
-  }
-
-  const hoursUsed = hpy * life
-  const alertLifePercent = totalHours > 0 ? (hoursUsed / totalHours) * 100 : 0
-
-  return {
-    depreciationYear,
-    depreciationHour,
-    yearTable,
-    totalCostOfOwnership: tco,
-    alertLifePercent,
-  }
+function calculate(inputs: Inputs): MachineDepreciationResult | null {
+  return calculateMachineDepreciation({
+    purchasePrice: parseFloat(inputs.purchasePrice),
+    residualPercent: parseFloat(inputs.residualPercent),
+    lifeYears: parseInt(inputs.lifeYears),
+    totalLifeHours: parseFloat(inputs.totalLifeHours),
+    hoursPerYear: parseFloat(inputs.hoursPerYear) || 800,
+    method: inputs.method as 'linear' | 'hours',
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.purchasePrice || parseFloat(inputs.purchasePrice) <= 0)
-    return 'Informe o valor de aquisição'
-  if (!inputs.lifeYears || parseInt(inputs.lifeYears) <= 0) return 'Informe a vida útil'
-  return null
+  return validateMachineDepreciation({
+    purchasePrice: parseFloat(inputs.purchasePrice),
+    lifeYears: parseInt(inputs.lifeYears),
+  })
 }
 
 // ── Component ──
 
 export default function MachineDepreciation() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, MachineDepreciationResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

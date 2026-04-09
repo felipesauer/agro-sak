@@ -5,6 +5,7 @@ import SelectField from '../../components/ui/SelectField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
+import { calculateCropProfit, validateCropProfit, type CropProfitResult } from '../../core/financial/crop-profit'
 
 // ── Types ──
 
@@ -25,21 +26,6 @@ interface Inputs {
   costOpt: string
 }
 
-interface ScenarioResult {
-  label: string
-  grossRevenue: number
-  taxes: number
-  netRevenue: number
-  profit: number
-  margin: number
-  roi: number
-  totalResult: number
-}
-
-interface Result {
-  scenarios: ScenarioResult[]
-}
-
 const PRODUCER_OPTIONS = [
   { value: 'pf', label: 'Pessoa Física (PF) — 1,5%' },
   { value: 'pj', label: 'Pessoa Jurídica (PJ) — 2,85%' },
@@ -57,47 +43,32 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
+function calculate(inputs: Inputs): CropProfitResult | null {
   const area = parseFloat(inputs.area) || 0
   const taxRate = (FUNRURAL[inputs.producerType] ?? 1.5) / 100
 
-  const configs = [
-    { label: 'Pessimista', y: inputs.yieldPess, p: inputs.pricePess, c: inputs.costPess },
-    { label: 'Realista', y: inputs.yieldReal, p: inputs.priceReal, c: inputs.costReal },
-    { label: 'Otimista', y: inputs.yieldOpt, p: inputs.priceOpt, c: inputs.costOpt },
-  ]
-
-  const scenarios: ScenarioResult[] = configs.map((cfg) => {
-    const yld = parseFloat(cfg.y) || 0
-    const price = parseFloat(cfg.p) || 0
-    const cost = parseFloat(cfg.c) || 0
-
-    const grossRevenue = yld * price
-    const taxes = grossRevenue * taxRate
-    const netRevenue = grossRevenue - taxes
-    const profit = netRevenue - cost
-    const margin = grossRevenue > 0 ? (profit / grossRevenue) * 100 : 0
-    const roi = cost > 0 ? (profit / cost) * 100 : 0
-    const totalResult = profit * area
-
-    return { label: cfg.label, grossRevenue, taxes, netRevenue, profit, margin, roi, totalResult }
+  return calculateCropProfit({
+    areaHa: area,
+    taxRate,
+    scenarios: [
+      { label: 'Pessimista', yieldScHa: parseFloat(inputs.yieldPess) || 0, pricePerSc: parseFloat(inputs.pricePess) || 0, costPerHa: parseFloat(inputs.costPess) || 0 },
+      { label: 'Realista', yieldScHa: parseFloat(inputs.yieldReal) || 0, pricePerSc: parseFloat(inputs.priceReal) || 0, costPerHa: parseFloat(inputs.costReal) || 0 },
+      { label: 'Otimista', yieldScHa: parseFloat(inputs.yieldOpt) || 0, pricePerSc: parseFloat(inputs.priceOpt) || 0, costPerHa: parseFloat(inputs.costOpt) || 0 },
+    ],
   })
-
-  return { scenarios }
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área plantada'
-  if (!inputs.yieldReal || !inputs.priceReal || !inputs.costReal)
-    return 'Preencha pelo menos o cenário realista'
-  const yP = parseFloat(inputs.yieldPess)
-  const yR = parseFloat(inputs.yieldReal)
-  const yO = parseFloat(inputs.yieldOpt)
-  if (!isNaN(yP) && !isNaN(yR) && yP > yR)
-    return 'Produtividade pessimista deve ser ≤ realista'
-  if (!isNaN(yR) && !isNaN(yO) && yR > yO)
-    return 'Produtividade realista deve ser ≤ otimista'
-  return null
+  return validateCropProfit({
+    areaHa: parseFloat(inputs.area) || 0,
+    taxRate: (FUNRURAL[inputs.producerType] ?? 1.5) / 100,
+    scenarios: [
+      { label: 'Pessimista', yieldScHa: parseFloat(inputs.yieldPess) || 0, pricePerSc: parseFloat(inputs.pricePess) || 0, costPerHa: parseFloat(inputs.costPess) || 0 },
+      { label: 'Realista', yieldScHa: parseFloat(inputs.yieldReal) || 0, pricePerSc: parseFloat(inputs.priceReal) || 0, costPerHa: parseFloat(inputs.costReal) || 0 },
+      { label: 'Otimista', yieldScHa: parseFloat(inputs.yieldOpt) || 0, pricePerSc: parseFloat(inputs.priceOpt) || 0, costPerHa: parseFloat(inputs.costOpt) || 0 },
+    ],
+  })
 }
 
 // ── Component ──
@@ -107,7 +78,7 @@ const SCENARIO_BG = ['bg-red-50 border-red-200', 'bg-agro-50 border-agro-200', '
 
 export default function CropProfitSimulator() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, CropProfitResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

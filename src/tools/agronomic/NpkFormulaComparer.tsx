@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { calculateNpkFormulaComparison, validateNpkFormulaEntries, type FormulaCompareResult } from '../../core/agronomic/npk-formula-comparer'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
@@ -17,17 +18,6 @@ interface FormulaEntry {
   supplier: string
 }
 
-interface FormulaResult extends Record<string, unknown> {
-  formula: string
-  supplier: string
-  totalPercent: number
-  costPerKgN: number | null
-  costPerKgP: number | null
-  costPerKgK: number | null
-  costPerPoint: number
-  isBest: boolean
-}
-
 let _entryId = 0
 function emptyEntry(): FormulaEntry {
   return { id: `fe-${++_entryId}`, n: '', p: '', k: '', price: '', supplier: '' }
@@ -40,7 +30,7 @@ export default function NpkFormulaComparer() {
     { id: `fe-${++_entryId}`, n: '8', p: '28', k: '16', price: '145', supplier: '' },
     emptyEntry(),
   ])
-  const [results, setResults] = useState<FormulaResult[] | null>(null)
+  const [results, setResults] = useState<FormulaCompareResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const updateEntry = (idx: number, key: keyof FormulaEntry, value: string) => {
@@ -60,54 +50,24 @@ export default function NpkFormulaComparer() {
     const valid = entries.filter(
       (e) => e.n && e.p && e.k && e.price && parseFloat(e.price) > 0,
     )
-    if (valid.length < 2) {
-      setError('Preencha pelo menos 2 formulações com preço para comparar')
+
+    const parsed = valid.map(e => ({
+      n: parseFloat(e.n) || 0,
+      p: parseFloat(e.p) || 0,
+      k: parseFloat(e.k) || 0,
+      pricePerBag50kg: parseFloat(e.price),
+      supplier: e.supplier || undefined,
+    }))
+
+    const validationError = validateNpkFormulaEntries(parsed)
+    if (validationError) {
+      setError(validationError)
       setResults(null)
       return
     }
 
-    // Validate N+P+K ≤ 100%
-    for (const e of valid) {
-      const total = (parseFloat(e.n) || 0) + (parseFloat(e.p) || 0) + (parseFloat(e.k) || 0)
-      if (total > 100) {
-        setError(`N + P₂O₅ + K₂O não pode ultrapassar 100% (formulação com ${total}%)`)
-        setResults(null)
-        return
-      }
-    }
-
-    const parsed: FormulaResult[] = valid.map((e) => {
-      const n = parseFloat(e.n) || 0
-      const p = parseFloat(e.p) || 0
-      const k = parseFloat(e.k) || 0
-      const price = parseFloat(e.price)
-      const totalPercent = n + p + k
-      const pricePerKg = price / 50 // 50kg bag
-
-      return {
-        formula: `${String(n).padStart(2, '0')}-${String(p).padStart(2, '0')}-${String(k).padStart(2, '0')}`,
-        supplier: e.supplier || '—',
-        totalPercent,
-        costPerKgN: n > 0 ? pricePerKg / (n / 100) : null,
-        costPerKgP: p > 0 ? pricePerKg / (p / 100) : null,
-        costPerKgK: k > 0 ? pricePerKg / (k / 100) : null,
-        costPerPoint: price / (50 * (totalPercent / 100)),
-        isBest: false,
-      }
-    })
-
-    // Mark best cost per point
-    let minCost = Infinity
-    let bestIdx = 0
-    parsed.forEach((f, i) => {
-      if (f.costPerPoint < minCost) {
-        minCost = f.costPerPoint
-        bestIdx = i
-      }
-    })
-    parsed[bestIdx].isBest = true
-
-    setResults(parsed)
+    const result = calculateNpkFormulaComparison(parsed)
+    setResults(result)
   }
 
   const clear = () => {

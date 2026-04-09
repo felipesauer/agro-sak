@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { calculateProductionCost, validateProductionCost, type ProductionCostResult } from '../../core/financial/production-cost'
 
 // ── Types ──
 
@@ -16,14 +17,6 @@ interface CostGroup {
 
 interface Inputs {
   [key: string]: string
-}
-
-interface Result {
-  groupTotals: { label: string; total: number; percent: number }[]
-  totalCostHa: number
-  costPerSc: number
-  breakEvenSc: number | null
-  breakEvenPrice: number | null
 }
 
 // ── Cost structure ──
@@ -90,38 +83,29 @@ const INITIAL = buildInitial()
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const expectedYield = parseFloat(inputs.expectedYield) || 0
-  const sacPrice = parseFloat(inputs.sacPrice) || 0
-
-  let totalCostHa = 0
-  const groupTotals: { label: string; total: number; percent: number }[] = []
-
+function buildCoreInput(inputs: Inputs) {
+  const costItems: Record<string, number> = {}
   for (const group of COST_GROUPS) {
-    let groupTotal = 0
     for (const item of group.items) {
-      groupTotal += parseFloat(inputs[item.key]) || 0
+      costItems[item.key] = parseFloat(inputs[item.key]) || 0
     }
-    totalCostHa += groupTotal
-    groupTotals.push({ label: group.label, total: groupTotal, percent: 0 })
   }
-
-  // Calculate percentages
-  for (const g of groupTotals) {
-    g.percent = totalCostHa > 0 ? (g.total / totalCostHa) * 100 : 0
+  return {
+    expectedYieldScHa: parseFloat(inputs.expectedYield) || 0,
+    sacPrice: parseFloat(inputs.sacPrice) || 0,
+    costItems,
+    costGroups: COST_GROUPS.map(g => ({ label: g.label, keys: g.items.map(i => i.key) })),
   }
+}
 
-  const costPerSc = expectedYield > 0 ? totalCostHa / expectedYield : 0
-  const breakEvenSc = sacPrice > 0 ? totalCostHa / sacPrice : null
-  const breakEvenPrice = expectedYield > 0 ? totalCostHa / expectedYield : null
-
-  return { groupTotals, totalCostHa, costPerSc, breakEvenSc, breakEvenPrice }
+function calculate(inputs: Inputs): ProductionCostResult | null {
+  return calculateProductionCost(buildCoreInput(inputs))
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.expectedYield || parseFloat(inputs.expectedYield) <= 0)
     return 'Informe a produtividade esperada'
-  return null
+  return validateProductionCost(buildCoreInput(inputs))
 }
 
 // ── Component ──
@@ -135,7 +119,7 @@ export default function ProductionCost() {
   })
 
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, ProductionCostResult>({ initialInputs: INITIAL, calculate, validate })
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }))

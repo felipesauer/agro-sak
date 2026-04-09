@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useCalculator from '../../hooks/useCalculator'
+import { calculateBreakEven, validateBreakEven, type BreakEvenResult, type BreakEvenMode } from '../../core/financial/break-even'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -10,19 +11,11 @@ import { formatNumber, formatCurrency, formatPercent } from '../../utils/formatt
 
 // ── Types ──
 
-type Mode = 'yield' | 'price'
-
 interface Inputs {
-  mode: Mode
+  mode: BreakEvenMode
   costPerHa: string
   sacPrice: string
   expectedYield: string
-}
-
-interface Result {
-  breakEvenYield: number | null
-  breakEvenPrice: number | null
-  safetyMargin: number | null
 }
 
 const MODE_OPTIONS = [
@@ -39,53 +32,36 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const cost = parseFloat(inputs.costPerHa)
-  const price = parseFloat(inputs.sacPrice) || 0
-  const expectedYield = parseFloat(inputs.expectedYield) || 0
-
-  let breakEvenYield: number | null = null
-  let breakEvenPrice: number | null = null
-  let safetyMargin: number | null = null
-
-  if (inputs.mode === 'yield' && price > 0) {
-    breakEvenYield = cost / price
-    if (expectedYield > 0) {
-      safetyMargin = ((expectedYield - breakEvenYield) / expectedYield) * 100
-    }
-  }
-
-  if (inputs.mode === 'price' && expectedYield > 0) {
-    breakEvenPrice = cost / expectedYield
-    if (price > 0) {
-      safetyMargin = ((price - breakEvenPrice) / price) * 100
-    }
-  }
-
-  return { breakEvenYield, breakEvenPrice, safetyMargin }
+function calculate(inputs: Inputs): BreakEvenResult | null {
+  return calculateBreakEven({
+    mode: inputs.mode,
+    costPerHa: parseFloat(inputs.costPerHa),
+    sacPrice: parseFloat(inputs.sacPrice) || 0,
+    expectedYield: parseFloat(inputs.expectedYield) || 0,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.costPerHa || parseFloat(inputs.costPerHa) <= 0)
-    return 'Informe o custo total por hectare'
-  if (inputs.mode === 'yield' && (!inputs.sacPrice || parseFloat(inputs.sacPrice) <= 0))
-    return 'Informe o preço de venda da saca'
-  if (inputs.mode === 'price' && (!inputs.expectedYield || parseFloat(inputs.expectedYield) <= 0))
-    return 'Informe a produtividade esperada'
-  return null
+  if (!inputs.costPerHa || isNaN(parseFloat(inputs.costPerHa))) return 'Informe o custo total por hectare'
+  return validateBreakEven({
+    mode: inputs.mode,
+    costPerHa: parseFloat(inputs.costPerHa),
+    sacPrice: parseFloat(inputs.sacPrice) || 0,
+    expectedYield: parseFloat(inputs.expectedYield) || 0,
+  })
 }
 
 // ── Component ──
 
 export default function BreakEven() {
-  const [mode, setMode] = useState<Mode>('yield')
+  const [mode, setMode] = useState<BreakEvenMode>('yield')
 
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, BreakEvenResult>({ initialInputs: INITIAL, calculate, validate })
 
   const handleModeChange = (value: string) => {
-    setMode(value as Mode)
-    updateInput('mode', value as Mode)
+    setMode(value as BreakEvenMode)
+    updateInput('mode', value as BreakEvenMode)
   }
 
   return (

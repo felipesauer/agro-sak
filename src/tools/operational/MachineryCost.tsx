@@ -9,6 +9,7 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 import { useDieselPrice } from '../../db/hooks'
+import { calculateMachineryCost, validateMachineryCost, type MachineryCostResult, type CostBreakdown } from '../../core/operational/machinery-cost'
 
 // ── Types ──
 
@@ -33,38 +34,12 @@ interface Inputs {
   outsourceHa: string
 }
 
-interface CostBreakdown {
-  depreciation: number
-  interest: number
-  insurance: number
-  maintenance: number
-  fuel: number
-  operator: number
-  total: number
-  perHa: number
-}
-
-interface Result {
-  own: CostBreakdown
-  rental: { totalH: number; perHa: number }
-  outsource: { perHa: number }
-  recommendation: string
-  breakEvenHours: number
-}
-
 const MACHINE_OPTIONS = [
   { value: 'tractor', label: 'Trator' },
   { value: 'harvester', label: 'Colheitadeira' },
   { value: 'planter', label: 'Plantadeira' },
   { value: 'sprayer', label: 'Pulverizador' },
 ]
-
-const RESIDUAL_VALUE: Record<string, number> = {
-  tractor: 0.3,
-  harvester: 0.2,
-  planter: 0.15,
-  sprayer: 0.2,
-}
 
 const INITIAL: Inputs = {
   machineType: 'harvester',
@@ -86,76 +61,34 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const price = parseFloat(inputs.purchasePrice)
-  const life = parseFloat(inputs.lifeYears)
-  const hpy = parseFloat(inputs.hoursPerYear)
-  const capRate = parseFloat(inputs.capitalRate) / 100
-  const insRate = parseFloat(inputs.insuranceRate) / 100
-  const mntRate = parseFloat(inputs.maintenanceRate) / 100
-  const fuelL = parseFloat(inputs.fuelConsumption)
-  const diesel = parseFloat(inputs.dieselPrice)
-  const salary = parseFloat(inputs.operatorSalary)
-  const capOp = parseFloat(inputs.operationalCapacity)
-  if (!capOp || capOp <= 0) return null
-  const vr = RESIDUAL_VALUE[inputs.machineType] ?? 0.2
-
-  const depreciation = (price * (1 - vr)) / (life * hpy)
-  const interest = (price * capRate) / hpy
-  const insurance = (price * insRate) / hpy
-  const maintenance = (price * mntRate) / hpy
-  const fuel = fuelL * diesel
-  const operator = (salary * 13.33) / hpy
-  const total = depreciation + interest + insurance + maintenance + fuel + operator
-  const perHa = total / capOp
-
-  const own: CostBreakdown = { depreciation, interest, insurance, maintenance, fuel, operator, total, perHa }
-
-  // Aluguel
-  let rentalH = parseFloat(inputs.rentalHourly) || 0
-  if (inputs.rentalIncludesOperator === 'no') rentalH += operator
-  if (inputs.rentalIncludesFuel === 'no') rentalH += fuel
-  const rentalHa = rentalH / capOp
-
-  // Terceirização
-  const outsourceHa = parseFloat(inputs.outsourceHa) || 0
-
-  // Recommendation
-  const costs = [
-    { label: 'Própria', v: perHa },
-    { label: 'Aluguel', v: rentalHa },
-    { label: 'Terceirização', v: outsourceHa },
-  ]
-  costs.sort((a, b) => a.v - b.v)
-  const recommendation = `${costs[0].label} é a opção mais econômica (${formatCurrency(costs[0].v)}/ha)`
-
-  // Break-even: hours/year where own cost equals rental
-  // own fixed cost/h (depr+interest+ins+maint) = price*(1-vr)/(life*H) + price*(cap+ins+mnt)/H
-  // fuel and operator are variable and exist in both
-  const fixedAnnual = (price * (1 - vr)) / life + price * (capRate + insRate + mntRate)
-  // rental cost savings per hour (only the fixed part)
-  const rentalAdj = parseFloat(inputs.rentalHourly) || 0
-  const ownVariable = fuel + operator
-  const savingPerH = rentalAdj - ownVariable
-  const breakEvenHours = savingPerH > 0 ? fixedAnnual / savingPerH : 0
-
+function toInput(inputs: Inputs) {
   return {
-    own,
-    rental: { totalH: rentalH, perHa: rentalHa },
-    outsource: { perHa: outsourceHa },
-    recommendation,
-    breakEvenHours: Math.round(breakEvenHours),
+    machineType: inputs.machineType,
+    purchasePrice: parseFloat(inputs.purchasePrice),
+    lifeYears: parseFloat(inputs.lifeYears),
+    hoursPerYear: parseFloat(inputs.hoursPerYear),
+    capitalRate: parseFloat(inputs.capitalRate) / 100,
+    insuranceRate: parseFloat(inputs.insuranceRate) / 100,
+    maintenanceRate: parseFloat(inputs.maintenanceRate) / 100,
+    fuelConsumptionLPerH: parseFloat(inputs.fuelConsumption),
+    dieselPrice: parseFloat(inputs.dieselPrice),
+    operatorSalary: parseFloat(inputs.operatorSalary),
+    operationalCapacityHaPerH: parseFloat(inputs.operationalCapacity),
+    rentalHourly: parseFloat(inputs.rentalHourly) || 0,
+    rentalIncludesOperator: inputs.rentalIncludesOperator === 'yes',
+    rentalIncludesFuel: inputs.rentalIncludesFuel === 'yes',
+    outsourcePerHa: parseFloat(inputs.outsourceHa) || 0,
   }
 }
 
+function calculate(inputs: Inputs): MachineryCostResult | null {
+  const parsed = toInput(inputs)
+  if (!parsed.operationalCapacityHaPerH || parsed.operationalCapacityHaPerH <= 0) return null
+  return calculateMachineryCost(parsed)
+}
+
 function validate(inputs: Inputs): string | null {
-  if (!inputs.purchasePrice || parseFloat(inputs.purchasePrice) <= 0)
-    return 'Informe o valor de compra'
-  if (!inputs.hoursPerYear || parseFloat(inputs.hoursPerYear) <= 0)
-    return 'Informe as horas de uso por ano'
-  if (!inputs.operationalCapacity || parseFloat(inputs.operationalCapacity) <= 0)
-    return 'Informe a capacidade operacional (ha/h)'
-  return null
+  return validateMachineryCost(toInput(inputs))
 }
 
 // ── Component ──
@@ -167,7 +100,7 @@ export default function MachineryCost() {
     dieselPrice: dieselFromDb ? String(dieselFromDb.price) : INITIAL.dieselPrice,
   }), [dieselFromDb])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: currentInitial, calculate, validate })
+    useCalculator<Inputs, MachineryCostResult>({ initialInputs: currentInitial, calculate, validate })
 
   // Sync DB diesel price to inputs (useState only reads initialInputs on mount)
   useEffect(() => {
@@ -213,17 +146,17 @@ export default function MachineryCost() {
               })}
             </div>
 
-            <AlertBanner variant="info" message={result.recommendation} />
+            <AlertBanner variant="info" message={`${result.cheapest} é a opção mais econômica`} />
 
-            {result.breakEvenHours > 0 && (
+            {result.breakEvenHoursPerYear > 0 && (
               <ResultCard
                 label="Break-even (compra vs aluguel)"
-                value={`${result.breakEvenHours}`}
+                value={`${result.breakEvenHoursPerYear}`}
                 unit="h/ano"
                 variant="default"
               >
                 <p className="text-xs text-gray-500">
-                  {parseFloat(inputs.hoursPerYear) >= result.breakEvenHours
+                  {parseFloat(inputs.hoursPerYear) >= result.breakEvenHoursPerYear
                     ? 'Seu uso justifica a compra'
                     : 'Uso abaixo do break-even — aluguel pode ser melhor'}
                 </p>

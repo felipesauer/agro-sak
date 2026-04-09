@@ -9,6 +9,7 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency } from '../../utils/formatters'
 import { exportToCsv } from '../../utils/export-csv'
+import { calculateRuralFinancing, validateRuralFinancing, type RuralFinancingResult } from '../../core/financial/rural-financing'
 
 // ── Types ──
 
@@ -19,22 +20,6 @@ interface Inputs {
   graceMonths: string
   annualRate: string
   system: string
-}
-
-interface Installment {
-  month: number
-  payment: number
-  principal: number
-  interest: number
-  balance: number
-}
-
-interface Result {
-  installments: Installment[]
-  firstPayment: number
-  lastPayment: number
-  totalInterest: number
-  totalPaid: number
 }
 
 const CREDIT_LINES = [
@@ -71,74 +56,32 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const principal = parseFloat(inputs.amount)
-  const totalMonths = parseInt(inputs.totalMonths)
-  const graceMonths = parseInt(inputs.graceMonths) || 0
-  const annualRate = parseFloat(inputs.annualRate)
-  const monthlyRate = annualRate / 100 / 12
-
-  const installments: Installment[] = []
-  let balance = principal
-  let totalInterest = 0
-
-  if (inputs.system === 'sac') {
-    const amortMonths = totalMonths - graceMonths
-    const amortization = amortMonths > 0 ? principal / amortMonths : 0
-
-    for (let m = 1; m <= totalMonths; m++) {
-      const interest = balance * monthlyRate
-      totalInterest += interest
-      const princ = m <= graceMonths ? 0 : amortization
-      const payment = interest + princ
-      balance = Math.max(0, balance - princ)
-      installments.push({ month: m, payment, principal: princ, interest, balance })
-    }
-  } else {
-    // PRICE — grace period with interest-only, then fixed payments
-    const amortMonths = totalMonths - graceMonths
-    // Grace period
-    for (let m = 1; m <= graceMonths; m++) {
-      const interest = balance * monthlyRate
-      totalInterest += interest
-      installments.push({ month: m, payment: interest, principal: 0, interest, balance })
-    }
-    // Amortization period — PMT formula
-    if (amortMonths > 0 && monthlyRate > 0) {
-      const pmt = balance * (monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
-        (Math.pow(1 + monthlyRate, amortMonths) - 1)
-      for (let m = graceMonths + 1; m <= totalMonths; m++) {
-        const interest = balance * monthlyRate
-        totalInterest += interest
-        const princ = pmt - interest
-        balance = Math.max(0, balance - princ)
-        installments.push({ month: m, payment: pmt, principal: princ, interest, balance })
-      }
-    }
-  }
-
-  const firstPayment = installments[0]?.payment ?? 0
-  const lastPayment = installments[installments.length - 1]?.payment ?? 0
-  const totalPaid = installments.reduce((sum, i) => sum + i.payment, 0)
-
-  return { installments, firstPayment, lastPayment, totalInterest, totalPaid }
+function calculate(inputs: Inputs): RuralFinancingResult | null {
+  return calculateRuralFinancing({
+    amount: parseFloat(inputs.amount) || 0,
+    totalMonths: parseInt(inputs.totalMonths) || 0,
+    graceMonths: parseInt(inputs.graceMonths) || 0,
+    annualRatePercent: parseFloat(inputs.annualRate) || 0,
+    system: inputs.system as 'sac' | 'price',
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.amount || parseFloat(inputs.amount) <= 0) return 'Informe o valor financiado'
-  if (!inputs.totalMonths || parseInt(inputs.totalMonths) <= 0) return 'Informe o prazo total'
-  if (!inputs.annualRate) return 'Informe a taxa de juros'
-  const grace = parseInt(inputs.graceMonths) || 0
-  const total = parseInt(inputs.totalMonths)
-  if (grace >= total) return 'Carência deve ser menor que o prazo total'
-  return null
+  if (!inputs.amount || isNaN(parseFloat(inputs.amount))) return 'Informe o valor financiado'
+  return validateRuralFinancing({
+    amount: parseFloat(inputs.amount) || 0,
+    totalMonths: parseInt(inputs.totalMonths) || 0,
+    graceMonths: parseInt(inputs.graceMonths) || 0,
+    annualRatePercent: parseFloat(inputs.annualRate) || 0,
+    system: inputs.system as 'sac' | 'price',
+  })
 }
 
 // ── Component ──
 
 export default function RuralFinancing() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, RuralFinancingResult>({ initialInputs: INITIAL, calculate, validate })
 
   const handleLineChange = (value: string) => {
     updateInput('creditLine', value)

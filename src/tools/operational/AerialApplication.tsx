@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { calculateAerialApplication, validateAerialApplication, type AerialApplicationResult } from '../../core/operational/aerial-application'
 
 // ── Types ──
 
@@ -16,18 +17,6 @@ interface Inputs {
   daysSaved: string
   dailyCropLoss: string
   productCost: string
-}
-
-interface Result {
-  aerialOperationTotal: number
-  groundOperationTotal: number
-  aerialProductTotal: number
-  groundProductTotal: number
-  aerialGrandTotal: number
-  groundGrandTotal: number
-  timeSavingsValue: number
-  netSavings: number
-  totalDaysSaved: number
 }
 
 const INITIAL: Inputs = {
@@ -42,57 +31,35 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const aerial = parseFloat(inputs.aerialCost)
-  const ground = parseFloat(inputs.groundCost)
-  const apps = parseFloat(inputs.numApplications)
-  const days = parseFloat(inputs.daysSaved)
-  const dailyLoss = parseFloat(inputs.dailyCropLoss)
-  const product = parseFloat(inputs.productCost)
-
-  const aerialOperationTotal = aerial * area * apps
-  const groundOperationTotal = ground * area * apps
-
-  // Product cost is the same for both methods
-  const aerialProductTotal = product * area * apps
-  const groundProductTotal = product * area * apps
-
-  const aerialGrandTotal = aerialOperationTotal + aerialProductTotal
-  const groundGrandTotal = groundOperationTotal + groundProductTotal
-
-  const totalDaysSaved = days * apps
-  const timeSavingsValue = dailyLoss * area * totalDaysSaved
-
-  // Net savings = (ground cost - aerial cost) + time benefit
-  const netSavings = (groundGrandTotal - aerialGrandTotal) + timeSavingsValue
-
-  return {
-    aerialOperationTotal,
-    groundOperationTotal,
-    aerialProductTotal,
-    groundProductTotal,
-    aerialGrandTotal,
-    groundGrandTotal,
-    timeSavingsValue,
-    netSavings,
-    totalDaysSaved,
-  }
+function calculate(inputs: Inputs): AerialApplicationResult | null {
+  return calculateAerialApplication({
+    areaHa: parseFloat(inputs.area),
+    aerialCostPerHa: parseFloat(inputs.aerialCost),
+    groundCostPerHa: parseFloat(inputs.groundCost),
+    numApplications: parseFloat(inputs.numApplications),
+    daysSavedPerApp: parseFloat(inputs.daysSaved),
+    dailyCropLossPerHa: parseFloat(inputs.dailyCropLoss),
+    productCostPerHa: parseFloat(inputs.productCost),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área'
-  if (!inputs.aerialCost || parseFloat(inputs.aerialCost) <= 0) return 'Informe o custo da aplicação aérea'
-  if (!inputs.groundCost || parseFloat(inputs.groundCost) <= 0) return 'Informe o custo da aplicação terrestre'
-  if (!inputs.numApplications || parseFloat(inputs.numApplications) <= 0) return 'Informe o número de aplicações'
-  return null
+  return validateAerialApplication({
+    areaHa: parseFloat(inputs.area),
+    aerialCostPerHa: parseFloat(inputs.aerialCost),
+    groundCostPerHa: parseFloat(inputs.groundCost),
+    numApplications: parseFloat(inputs.numApplications),
+    daysSavedPerApp: parseFloat(inputs.daysSaved),
+    dailyCropLossPerHa: parseFloat(inputs.dailyCropLoss),
+    productCostPerHa: parseFloat(inputs.productCost),
+  })
 }
 
 // ── Component ──
 
 export default function AerialApplication() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, AerialApplicationResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

@@ -10,6 +10,7 @@ import ComparisonTable from '../../components/ui/ComparisonTable'
 import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
 import { useFreightRates } from '../../db/hooks'
+import { calculateGrainFreight, validateGrainFreight, type GrainFreightResult } from '../../core/operational/grain-freight'
 
 // ── Types ──
 
@@ -20,13 +21,6 @@ interface Inputs {
   loadTons: string
   sacPrice: string
   sacWeight: string
-}
-
-interface Result {
-  totalFreight: number
-  costPerTon: number
-  costPerSac: number
-  freightPercent: number
 }
 
 const VEHICLE_OPTIONS = [
@@ -51,28 +45,24 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const dist = parseFloat(inputs.distance)
-  const fretKm = parseFloat(inputs.freightPerKm)
-  const tons = parseFloat(inputs.loadTons)
-  const sacPrice = parseFloat(inputs.sacPrice) || 115
-  const sacWeight = parseFloat(inputs.sacWeight) || 60
-
-  const totalFreight = dist * fretKm
-  const costPerTon = tons > 0 ? totalFreight / tons : 0
-  const sacsPerTon = 1000 / sacWeight
-  const costPerSac = costPerTon / sacsPerTon
-  const freightPercent = sacPrice > 0 ? (costPerSac / sacPrice) * 100 : 0
-
-  return { totalFreight, costPerTon, costPerSac, freightPercent }
+function calculate(inputs: Inputs): GrainFreightResult | null {
+  return calculateGrainFreight({
+    distanceKm: parseFloat(inputs.distance),
+    freightPerKm: parseFloat(inputs.freightPerKm),
+    loadTons: parseFloat(inputs.loadTons),
+    sacPrice: parseFloat(inputs.sacPrice) || 115,
+    sacWeightKg: parseFloat(inputs.sacWeight) || 60,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.distance || parseFloat(inputs.distance) <= 0) return 'Informe a distância'
-  if (!inputs.freightPerKm || parseFloat(inputs.freightPerKm) <= 0)
-    return 'Informe o valor do frete por km'
-  if (!inputs.loadTons || parseFloat(inputs.loadTons) <= 0) return 'Informe a carga'
-  return null
+  return validateGrainFreight({
+    distanceKm: parseFloat(inputs.distance),
+    freightPerKm: parseFloat(inputs.freightPerKm),
+    loadTons: parseFloat(inputs.loadTons),
+    sacPrice: parseFloat(inputs.sacPrice) || 115,
+    sacWeightKg: parseFloat(inputs.sacWeight) || 60,
+  })
 }
 
 // ── Component ──
@@ -84,7 +74,7 @@ export default function GrainFreight() {
     return dbFreight.find(r => r.key === 'avgPerTonKm')?.value ?? null
   }, [dbFreight])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, GrainFreightResult>({ initialInputs: INITIAL, calculate, validate })
 
   const handleVehicle = (v: string) => {
     updateInput('vehicleType', v)

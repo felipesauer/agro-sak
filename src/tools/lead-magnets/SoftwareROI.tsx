@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { calculateSoftwareRoi, validateSoftwareRoi, type SoftwareRoiResult } from '../../core/financial/software-roi'
 
 // ── Types ──
 
@@ -17,19 +18,6 @@ interface Inputs {
   customInputCost: string
   customProd: string
   customPrice: string
-}
-
-interface SavingsRow {
-  label: string
-  annual: number
-}
-
-interface Result {
-  savings: SavingsRow[]
-  totalAnnual: number
-  softwareAnnual: number
-  roi: number
-  paybackMonths: number
 }
 
 const INITIAL: Inputs = {
@@ -56,83 +44,35 @@ const MGMT_OPTIONS = [
   { value: 'basic_software', label: 'Software básico' },
 ]
 
-// Average input cost R$/ha by crop
-const INPUT_COST: Record<string, number> = {
-  soybean: 2800,
-  corn: 2400,
-  cotton: 5500,
-  mixed: 2600,
-}
-
-// Average productivity sc/ha
-const AVG_PROD: Record<string, number> = {
-  soybean: 55,
-  corn: 100,
-  cotton: 280, // @/ha
-  mixed: 55,
-}
-
-// Average sack price
-const AVG_PRICE: Record<string, number> = {
-  soybean: 110,
-  corn: 50,
-  cotton: 120, // R$/@
-  mixed: 110,
-}
-
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const swCost = parseFloat(inputs.softwareCostMonth) || 290
-
-  const inputCost = (inputs.crop === 'custom'
-    ? (parseFloat(inputs.customInputCost) || 2800)
-    : (INPUT_COST[inputs.crop] ?? 2800)) * area
-  const prod = inputs.crop === 'custom'
-    ? (parseFloat(inputs.customProd) || 55)
-    : (AVG_PROD[inputs.crop] ?? 55)
-  const price = inputs.crop === 'custom'
-    ? (parseFloat(inputs.customPrice) || 110)
-    : (AVG_PRICE[inputs.crop] ?? 110)
-
-  // Savings estimates (conservative)
-  const inputSaving = inputCost * 0.015
-  const salesGain = area * prod * 3 // R$3/sc better timing
-  const harvestSaving = area * 0.7 * price // 0.7 sc/ha less loss
-  const timeSaving = 10 * 12 * 100 // 10h/month × R$100/h equivalent
-  const fiscalSaving = 8000 // Average avoided errors
-
-  // Management discount: if already using spreadsheets, less gain
-  const mgmtFactor = inputs.management === 'memory' ? 1.0 : inputs.management === 'spreadsheet' ? 0.7 : 0.4
-
-  const savings: SavingsRow[] = [
-    { label: 'Redução de perdas em insumos (1,5%)', annual: inputSaving * mgmtFactor },
-    { label: 'Melhor timing de venda (R$3/sc)', annual: salesGain * mgmtFactor },
-    { label: 'Redução de perdas na colheita (0,7 sc/ha)', annual: harvestSaving * mgmtFactor },
-    { label: 'Economia de tempo de gestão (10h/mês)', annual: timeSaving * mgmtFactor },
-    { label: 'Redução de erros fiscais', annual: fiscalSaving * mgmtFactor },
-  ]
-
-  const totalAnnual = savings.reduce((s, r) => s + r.annual, 0)
-  const softwareAnnual = swCost * 12
-  const roi = softwareAnnual > 0 ? ((totalAnnual - softwareAnnual) / softwareAnnual) * 100 : 0
-  const paybackMonths = totalAnnual > 0 ? softwareAnnual / (totalAnnual / 12) : 0
-
-  return { savings, totalAnnual, softwareAnnual, roi, paybackMonths }
+function calculate(inputs: Inputs): SoftwareRoiResult | null {
+  return calculateSoftwareRoi({
+    areaHa: parseFloat(inputs.area),
+    crop: inputs.crop,
+    management: inputs.management,
+    softwareCostMonth: parseFloat(inputs.softwareCostMonth) || 290,
+    customInputCost: inputs.crop === 'custom' ? parseFloat(inputs.customInputCost) || undefined : undefined,
+    customProd: inputs.crop === 'custom' ? parseFloat(inputs.customProd) || undefined : undefined,
+    customPrice: inputs.crop === 'custom' ? parseFloat(inputs.customPrice) || undefined : undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.area) return 'Informe a área da fazenda'
-  if (isNaN(parseFloat(inputs.area)) || parseFloat(inputs.area) <= 0) return 'Área deve ser positiva'
-  return null
+  return validateSoftwareRoi({
+    areaHa: parseFloat(inputs.area),
+    crop: inputs.crop,
+    management: inputs.management,
+    softwareCostMonth: parseFloat(inputs.softwareCostMonth) || 290,
+  })
 }
 
 // ── Component ──
 
 export default function SoftwareROI() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, SoftwareRoiResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

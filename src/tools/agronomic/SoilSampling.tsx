@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateSoilSampling, validateSoilSampling, type SamplingMethod } from '../../core/agronomic/soil-sampling'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -41,12 +42,6 @@ const DEPTH_OPTIONS = [
   { value: '3', label: '3 camadas (0-10, 10-20, 20-40 cm)' },
 ]
 
-const SAMPLING_RATES: Record<string, { minHa: number; maxHa: number; subSamples: number }> = {
-  conventional: { minHa: 10, maxHa: 20, subSamples: 15 },
-  grid: { minHa: 2, maxHa: 5, subSamples: 10 },
-  precision: { minHa: 1, maxHa: 2, subSamples: 8 },
-}
-
 const INITIAL: Inputs = {
   area: '',
   samplingMethod: 'conventional',
@@ -58,47 +53,34 @@ const INITIAL: Inputs = {
 // ── Calculation ──
 
 function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const zones = parseInt(inputs.managementZones) || 1
-  const costPerSample = parseFloat(inputs.costPerSample)
-  const layers = parseInt(inputs.depthLayers) || 1
-
-  const rate = SAMPLING_RATES[inputs.samplingMethod]
-  if (!rate) return null
-
-  const avgHaPerSample = (rate.minHa + rate.maxHa) / 2
-  const areaPerZone = area / zones
-  const samplesPerZone = Math.max(1, Math.ceil(areaPerZone / avgHaPerSample))
-  const totalSamples = samplesPerZone * zones * layers
-
-  const gridSpacing = Math.sqrt(avgHaPerSample * 10000) // meters between samples
-
-  const totalCost = totalSamples * costPerSample
-  const costPerHa = totalCost / area
-
-  // Approximate walking distance (zigzag pattern)
-  const walkingDistance = samplesPerZone * zones * gridSpacing * 1.4 / 1000 // km
-
+  const r = calculateSoilSampling({
+    areaHa: parseFloat(inputs.area),
+    samplingMethod: inputs.samplingMethod as SamplingMethod,
+    managementZones: parseInt(inputs.managementZones) || 1,
+    costPerSample: parseFloat(inputs.costPerSample),
+    depthLayers: parseInt(inputs.depthLayers) || 1,
+  })
+  if (!r) return null
   return {
-    totalSamples,
-    samplesPerZone,
-    subSamplesPerComposite: rate.subSamples,
-    gridSpacing,
-    totalCost,
-    costPerHa,
-    walkingDistance,
+    totalSamples: r.totalSamples,
+    samplesPerZone: r.samplesPerZone,
+    subSamplesPerComposite: r.subSamplesPerComposite,
+    gridSpacing: r.gridSpacing,
+    totalCost: r.totalCost,
+    costPerHa: r.costPerHa,
+    walkingDistance: r.walkingDistanceKm,
   }
 }
 
 function validate(inputs: Inputs): string | null {
-  const area = parseFloat(inputs.area)
-  if (!inputs.area || isNaN(area) || area <= 0) return 'Informe a área total'
-  if (area > 100000) return 'Área muito grande — verifique o valor'
-  const zones = parseInt(inputs.managementZones)
-  if (isNaN(zones) || zones < 1 || zones > 50) return 'Zonas de manejo deve ser entre 1 e 50'
-  const cost = parseFloat(inputs.costPerSample)
-  if (isNaN(cost) || cost < 0) return 'Custo por amostra deve ser positivo'
-  return null
+  if (!inputs.area || isNaN(parseFloat(inputs.area))) return 'Informe a área total'
+  return validateSoilSampling({
+    areaHa: parseFloat(inputs.area),
+    samplingMethod: inputs.samplingMethod as SamplingMethod,
+    managementZones: parseInt(inputs.managementZones) || 1,
+    costPerSample: parseFloat(inputs.costPerSample) || 0,
+    depthLayers: parseInt(inputs.depthLayers) || 1,
+  })
 }
 
 // ── Component ──

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
+import { calculateNutrientRemoval, validateNutrientRemoval, STRAW_FACTOR, type NutrientRemovalResult } from '../../core/agronomic/nutrient-removal'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -29,16 +30,7 @@ interface Inputs {
   customBagKg: string
 }
 
-interface NutrientRow {
-  nutrient: string
-  kgPerHa: number
-  totalKg: number | null
-}
-
-interface Result {
-  rows: NutrientRow[]
-  totalArea: number | null
-}
+type Result = NutrientRemovalResult & { totalArea: number | null }
 
 const INITIAL: Inputs = {
   crop: 'soybean',
@@ -60,18 +52,6 @@ const PART_OPTIONS = [
   { value: 'grain_straw', label: 'Grão + palhada' },
 ]
 
-// Straw/residue factors by crop (grain+straw : grain-only ratio)
-const STRAW_FACTOR: Record<string, number> = {
-  soybean: 1.30,
-  corn: 1.50,
-  wheat: 1.40,
-  cotton: 1.20,
-  coffee: 1.15,
-  rice: 1.60,
-  sugarcane: 1.00,
-  bean: 1.30,
-}
-
 // ── Calculation ──
 
 type NutrientData = Record<string, { n: number; p2o5: number; k2o: number; s: number }>
@@ -79,39 +59,33 @@ type NutrientData = Record<string, { n: number; p2o5: number; k2o: number; s: nu
 function calculate(inputs: Inputs, nutrientData: NutrientData): Result | null {
   const prod = parseFloat(inputs.productivity)
   const bagKg = inputs.crop === 'custom' ? (parseFloat(inputs.customBagKg) || 60) : (BAG_WEIGHT_KG[inputs.crop] ?? 60)
-  const tonsPerHa = (prod * bagKg) / 1000
 
-  const removal = inputs.crop === 'custom'
+  const coefficients = inputs.crop === 'custom'
     ? { n: parseFloat(inputs.customN) || 0, p2o5: parseFloat(inputs.customP) || 0, k2o: parseFloat(inputs.customK) || 0, s: parseFloat(inputs.customS) || 0 }
     : nutrientData[inputs.crop]
-  if (!removal) return null
+  if (!coefficients) return null
 
-  const strawFactor = inputs.part === 'grain_straw' ? (STRAW_FACTOR[inputs.crop] ?? 1.3) : 1
   const area = parseFloat(inputs.area) || 0
-
-  const nutrients: { key: keyof typeof removal; label: string }[] = [
-    { key: 'n', label: 'N (Nitrogênio)' },
-    { key: 'p2o5', label: 'P₂O₅ (Fósforo)' },
-    { key: 'k2o', label: 'K₂O (Potássio)' },
-    { key: 's', label: 'S (Enxofre)' },
-  ]
-
-  const rows = nutrients.map(({ key, label }) => {
-    const kgPerHa = tonsPerHa * removal[key] * strawFactor
-    return {
-      nutrient: label,
-      kgPerHa,
-      totalKg: area > 0 ? kgPerHa * area : null,
-    }
+  const coreResult = calculateNutrientRemoval({
+    productivityScHa: prod,
+    bagWeightKg: bagKg,
+    coefficients,
+    includeStraw: inputs.part === 'grain_straw',
+    strawFactor: STRAW_FACTOR[inputs.crop],
+    areaHa: area > 0 ? area : undefined,
   })
 
-  return { rows, totalArea: area > 0 ? area : null }
+  return { ...coreResult, totalArea: area > 0 ? area : null }
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.productivity) return 'Informe a produtividade'
-  if (isNaN(parseFloat(inputs.productivity)) || parseFloat(inputs.productivity) <= 0) return 'Produtividade deve ser positiva'
-  return null
+  return validateNutrientRemoval({
+    productivityScHa: parseFloat(inputs.productivity),
+    bagWeightKg: 60,
+    coefficients: { n: 0, p2o5: 0, k2o: 0, s: 0 },
+    includeStraw: false,
+  })
 }
 
 // ── Component ──

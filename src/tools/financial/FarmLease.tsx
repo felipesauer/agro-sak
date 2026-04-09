@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
+import { calculateFarmLease, validateFarmLease, type FarmLeaseResult } from '../../core/financial/farm-lease'
 
 // ── Types ──
 
@@ -17,14 +18,6 @@ interface Inputs {
   sacPrice: string
   area: string
   costWithoutLease: string
-}
-
-interface Result {
-  leaseCostHa: number
-  totalLeaseCost: number
-  percentOfCost: number
-  percentOfRevenue: number
-  revenueHa: number
 }
 
 const PAYMENT_MODE_OPTIONS = [
@@ -43,30 +36,27 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area) || 0
-  const yld = parseFloat(inputs.expectedYield) || 0
-  const price = parseFloat(inputs.sacPrice) || 0
-  const costBase = parseFloat(inputs.costWithoutLease) || 0
-  const leaseVal = parseFloat(inputs.leaseValue) || 0
-
-  const leaseCostHa = inputs.paymentMode === 'sacks' ? leaseVal * price : leaseVal
-  const totalLeaseCost = leaseCostHa * area
-  const totalCost = costBase + leaseCostHa
-  const percentOfCost = totalCost > 0 ? (leaseCostHa / totalCost) * 100 : 0
-  const revenueHa = yld * price
-  const percentOfRevenue = revenueHa > 0 ? (leaseCostHa / revenueHa) * 100 : 0
-
-  return { leaseCostHa, totalLeaseCost, percentOfCost, percentOfRevenue, revenueHa }
+function calculate(inputs: Inputs): FarmLeaseResult | null {
+  return calculateFarmLease({
+    paymentMode: inputs.paymentMode as 'sacks' | 'fixed',
+    leaseValue: parseFloat(inputs.leaseValue) || 0,
+    expectedYieldScHa: parseFloat(inputs.expectedYield) || 0,
+    sacPrice: parseFloat(inputs.sacPrice) || 0,
+    areaHa: parseFloat(inputs.area) || 0,
+    costWithoutLease: parseFloat(inputs.costWithoutLease) || 0,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.leaseValue || parseFloat(inputs.leaseValue) <= 0)
-    return 'Informe o valor do arrendamento'
-  if (!inputs.sacPrice || parseFloat(inputs.sacPrice) <= 0)
-    return 'Informe o preço da saca'
-  if (!inputs.expectedYield) return 'Informe a produtividade esperada'
-  return null
+  if (!inputs.leaseValue || isNaN(parseFloat(inputs.leaseValue))) return 'Informe o valor do arrendamento'
+  return validateFarmLease({
+    paymentMode: inputs.paymentMode as 'sacks' | 'fixed',
+    leaseValue: parseFloat(inputs.leaseValue) || 0,
+    expectedYieldScHa: parseFloat(inputs.expectedYield) || 0,
+    sacPrice: parseFloat(inputs.sacPrice) || 0,
+    areaHa: parseFloat(inputs.area) || 0,
+    costWithoutLease: parseFloat(inputs.costWithoutLease) || 0,
+  })
 }
 
 // ── Reference data ──
@@ -84,7 +74,7 @@ const LEASE_REFERENCE = [
 
 export default function FarmLease() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, FarmLeaseResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { calculateElectricityCost, validateElectricityCost, type ElectricityCostResult } from '../../core/operational/electricity-cost'
 
 // ── Types ──
 
@@ -19,18 +20,6 @@ interface Inputs {
   energyRate: string
   demandCharge: string
   area: string
-}
-
-interface Result {
-  powerKW: number
-  monthlyKWh: number
-  annualKWh: number
-  monthlyCostEnergy: number
-  monthlyCostDemand: number
-  monthlyCostTotal: number
-  annualCost: number
-  costPerHa: number | null
-  costPerHour: number
 }
 
 // ── Constants ──
@@ -79,67 +68,41 @@ const TYPICAL_POWER: Record<string, { power: number; hoursPerDay: number }> = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
+function calculate(inputs: Inputs): ElectricityCostResult | null {
   const power = parseFloat(inputs.power)
   const hoursPerDay = parseFloat(inputs.hoursPerDay)
-  const daysPerMonth = parseFloat(inputs.daysPerMonth)
-  const months = parseFloat(inputs.months)
-  const energyRate = parseFloat(inputs.energyRate)
-  const demandCharge = parseFloat(inputs.demandCharge) || 0
-  const area = parseFloat(inputs.area)
-
   if (isNaN(power) || power <= 0 || isNaN(hoursPerDay) || hoursPerDay <= 0) return null
 
-  // Convert power to kW
-  let powerKW: number
-  switch (inputs.powerUnit) {
-    case 'hp': powerKW = power * 0.7457; break
-    case 'cv': powerKW = power * 0.7355; break
-    default: powerKW = power
-  }
-
-  const monthlyHours = hoursPerDay * daysPerMonth
-  const monthlyKWh = powerKW * monthlyHours
-  const annualKWh = monthlyKWh * months
-
-  const monthlyCostEnergy = monthlyKWh * energyRate
-  const monthlyCostDemand = powerKW * demandCharge
-  const monthlyCostTotal = monthlyCostEnergy + monthlyCostDemand
-  const annualCost = monthlyCostTotal * months
-  const costPerHour = monthlyCostTotal / monthlyHours
-
-  const costPerHa = !isNaN(area) && area > 0 ? annualCost / area : null
-
-  return {
-    powerKW,
-    monthlyKWh,
-    annualKWh,
-    monthlyCostEnergy,
-    monthlyCostDemand,
-    monthlyCostTotal,
-    annualCost,
-    costPerHa,
-    costPerHour,
-  }
+  return calculateElectricityCost({
+    power,
+    powerUnit: inputs.powerUnit as 'cv' | 'hp' | 'kw',
+    hoursPerDay,
+    daysPerMonth: parseFloat(inputs.daysPerMonth),
+    months: parseFloat(inputs.months),
+    energyRatePerKwh: parseFloat(inputs.energyRate),
+    demandChargePerKw: parseFloat(inputs.demandCharge) || 0,
+    areaHa: parseFloat(inputs.area) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.power) return 'Informe a potência do equipamento'
-  const power = parseFloat(inputs.power)
-  if (isNaN(power) || power <= 0) return 'A potência deve ser maior que zero'
-  if (power > 10000) return 'Potência muito alta — verifique o valor'
-  const hours = parseFloat(inputs.hoursPerDay)
-  if (isNaN(hours) || hours <= 0 || hours > 24) return 'Horas por dia devem ser entre 1 e 24'
-  const rate = parseFloat(inputs.energyRate)
-  if (isNaN(rate) || rate <= 0) return 'Informe a tarifa de energia'
-  return null
+  return validateElectricityCost({
+    power: parseFloat(inputs.power),
+    powerUnit: inputs.powerUnit as 'cv' | 'hp' | 'kw',
+    hoursPerDay: parseFloat(inputs.hoursPerDay),
+    daysPerMonth: parseFloat(inputs.daysPerMonth),
+    months: parseFloat(inputs.months),
+    energyRatePerKwh: parseFloat(inputs.energyRate),
+    demandChargePerKw: parseFloat(inputs.demandCharge) || 0,
+  })
 }
 
 // ── Component ──
 
 export default function ElectricityCost() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, ElectricityCostResult>({ initialInputs: INITIAL, calculate, validate })
 
   const handleEquipmentChange = (value: string) => {
     updateInput('equipmentType', value as never)

@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { calculateStorageViability, validateStorageViability, type StorageViabilityResult } from '../../core/grain/storage-viability'
 
 // ── Types ──
 
@@ -17,19 +18,6 @@ interface Inputs {
   breakageRate: string
   capitalRate: string
   insuranceRate: string
-}
-
-interface Result {
-  immediateRevenue: number
-  storageCost: number
-  capitalCost: number
-  insuranceCost: number
-  totalCost: number
-  breakageSc: number
-  futureRevenue: number
-  netGain: number
-  recommendation: string
-  breakEvenPrice: number
 }
 
 const INITIAL: Inputs = {
@@ -45,59 +33,33 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const qty = parseFloat(inputs.quantity)
-  const curPrice = parseFloat(inputs.currentPrice)
-  const futPrice = parseFloat(inputs.futurePrice)
-  const months = parseFloat(inputs.storageMonths)
-  const fee = parseFloat(inputs.storageFee)
-  const breakPct = parseFloat(inputs.breakageRate) / 100
-  const capPct = parseFloat(inputs.capitalRate) / 100
-  const insPct = parseFloat(inputs.insuranceRate) / 100
-
-  const immediateRevenue = qty * curPrice
-  const storageCost = qty * fee * months
-  const breakageSc = qty * breakPct * months
-  const capitalCost = immediateRevenue * capPct * months
-  const insuranceCost = immediateRevenue * insPct * months
-  const totalCost = storageCost + capitalCost + insuranceCost
-  const netQty = qty - breakageSc
-  const futureRevenue = netQty * futPrice - totalCost
-  const netGain = futureRevenue - immediateRevenue
-
-  const recommendation = netGain > 0 ? 'Vale armazenar — ganho projetado positivo' : 'Melhor vender agora — custo de armazenagem supera o ganho'
-
-  // Break-even price: future price where netGain = 0
-  // immediateRevenue = (qty - breakage) * breakEvenPrice - totalCost
-  const breakEvenPrice = netQty > 0 ? (immediateRevenue + totalCost) / netQty : 0
-
-  return {
-    immediateRevenue,
-    storageCost,
-    capitalCost,
-    insuranceCost,
-    totalCost,
-    breakageSc,
-    futureRevenue,
-    netGain,
-    recommendation,
-    breakEvenPrice,
-  }
+function calculate(inputs: Inputs): StorageViabilityResult | null {
+  return calculateStorageViability({
+    quantitySc: parseFloat(inputs.quantity),
+    currentPricePerSc: parseFloat(inputs.currentPrice),
+    futurePricePerSc: parseFloat(inputs.futurePrice),
+    storageMonths: parseFloat(inputs.storageMonths),
+    storageFeePerScMonth: parseFloat(inputs.storageFee),
+    breakageRatePctMonth: parseFloat(inputs.breakageRate),
+    capitalRatePctMonth: parseFloat(inputs.capitalRate),
+    insuranceRatePctMonth: parseFloat(inputs.insuranceRate),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.quantity || parseFloat(inputs.quantity) <= 0) return 'Informe a quantidade'
-  if (!inputs.currentPrice || parseFloat(inputs.currentPrice) <= 0) return 'Informe o preço atual'
-  if (!inputs.futurePrice) return 'Informe o preço futuro esperado'
-  if (!inputs.storageMonths || parseFloat(inputs.storageMonths) <= 0) return 'Informe o prazo de armazenagem'
-  return null
+  return validateStorageViability({
+    quantitySc: parseFloat(inputs.quantity),
+    currentPricePerSc: parseFloat(inputs.currentPrice),
+    futurePricePerSc: parseFloat(inputs.futurePrice),
+    storageMonths: parseFloat(inputs.storageMonths),
+  })
 }
 
 // ── Component ──
 
 export default function StorageViability() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, StorageViabilityResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

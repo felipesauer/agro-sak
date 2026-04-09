@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateSoilAnalysis, validateSoilAnalysis, type SoilAnalysisResult } from '../../core/agronomic/soil-analysis'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -6,7 +7,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatPercent } from '../../utils/formatters'
-import { SOIL_ANALYSIS_RANGES, classifySoilNutrient } from '../../data/reference-data'
+import { classifySoilNutrient } from '../../data/reference-data'
 
 const EXTRACTION_OPTIONS = [
   { value: 'resin', label: 'Resina (IAC — SP)' },
@@ -32,41 +33,7 @@ interface Inputs {
   Zn: string
 }
 
-interface NutrientResult {
-  name: string
-  value: number
-  unit: string
-  label: string
-  color: string
-}
-
-interface Result {
-  nutrients: NutrientResult[]
-  ctc: number
-  baseSaturation: number
-  alSaturation: number
-  caMgRatio: number
-  caKRatio: number
-  mgKRatio: number
-  warningCount: number
-  criticalCount: number
-}
-
 // ── Constants ──
-
-const NUTRIENT_DISPLAY: Record<string, string> = {
-  pH: 'pH (CaCl₂)',
-  organicMatter: 'Matéria Orgânica',
-  P: 'Fósforo (P)',
-  K: 'Potássio (K)',
-  Ca: 'Cálcio (Ca)',
-  Mg: 'Magnésio (Mg)',
-  S: 'Enxofre (S)',
-  B: 'Boro (B)',
-  Cu: 'Cobre (Cu)',
-  Mn: 'Manganês (Mn)',
-  Zn: 'Zinco (Zn)',
-}
 
 const INITIAL: Inputs = {
   extractionMethod: 'resin',
@@ -96,71 +63,37 @@ const COLOR_MAP: Record<string, { bg: string; text: string; border: string }> = 
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const nutrients: NutrientResult[] = []
-  let warningCount = 0
-  let criticalCount = 0
-
-  for (const [key, displayName] of Object.entries(NUTRIENT_DISPLAY)) {
-    const rawValue = inputs[key as keyof Inputs]
-    if (!rawValue) continue
-    const value = parseFloat(rawValue)
-    if (isNaN(value)) continue
-
-    const classification = classifySoilNutrient(key, value)
-    if (!classification) continue
-
-    const unit = SOIL_ANALYSIS_RANGES[key]?.unit ?? ''
-    nutrients.push({ name: displayName, value, unit, label: classification.label, color: classification.color })
-
-    if (classification.color === 'amber' || classification.color === 'yellow') warningCount++
-    if (classification.color === 'red') criticalCount++
-  }
-
-  // CTC and derived values
-  const Ca = parseFloat(inputs.Ca) || 0
-  const Mg = parseFloat(inputs.Mg) || 0
-  const K = parseFloat(inputs.K) || 0
-  const hAl = parseFloat(inputs.hAl) || 0
-
-  const sumBases = Ca + Mg + K
-  const ctc = sumBases + hAl
-  const baseSaturation = ctc > 0 ? (sumBases / ctc) * 100 : 0
-  const alSaturation = ctc > 0 ? (hAl / ctc) * 100 : 0
-
-  const caMgRatio = Mg > 0 ? Ca / Mg : 0
-  const caKRatio = K > 0 ? Ca / K : 0
-  const mgKRatio = K > 0 ? Mg / K : 0
-
+function buildInput(inputs: Inputs) {
+  const parse = (v: string) => { const n = parseFloat(v); return isNaN(n) ? undefined : n }
   return {
-    nutrients,
-    ctc,
-    baseSaturation,
-    alSaturation,
-    caMgRatio,
-    caKRatio,
-    mgKRatio,
-    warningCount,
-    criticalCount,
+    pH: parse(inputs.pH),
+    organicMatter: parse(inputs.organicMatter),
+    P: parse(inputs.P),
+    K: parse(inputs.K),
+    Ca: parse(inputs.Ca),
+    Mg: parse(inputs.Mg),
+    hAl: parse(inputs.hAl),
+    S: parse(inputs.S),
+    B: parse(inputs.B),
+    Cu: parse(inputs.Cu),
+    Mn: parse(inputs.Mn),
+    Zn: parse(inputs.Zn),
   }
 }
 
+function calculate(inputs: Inputs): SoilAnalysisResult | null {
+  return calculateSoilAnalysis(buildInput(inputs), classifySoilNutrient)
+}
+
 function validate(inputs: Inputs): string | null {
-  const filledCount = Object.values(inputs).filter(v => v !== '').length
-  if (filledCount < 3) return 'Preencha pelo menos 3 parâmetros da análise de solo'
-  for (const [key, value] of Object.entries(inputs)) {
-    if (value === '') continue
-    const num = parseFloat(value)
-    if (isNaN(num) || num < 0) return `Valor inválido para ${NUTRIENT_DISPLAY[key] ?? key}`
-  }
-  return null
+  return validateSoilAnalysis(buildInput(inputs))
 }
 
 // ── Component ──
 
 export default function SoilAnalysis() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, SoilAnalysisResult>({
       initialInputs: INITIAL,
       calculate,
       validate,

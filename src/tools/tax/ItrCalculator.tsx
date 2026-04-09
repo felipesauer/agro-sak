@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateItr, validateItr, type ItrResult } from '../../core/tax/itr'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
@@ -6,32 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 
-// ── ITR rate table (simplified) ──
 
-// Row: area bracket index, Col: GU bracket index
-const ITR_RATES = [
-  // GU >= 80%  65-80%   50-65%   < 50%
-  [0.03,       0.20,    0.40,    1.00],  // <= 50 ha
-  [0.07,       0.40,    0.80,    2.00],  // 50-200
-  [0.10,       0.60,    1.30,    3.00],  // 200-500
-  [0.15,       0.85,    1.90,    4.30],  // 500-1000
-  [0.45,       3.00,    5.16,    8.60],  // > 1000
-]
-
-function getAreaBracket(area: number): number {
-  if (area <= 50) return 0
-  if (area <= 200) return 1
-  if (area <= 500) return 2
-  if (area <= 1000) return 3
-  return 4
-}
-
-function getGUBracket(gu: number): number {
-  if (gu >= 80) return 0
-  if (gu >= 65) return 1
-  if (gu >= 50) return 2
-  return 3
-}
 
 // ── Types ──
 
@@ -41,14 +17,7 @@ interface Inputs {
   vtnPerHa: string
 }
 
-interface Result {
-  gu: number
-  rate: number
-  vtnTotal: number
-  itrAnnual: number
-  itrPerHa: number
-  guLabel: string
-}
+
 
 const INITIAL: Inputs = {
   totalArea: '',
@@ -58,47 +27,30 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const total = parseFloat(inputs.totalArea)
-  const used = parseFloat(inputs.usedArea)
-  const vtn = parseFloat(inputs.vtnPerHa)
-
-  const gu = (used / total) * 100
-  const areaBracket = getAreaBracket(total)
-  const guBracket = getGUBracket(gu)
-  const rate = ITR_RATES[areaBracket][guBracket]
-
-  const vtnTotal = vtn * total
-  const itrAnnual = vtnTotal * (rate / 100)
-  const itrPerHa = itrAnnual / total
-
-  const guLabels = ['≥ 80% (Alto)', '65–80% (Médio-alto)', '50–65% (Médio)', '< 50% (Baixo)']
-
-  return {
-    gu,
-    rate,
-    vtnTotal,
-    itrAnnual,
-    itrPerHa,
-    guLabel: guLabels[guBracket],
-  }
+function calculate(inputs: Inputs): ItrResult | null {
+  return calculateItr({
+    totalArea: parseFloat(inputs.totalArea),
+    usedArea: parseFloat(inputs.usedArea),
+    vtnPerHa: parseFloat(inputs.vtnPerHa),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.totalArea) return 'Informe a área total'
   if (!inputs.usedArea) return 'Informe a área utilizada'
   if (!inputs.vtnPerHa) return 'Informe o VTN por hectare'
-  const total = parseFloat(inputs.totalArea)
-  const used = parseFloat(inputs.usedArea)
-  if (used > total) return 'Área utilizada não pode ser maior que a área total'
-  return null
+  return validateItr({
+    totalArea: parseFloat(inputs.totalArea),
+    usedArea: parseFloat(inputs.usedArea),
+    vtnPerHa: parseFloat(inputs.vtnPerHa),
+  })
 }
 
 // ── Component ──
 
 export default function ITR() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, ItrResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

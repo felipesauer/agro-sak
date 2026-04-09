@@ -7,6 +7,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
+import { calculatePreHarvestYield, validatePreHarvestYield, type PreHarvestYieldResult } from '../../core/operational/pre-harvest-yield'
 
 // ── Types ──
 
@@ -29,13 +30,6 @@ interface CornInputs {
 }
 
 type Inputs = SoybeanInputs | CornInputs
-
-interface Result {
-  yieldKgHa: number
-  yieldScHa: number
-  yieldLow: number
-  yieldHigh: number
-}
 
 const CROP_OPTIONS = [
   { value: 'soybean', label: 'Soja' },
@@ -62,50 +56,35 @@ const CORN_INITIAL: CornInputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const pmg = parseFloat(inputs.thousandGrainWeight)
-  const spacing = parseFloat(inputs.rowSpacing)
-
-  let yieldKgHa: number
-
-  if (inputs.crop === 'soybean') {
-    const plants = parseFloat(inputs.plantsPerMeter)
-    const pods = parseFloat(inputs.podsPerPlant)
-    const grains = parseFloat(inputs.grainsPerPod)
-    // plants/m ÷ (spacing_cm/100) = plants/m², × pods × grains × PMG/1e6 × 10000 = kg/ha
-    const plantsPerM2 = plants / (spacing / 100)
-    yieldKgHa = plantsPerM2 * pods * grains * (pmg / 1000)
-  } else {
-    const ears = parseFloat(inputs.earsPerMeter)
-    const rows = parseFloat(inputs.rowsPerEar)
-    const grains = parseFloat(inputs.grainsPerRow)
-    const earsPerM2 = ears / (spacing / 100)
-    yieldKgHa = earsPerM2 * rows * grains * (pmg / 1000)
+function toInput(inputs: Inputs) {
+  const base = {
+    thousandGrainWeight: parseFloat(inputs.thousandGrainWeight),
+    rowSpacingM: parseFloat(inputs.rowSpacing),
   }
+  if (inputs.crop === 'soybean') {
+    return {
+      ...base,
+      crop: 'soybean' as const,
+      plantsPerMeter: parseFloat(inputs.plantsPerMeter),
+      podsPerPlant: parseFloat(inputs.podsPerPlant),
+      grainsPerPod: parseFloat(inputs.grainsPerPod),
+    }
+  }
+  return {
+    ...base,
+    crop: 'corn' as const,
+    earsPerMeter: parseFloat(inputs.earsPerMeter),
+    rowsPerEar: parseFloat(inputs.rowsPerEar),
+    grainsPerRow: parseFloat(inputs.grainsPerRow),
+  }
+}
 
-  const yieldScHa = yieldKgHa / 60
-  const yieldLow = yieldScHa * 0.9
-  const yieldHigh = yieldScHa * 1.1
-
-  return { yieldKgHa, yieldScHa, yieldLow, yieldHigh }
+function calculate(inputs: Inputs): PreHarvestYieldResult | null {
+  return calculatePreHarvestYield(toInput(inputs))
 }
 
 function validate(inputs: Inputs): string | null {
-  const spacing = parseFloat(inputs.rowSpacing)
-  if (!inputs.rowSpacing || spacing <= 0) return 'Informe o espaçamento entre linhas'
-  if (!inputs.thousandGrainWeight) return 'Informe o peso de mil grãos (PMG)'
-
-  if (inputs.crop === 'soybean') {
-    if (!inputs.plantsPerMeter) return 'Informe as plantas por metro'
-    if (!inputs.podsPerPlant) return 'Informe as vagens por planta'
-    if (!inputs.grainsPerPod) return 'Informe os grãos por vagem'
-  } else {
-    if (!inputs.earsPerMeter) return 'Informe as espigas por metro'
-    if (!inputs.rowsPerEar) return 'Informe as fileiras por espiga'
-    if (!inputs.grainsPerRow) return 'Informe os grãos por fileira'
-  }
-
-  return null
+  return validatePreHarvestYield(toInput(inputs))
 }
 
 // ── Component ──
@@ -114,7 +93,7 @@ export default function PreHarvestYield() {
   const [crop, setCrop] = useState<'soybean' | 'corn'>('soybean')
 
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, PreHarvestYieldResult>({
       initialInputs: crop === 'soybean' ? SOYBEAN_INITIAL : CORN_INITIAL,
       calculate,
       validate,

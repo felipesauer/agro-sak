@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { calculateWaterConsumption, validateWaterConsumption, type WaterConsumptionResult } from '../../core/operational/water-consumption'
 
 // ── Types ──
 
@@ -21,16 +22,6 @@ interface Inputs {
   pumpPower: string
   electricityCost: string
   hoursPerDay: string
-}
-
-interface Result {
-  dailyWaterNeed: number
-  monthlyWaterNeed: number
-  dailyEnergyCost: number
-  monthlyEnergyCost: number
-  costPerMm: number
-  costPerHa: number
-  dailyLamina: number
 }
 
 const CROP_OPTIONS = [
@@ -73,64 +64,35 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const et0 = parseFloat(inputs.et0)
-  const kc = parseFloat(inputs.kc)
-  const efficiency = parseFloat(inputs.efficiency) / 100
-  const pumpPower = parseFloat(inputs.pumpPower)
-  const electricityCost = parseFloat(inputs.electricityCost)
-  const hoursPerDay = parseFloat(inputs.hoursPerDay)
-
-  // ETc = ET0 × Kc (mm/day)
-  const etc = et0 * kc
-
-  // Lamina needed considering efficiency (mm/day)
-  const dailyLamina = efficiency > 0 ? etc / efficiency : etc
-
-  // Volume: 1 mm on 1 ha = 10 m³
-  const dailyWaterNeed = dailyLamina * area * 10 // m³/day
-  const monthlyWaterNeed = dailyWaterNeed * 30
-
-  // Energy cost: 1 cv = 0.7355 kW
-  const pumpKw = pumpPower * 0.7355
-  const dailyEnergyKwh = pumpKw * hoursPerDay
-  const dailyEnergyCost = dailyEnergyKwh * electricityCost
-  const monthlyEnergyCost = dailyEnergyCost * 30
-
-  // Cost per mm applied across entire area
-  const costPerMm = dailyLamina > 0 ? dailyEnergyCost / dailyLamina : 0
-
-  // Cost per hectare per month
-  const costPerHa = area > 0 ? monthlyEnergyCost / area : 0
-
-  return {
-    dailyWaterNeed,
-    monthlyWaterNeed,
-    dailyEnergyCost,
-    monthlyEnergyCost,
-    costPerMm,
-    costPerHa,
-    dailyLamina,
-  }
+function calculate(inputs: Inputs): WaterConsumptionResult | null {
+  return calculateWaterConsumption({
+    areaHa: parseFloat(inputs.area),
+    et0MmDay: parseFloat(inputs.et0),
+    kc: parseFloat(inputs.kc),
+    efficiencyPercent: parseFloat(inputs.efficiency),
+    pumpPowerCv: parseFloat(inputs.pumpPower),
+    electricityCostPerKwh: parseFloat(inputs.electricityCost),
+    hoursPerDay: parseFloat(inputs.hoursPerDay),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área'
-  if (!inputs.et0 || parseFloat(inputs.et0) <= 0) return 'Informe a ET0'
-  if (!inputs.kc || parseFloat(inputs.kc) <= 0) return 'Informe o Kc'
-  if (!inputs.efficiency || parseFloat(inputs.efficiency) <= 0 || parseFloat(inputs.efficiency) > 100)
-    return 'Eficiência deve ser entre 1 e 100%'
-  if (!inputs.pumpPower || parseFloat(inputs.pumpPower) <= 0) return 'Informe a potência da bomba'
-  if (!inputs.electricityCost || parseFloat(inputs.electricityCost) <= 0) return 'Informe o custo da energia'
-  return null
+  return validateWaterConsumption({
+    areaHa: parseFloat(inputs.area),
+    et0MmDay: parseFloat(inputs.et0),
+    kc: parseFloat(inputs.kc),
+    efficiencyPercent: parseFloat(inputs.efficiency),
+    pumpPowerCv: parseFloat(inputs.pumpPower),
+    electricityCostPerKwh: parseFloat(inputs.electricityCost),
+    hoursPerDay: parseFloat(inputs.hoursPerDay),
+  })
 }
 
 // ── Component ──
 
 export default function WaterConsumption() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, WaterConsumptionResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout
@@ -143,7 +105,7 @@ export default function WaterConsumption() {
           <div className="space-y-4">
             <ResultCard
               label="Lâmina diária necessária"
-              value={formatNumber(result.dailyLamina, 1)}
+              value={formatNumber(result.dailyLaminaMm, 1)}
               unit="mm/dia"
               highlight
               variant="warning"
@@ -152,12 +114,12 @@ export default function WaterConsumption() {
             <div className="grid gap-4 sm:grid-cols-2">
               <ResultCard
                 label="Volume diário"
-                value={formatNumber(result.dailyWaterNeed, 0)}
+                value={formatNumber(result.dailyWaterM3, 0)}
                 unit="m³/dia"
               />
               <ResultCard
                 label="Volume mensal"
-                value={formatNumber(result.monthlyWaterNeed, 0)}
+                value={formatNumber(result.monthlyWaterM3, 0)}
                 unit="m³/mês"
               />
             </div>
@@ -185,14 +147,14 @@ export default function WaterConsumption() {
               />
               <ResultCard
                 label="Custo por hectare/mês"
-                value={formatCurrency(result.costPerHa)}
+                value={formatCurrency(result.costPerHaMonth)}
                 unit="/ha/mês"
               />
             </div>
 
             <AlertBanner
               variant="info"
-              message={`Para irrigar ${inputs.area} ha com ${formatNumber(result.dailyLamina, 1)} mm/dia, são necessários ${formatNumber(result.dailyWaterNeed, 0)} m³ de água diariamente.`}
+              message={`Para irrigar ${inputs.area} ha com ${formatNumber(result.dailyLaminaMm, 1)} mm/dia, são necessários ${formatNumber(result.dailyWaterM3, 0)} m³ de água diariamente.`}
             />
           </div>
         )

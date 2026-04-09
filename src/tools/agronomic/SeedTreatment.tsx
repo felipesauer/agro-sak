@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateSeedTreatment, validateSeedTreatment, type SeedTreatmentResult } from '../../core/agronomic/seed-treatment'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -28,23 +29,6 @@ interface Inputs {
   slots: ProductSlot[]
 }
 
-interface ProductResult {
-  name: string
-  type: string
-  dosePerKg: number
-  totalMl: number
-  totalLiters: number
-  cost: number
-}
-
-interface Result {
-  totalSeedKg: number
-  products: ProductResult[]
-  totalCostPerHa: number
-  totalCostTotal: number
-  totalVolumePerHa: number
-}
-
 // ── Constants ──
 
 const PRODUCT_OPTIONS = SEED_TREATMENT_PRODUCTS.map((p, i) => ({
@@ -68,60 +52,47 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const seedRate = parseFloat(inputs.seedRate)
-  const totalSeedKg = seedRate * area
-
-  const products: ProductResult[] = inputs.slots
+function calculate(inputs: Inputs): SeedTreatmentResult | null {
+  const slots = inputs.slots
     .filter(s => s.productIndex !== '')
     .map(s => {
       const idx = parseInt(s.productIndex, 10)
       const product = SEED_TREATMENT_PRODUCTS[idx]
-      const dose = s.customDose ? parseFloat(s.customDose) : product.dosePerKg
-      const price = s.customPrice ? parseFloat(s.customPrice) : product.pricePerLiter
-
-      const totalMl = (dose / 100) * totalSeedKg
-      const totalLiters = totalMl / 1000
-      const cost = totalLiters * price
-
       return {
-        name: product.name,
-        type: SEED_TREATMENT_TYPE_LABELS[product.type],
-        dosePerKg: dose,
-        totalMl,
-        totalLiters,
-        cost,
+        product: { ...product, type: SEED_TREATMENT_TYPE_LABELS[product.type] },
+        customDose: s.customDose ? parseFloat(s.customDose) : undefined,
+        customPrice: s.customPrice ? parseFloat(s.customPrice) : undefined,
       }
     })
 
-  const totalCostTotal = products.reduce((sum, p) => sum + p.cost, 0)
-  const totalCostPerHa = area > 0 ? totalCostTotal / area : 0
-  const totalVolumePerHa = area > 0
-    ? products.reduce((sum, p) => sum + p.totalMl, 0) / area
-    : 0
-
-  return { totalSeedKg, products, totalCostPerHa, totalCostTotal, totalVolumePerHa }
+  return calculateSeedTreatment({
+    areaHa: parseFloat(inputs.area),
+    seedRateKgHa: parseFloat(inputs.seedRate),
+    slots,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.area) return 'Informe a área em hectares'
   if (!inputs.seedRate) return 'Informe a taxa de semeadura (kg/ha)'
-  const area = parseFloat(inputs.area)
-  if (isNaN(area) || area <= 0) return 'A área deve ser maior que zero'
-  if (area > 100_000) return 'Área muito grande — verifique o valor'
-  const rate = parseFloat(inputs.seedRate)
-  if (isNaN(rate) || rate <= 0) return 'A taxa de semeadura deve ser maior que zero'
   const activeSlots = inputs.slots.filter(s => s.productIndex !== '')
   if (activeSlots.length === 0) return 'Selecione pelo menos um produto para o tratamento'
-  return null
+  return validateSeedTreatment({
+    areaHa: parseFloat(inputs.area),
+    seedRateKgHa: parseFloat(inputs.seedRate),
+    slots: activeSlots.map(s => {
+      const idx = parseInt(s.productIndex, 10)
+      const product = SEED_TREATMENT_PRODUCTS[idx]
+      return { product, customDose: s.customDose ? parseFloat(s.customDose) : undefined, customPrice: s.customPrice ? parseFloat(s.customPrice) : undefined }
+    }),
+  })
 }
 
 // ── Component ──
 
 export default function SeedTreatment() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, SeedTreatmentResult>({
       initialInputs: INITIAL,
       calculate,
       validate,

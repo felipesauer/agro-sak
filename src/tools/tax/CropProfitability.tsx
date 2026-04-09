@@ -7,6 +7,7 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 import { CROP_LABELS } from '../../data/reference-data'
+import { calculateCropProfitability, validateCropProfitability, type CropProfitabilityResult } from '../../core/tax/crop-profitability'
 
 // ── Types ──
 
@@ -18,15 +19,7 @@ interface CropEntry {
   cost: string
 }
 
-interface CropResult {
-  name: string
-  revenue: number
-  cost: number
-  funrural: number
-  profit: number
-  roi: number
-  margin: number
-}
+type CropResult = CropProfitabilityResult
 
 const AVAILABLE_CROPS = Object.entries(CROP_LABELS)
   .filter(([key]) => !['pasture', 'brachiaria', 'millet'].includes(key))
@@ -68,39 +61,25 @@ export default function CropProfitability() {
   const calculate = () => {
     setError(null)
     const valid = crops.filter((c) => c.productivity && c.price && c.cost)
-    if (valid.length < 2) {
-      setError('Preencha pelo menos 2 culturas para comparar')
+
+    const coreInputs = {
+      producerType,
+      crops: valid.map((c) => ({
+        name: CROP_LABELS[c.name] || c.name,
+        productivity: parseFloat(c.productivity),
+        price: parseFloat(c.price),
+        cost: parseFloat(c.cost),
+      })),
+    }
+
+    const validationError = validateCropProfitability(coreInputs)
+    if (validationError) {
+      setError(validationError)
       setResults(null)
       return
     }
 
-    const funruralRate = producerType === 'pj' ? 0.0285 : 0.015
-
-    const parsed: CropResult[] = valid.map((c) => {
-      const prod = parseFloat(c.productivity)
-      const price = parseFloat(c.price)
-      const cost = parseFloat(c.cost)
-
-      // For cotton, 1@ = 15kg; others 1 sc = 60kg; prices already in R$/sc or R$/@
-      const revenue = prod * price
-      const funrural = revenue * funruralRate
-      const profit = revenue - cost - funrural
-      const roi = cost > 0 ? (profit / cost) * 100 : 0
-      const margin = revenue > 0 ? (profit / revenue) * 100 : 0
-
-      return {
-        name: CROP_LABELS[c.name] || c.name,
-        revenue,
-        cost,
-        funrural,
-        profit,
-        roi,
-        margin,
-      }
-    })
-
-    parsed.sort((a, b) => b.profit - a.profit)
-    setResults(parsed)
+    setResults(calculateCropProfitability(coreInputs))
   }
 
   const clear = () => {

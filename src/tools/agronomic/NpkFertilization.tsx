@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateNpkFertilization, validateNpkFertilization, type NpkFertilizationResult } from '../../core/agronomic/npk-fertilization'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -7,63 +8,6 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
-
-// ── Reference tables (simplified EMBRAPA/Cerrado) ──
-
-const P_CLASSES: Record<string, { limits: number[]; labels: string[] }> = {
-  clay: { limits: [3, 6, 9, 18], labels: ['Muito baixo', 'Baixo', 'Médio', 'Alto', 'Muito alto'] },
-  medium: { limits: [6, 12, 18, 36], labels: ['Muito baixo', 'Baixo', 'Médio', 'Alto', 'Muito alto'] },
-  sandy: { limits: [10, 20, 30, 60], labels: ['Muito baixo', 'Baixo', 'Médio', 'Alto', 'Muito alto'] },
-}
-
-const K_CLASSES = {
-  limits: [25, 50, 80, 120],
-  labels: ['Muito baixo', 'Baixo', 'Médio', 'Alto', 'Muito alto'],
-}
-
-// Simplified P₂O₅ recommendation (kg/ha) by level for general crops
-const P_REC: Record<string, number[]> = {
-  soybean: [120, 90, 60, 30, 0],
-  corn:    [140, 100, 70, 40, 0],
-  cotton:  [140, 110, 80, 40, 0],
-  bean:    [120, 90, 60, 30, 0],
-}
-
-// Simplified K₂O recommendation (kg/ha) by level
-const K_REC: Record<string, number[]> = {
-  soybean: [120, 90, 60, 30, 0],
-  corn:    [120, 80, 60, 30, 0],
-  cotton:  [140, 100, 70, 40, 0],
-  bean:    [100, 70, 50, 30, 0],
-}
-
-// N recommendation (kg/ha)
-const N_REC: Record<string, { inoculated: number; notInoculated: number }> = {
-  soybean: { inoculated: 0, notInoculated: 20 },
-  corn:    { inoculated: 120, notInoculated: 140 },
-  cotton:  { inoculated: 120, notInoculated: 120 },
-  bean:    { inoculated: 60, notInoculated: 80 },
-}
-
-// Formulas NPK comerciais comuns
-const NPK_FORMULAS = [
-  { formula: '02-20-18', n: 2, p: 20, k: 18, total: 40 },
-  { formula: '04-14-08', n: 4, p: 14, k: 8, total: 26 },
-  { formula: '04-30-10', n: 4, p: 30, k: 10, total: 44 },
-  { formula: '05-25-15', n: 5, p: 25, k: 15, total: 45 },
-  { formula: '08-28-16', n: 8, p: 28, k: 16, total: 52 },
-  { formula: '10-10-10', n: 10, p: 10, k: 10, total: 30 },
-  { formula: '20-00-20', n: 20, p: 0, k: 20, total: 40 },
-  { formula: '20-05-20', n: 20, p: 5, k: 20, total: 45 },
-  { formula: '00-20-20', n: 0, p: 20, k: 20, total: 40 },
-]
-
-function classifyLevel(value: number, limits: number[]): number {
-  for (let i = 0; i < limits.length; i++) {
-    if (value < limits[i]) return i
-  }
-  return limits.length - 1
-}
 
 // ── Types ──
 
@@ -77,15 +21,6 @@ interface Inputs {
   customN: string
   customP: string
   customK: string
-}
-
-interface Result {
-  nRec: number
-  pRec: number
-  kRec: number
-  pLevel: string
-  kLevel: string
-  formulas: { formula: string; kgPerHa: number; bagsPerHa: number; nSupplied: number; pSupplied: number; kSupplied: number }[]
 }
 
 const INITIAL: Inputs = {
@@ -121,100 +56,37 @@ const INOC_OPTIONS = [
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  let nRec: number, pRec: number, kRec: number, pLevel: string, kLevel: string
-
-  if (inputs.crop === 'custom') {
-    nRec = parseFloat(inputs.customN) || 0
-    pRec = parseFloat(inputs.customP) || 0
-    kRec = parseFloat(inputs.customK) || 0
-    pLevel = 'Personalizado'
-    kLevel = 'Personalizado'
-  } else {
-    const p = parseFloat(inputs.pSoil)
-    const k = parseFloat(inputs.kSoil)
-
-    const pClasses = P_CLASSES[inputs.texture] ?? P_CLASSES.clay
-    const pLevelIdx = classifyLevel(p, pClasses.limits)
-    const kLevelIdx = classifyLevel(k, K_CLASSES.limits)
-
-    pLevel = pClasses.labels[pLevelIdx]
-    kLevel = K_CLASSES.labels[kLevelIdx]
-
-    const nRef = N_REC[inputs.crop] ?? N_REC.soybean
-    nRec = inputs.inoculated === 'yes' ? nRef.inoculated : nRef.notInoculated
-
-    const pRecTable = P_REC[inputs.crop] ?? P_REC.soybean
-    const kRecTable = K_REC[inputs.crop] ?? K_REC.soybean
-    pRec = pRecTable[pLevelIdx] ?? 0
-    kRec = kRecTable[kLevelIdx] ?? 0
-  }
-
-  // Find best 3 formulas
-  const scored = NPK_FORMULAS
-    .filter((f) => {
-      // at least one needed nutrient should be present in the formula
-      if (nRec > 0 && pRec > 0 && kRec > 0) return true
-      if (pRec > 0 && f.p > 0) return true
-      if (kRec > 0 && f.k > 0) return true
-      if (nRec > 0 && f.n > 0) return true
-      return false
-    })
-    .map((f) => {
-      // Target kg/ha to roughly meet P requirement (often the driver for base fertilization)
-      const kgByP = pRec > 0 && f.p > 0 ? (pRec / (f.p / 100)) : Infinity
-      const kgByK = kRec > 0 && f.k > 0 ? (kRec / (f.k / 100)) : Infinity
-      const kgPerHa = Math.min(
-        Math.max(kgByP, kgByK) > 2000 ? 400 : Math.round(Math.min(kgByP, kgByK)),
-        2000,
-      )
-
-      const nSupplied = kgPerHa * (f.n / 100)
-      const pSupplied = kgPerHa * (f.p / 100)
-      const kSupplied = kgPerHa * (f.k / 100)
-
-      const pError = Math.abs(pSupplied - pRec)
-      const kError = Math.abs(kSupplied - kRec)
-      const score = pError + kError
-
-      return {
-        formula: f.formula,
-        kgPerHa,
-        bagsPerHa: kgPerHa / 50,
-        nSupplied,
-        pSupplied,
-        kSupplied,
-        score,
-      }
-    })
-    .sort((a, b) => a.score - b.score)
-    .slice(0, 3)
-
-  return {
-    nRec,
-    pRec,
-    kRec,
-    pLevel,
-    kLevel,
-    formulas: scored,
-  }
+function calculate(inputs: Inputs): NpkFertilizationResult | null {
+  return calculateNpkFertilization({
+    crop: inputs.crop,
+    texture: inputs.texture,
+    pSoil: parseFloat(inputs.pSoil) || 0,
+    kSoil: parseFloat(inputs.kSoil) || 0,
+    inoculated: inputs.inoculated === 'yes',
+    customN: inputs.customN ? parseFloat(inputs.customN) : undefined,
+    customP: inputs.customP ? parseFloat(inputs.customP) : undefined,
+    customK: inputs.customK ? parseFloat(inputs.customK) : undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (inputs.crop === 'custom') {
-    if (!inputs.customP && !inputs.customK && !inputs.customN) return 'Informe ao menos um nutriente alvo'
-    return null
-  }
-  if (!inputs.pSoil) return 'Informe o fósforo (P) do laudo'
-  if (!inputs.kSoil) return 'Informe o potássio (K) do laudo'
-  return null
+  return validateNpkFertilization({
+    crop: inputs.crop,
+    texture: inputs.texture,
+    pSoil: parseFloat(inputs.pSoil) || 0,
+    kSoil: parseFloat(inputs.kSoil) || 0,
+    inoculated: inputs.inoculated === 'yes',
+    customN: inputs.customN ? parseFloat(inputs.customN) : undefined,
+    customP: inputs.customP ? parseFloat(inputs.customP) : undefined,
+    customK: inputs.customK ? parseFloat(inputs.customK) : undefined,
+  })
 }
 
 // ── Component ──
 
 export default function NpkFertilization() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, NpkFertilizationResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

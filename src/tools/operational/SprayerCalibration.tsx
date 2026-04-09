@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
+import { calculateSprayerCalibration, validateSprayerCalibration, type SprayerCalibrationResult } from '../../core/operational/sprayer-calibration'
 
 // ── Types ──
 
@@ -19,13 +20,6 @@ interface Inputs {
   tankCapacity: string
   dosePerHa: string
   doseUnit: string
-}
-
-interface Result {
-  sprayVolume: number
-  areaCoveredPerTank: number
-  productPerTank: number | null
-  volumeAlert: string | null
 }
 
 const SPRAYER_OPTIONS = [
@@ -52,40 +46,23 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const flow = parseFloat(inputs.flowPerNozzle)
-  const speed = parseFloat(inputs.speed)
-  const spacing = parseFloat(inputs.nozzleSpacing)
-  const tankCap = parseFloat(inputs.tankCapacity)
-  const dosePerHa = parseFloat(inputs.dosePerHa) || 0
-
-  // Volume de calda (L/ha) = (Vazão_bico × 600) / (Velocidade × Espaçamento)
-  const sprayVolume = (flow * 600) / (speed * spacing)
-
-  // Área coberta por tanque
-  const areaCoveredPerTank = tankCap / sprayVolume
-
-  // Produto por tanque
-  const productPerTank = dosePerHa > 0 ? dosePerHa * areaCoveredPerTank : null
-
-  // Alerts
-  let volumeAlert: string | null = null
-  if (sprayVolume < 50)
-    volumeAlert = 'Volume abaixo de 50 L/ha — risco de deriva e cobertura insuficiente.'
-  else if (sprayVolume > 400)
-    volumeAlert = 'Volume acima de 400 L/ha — impraticável para a maioria das operações.'
-
-  return { sprayVolume, areaCoveredPerTank, productPerTank, volumeAlert }
+function calculate(inputs: Inputs): SprayerCalibrationResult | null {
+  return calculateSprayerCalibration({
+    flowPerNozzleLPerMin: parseFloat(inputs.flowPerNozzle),
+    speedKmH: parseFloat(inputs.speed),
+    nozzleSpacingM: parseFloat(inputs.nozzleSpacing),
+    tankCapacityL: parseFloat(inputs.tankCapacity),
+    dosePerHa: parseFloat(inputs.dosePerHa) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.flowPerNozzle) return 'Informe a vazão por bico'
-  if (!inputs.speed) return 'Informe a velocidade de aplicação'
-  if (!inputs.nozzleSpacing) return 'Informe o espaçamento entre bicos'
-  if (!inputs.tankCapacity) return 'Informe a capacidade do tanque'
-  if (isNaN(parseFloat(inputs.speed)) || parseFloat(inputs.speed) <= 0) return 'Velocidade deve ser positiva'
-  if (isNaN(parseFloat(inputs.nozzleSpacing)) || parseFloat(inputs.nozzleSpacing) <= 0) return 'Espaçamento deve ser positivo'
-  return null
+  return validateSprayerCalibration({
+    flowPerNozzleLPerMin: parseFloat(inputs.flowPerNozzle),
+    speedKmH: parseFloat(inputs.speed),
+    nozzleSpacingM: parseFloat(inputs.nozzleSpacing),
+    tankCapacityL: parseFloat(inputs.tankCapacity),
+  })
 }
 
 // ── Reference table data ──
@@ -100,7 +77,7 @@ const VOLUME_REFERENCE = [
 
 export default function SprayerCalibration() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, SprayerCalibrationResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout
@@ -114,7 +91,7 @@ export default function SprayerCalibration() {
             <div className="grid gap-3 sm:grid-cols-2">
               <ResultCard
                 label="Volume de calda"
-                value={formatNumber(result.sprayVolume, 1)}
+                value={formatNumber(result.sprayVolumeLPerHa, 1)}
                 unit="L/ha"
                 highlight
                 variant="default"

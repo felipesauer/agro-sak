@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { DRYING_ENERGY_REF, MOISTURE_STANDARD, cropOptionsFrom } from '../../data/reference-data'
+import { calculateDryingCost, validateDryingCost, type DryingCostResult } from '../../core/grain/drying-cost'
 
 // ── Types ──
 
@@ -19,21 +20,6 @@ interface Inputs {
   energyPrice: string
   dryerCapacity: string
   thirdPartyCost: string
-}
-
-interface Result {
-  waterToRemove: number
-  energyRequired: number
-  fuelConsumed: number
-  fuelUnit: string
-  energyCost: number
-  energyCostPerTon: number
-  energyCostPerBag: number
-  dryingTimeHours: number
-  thirdPartyCostTotal: number
-  thirdPartyCostPerTon: number
-  savings: number
-  ownIsCheaper: boolean
 }
 
 // ── Constants ──
@@ -66,85 +52,44 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const grainWeight = parseFloat(inputs.grainWeight) // in tons
-  const ui = parseFloat(inputs.initialMoisture)
-  const uf = parseFloat(inputs.targetMoisture)
-
+function calculate(inputs: Inputs): DryingCostResult | null {
+  const grainWeight = parseFloat(inputs.grainWeight)
   const sourceKey = inputs.energySource as keyof typeof DRYING_ENERGY_REF.sources
   const source = DRYING_ENERGY_REF.sources[sourceKey]
   if (!source) return null
 
   const customPrice = parseFloat(inputs.energyPrice)
-  const price = isNaN(customPrice) || customPrice <= 0 ? source.pricePerUnit : customPrice
-
   const capacityKey = inputs.dryerCapacity as keyof typeof DRYING_ENERGY_REF.dryerCapacity
   const dryer = DRYING_ENERGY_REF.dryerCapacity[capacityKey]
 
-  const thirdPartyCostPerBag = parseFloat(inputs.thirdPartyCost) || DRYING_ENERGY_REF.thirdPartyCostPerBag.avg
-
-  // Weight of water to remove (kg)
-  // Water removed = grainWeight(kg) × (Ui - Uf) / (100 - Uf)
-  const grainWeightKg = grainWeight * 1000
-  const waterToRemove = grainWeightKg * (ui - uf) / (100 - uf)
-
-  // Energy required (kcal)
-  const energyRequired = waterToRemove * DRYING_ENERGY_REF.kcalPerKgWater
-
-  // Fuel consumed (in source units)
-  const fuelConsumed = energyRequired / (source.kcalPerUnit * source.efficiency)
-
-  // Cost
-  const energyCost = fuelConsumed * price
-  const energyCostPerTon = grainWeight > 0 ? energyCost / grainWeight : 0
-  const energyCostPerBag = energyCostPerTon * 0.06 // 60 kg bag = 0.06 ton
-
-  // Drying time
-  const dryingTimeHours = dryer ? grainWeight / dryer.throughput : 0
-
-  // Third-party comparison
-  const totalBags = grainWeightKg / 60
-  const thirdPartyCostTotal = totalBags * thirdPartyCostPerBag
-  const thirdPartyCostPerTon = grainWeight > 0 ? thirdPartyCostTotal / grainWeight : 0
-
-  const savings = thirdPartyCostTotal - energyCost
-  const ownIsCheaper = savings > 0
-
-  return {
-    waterToRemove,
-    energyRequired,
-    fuelConsumed,
-    fuelUnit: source.unit,
-    energyCost,
-    energyCostPerTon,
-    energyCostPerBag,
-    dryingTimeHours,
-    thirdPartyCostTotal,
-    thirdPartyCostPerTon,
-    savings: Math.abs(savings),
-    ownIsCheaper,
-  }
+  return calculateDryingCost({
+    grainWeightTons: grainWeight,
+    initialMoisture: parseFloat(inputs.initialMoisture),
+    targetMoisture: parseFloat(inputs.targetMoisture),
+    energySource: source,
+    energyPriceOverride: isNaN(customPrice) || customPrice <= 0 ? undefined : customPrice,
+    dryerThroughput: dryer ? dryer.throughput : 0,
+    thirdPartyCostPerBag: parseFloat(inputs.thirdPartyCost) || DRYING_ENERGY_REF.thirdPartyCostPerBag.avg,
+    kcalPerKgWater: DRYING_ENERGY_REF.kcalPerKgWater,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.grainWeight) return 'Informe a quantidade de grãos (toneladas)'
   if (!inputs.initialMoisture) return 'Informe a umidade inicial'
   if (!inputs.targetMoisture) return 'Informe a umidade final desejada'
-  const weight = parseFloat(inputs.grainWeight)
-  if (isNaN(weight) || weight <= 0) return 'A quantidade de grãos deve ser maior que zero'
-  const ui = parseFloat(inputs.initialMoisture)
-  const uf = parseFloat(inputs.targetMoisture)
-  if (isNaN(ui) || ui <= 0 || ui > 50) return 'Umidade inicial deve estar entre 1% e 50%'
-  if (isNaN(uf) || uf <= 0 || uf > 50) return 'Umidade final deve estar entre 1% e 50%'
-  if (ui <= uf) return 'Umidade inicial deve ser maior que a final'
-  return null
+  return validateDryingCost({
+    grainWeightTons: parseFloat(inputs.grainWeight),
+    initialMoisture: parseFloat(inputs.initialMoisture),
+    targetMoisture: parseFloat(inputs.targetMoisture),
+  })
 }
 
 // ── Component ──
 
 export default function DryingCost() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, DryingCostResult>({
       initialInputs: INITIAL,
       calculate,
       validate,
@@ -202,7 +147,7 @@ export default function DryingCost() {
             <div className="grid gap-3 sm:grid-cols-3">
               <ResultCard
                 label="Água removida"
-                value={formatNumber(result.waterToRemove, 0)}
+                value={formatNumber(result.waterToRemoveKg, 0)}
                 unit="kg"
                 variant="default"
               />
@@ -214,7 +159,7 @@ export default function DryingCost() {
               />
               <ResultCard
                 label="Energia necessária"
-                value={formatNumber(result.energyRequired / 1_000_000, 2)}
+                value={formatNumber(result.energyRequiredKcal / 1_000_000, 2)}
                 unit="Mcal"
                 variant="default"
               />

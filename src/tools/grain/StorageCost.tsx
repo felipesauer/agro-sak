@@ -5,28 +5,18 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency } from '../../utils/formatters'
+import { calculateStorageCost, validateStorageCost, type StorageCostResult } from '../../core/grain/storage-cost'
 
 // ── Types ──
 
 interface Inputs {
-  // Terceiro
   thirdPartyFee: string
   volumeAnnual: string
   avgMonths: string
-  // Próprio
   siloCapacity: string
   constructionCost: string
   siloLifeYears: string
   annualOpCost: string
-}
-
-interface Result {
-  thirdPartyCostSc: number
-  thirdPartyTotal: number
-  ownCostSc: number
-  ownTotal: number
-  breakEvenYears: number
-  annualSavings: number
 }
 
 const INITIAL: Inputs = {
@@ -41,46 +31,30 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const fee = parseFloat(inputs.thirdPartyFee)
-  const vol = parseFloat(inputs.volumeAnnual)
-  const months = parseFloat(inputs.avgMonths)
-  const constCost = parseFloat(inputs.constructionCost)
-  const life = parseFloat(inputs.siloLifeYears)
-  const opCost = parseFloat(inputs.annualOpCost)
-
-  const thirdPartyCostSc = fee * months
-  const thirdPartyTotal = thirdPartyCostSc * vol
-
-  const annualDepr = constCost / life
-  const ownTotal = annualDepr + opCost
-  const ownCostSc = vol > 0 ? ownTotal / vol : 0
-
-  const annualSavings = thirdPartyTotal - ownTotal
-  const breakEvenYears = annualSavings > 0 ? constCost / annualSavings : Infinity
-
-  return {
-    thirdPartyCostSc,
-    thirdPartyTotal,
-    ownCostSc,
-    ownTotal,
-    breakEvenYears: breakEvenYears === Infinity ? 0 : Math.ceil(breakEvenYears),
-    annualSavings,
-  }
+function calculate(inputs: Inputs): StorageCostResult | null {
+  return calculateStorageCost({
+    thirdPartyFeePerScMonth: parseFloat(inputs.thirdPartyFee),
+    volumeAnnualSc: parseFloat(inputs.volumeAnnual),
+    avgMonths: parseFloat(inputs.avgMonths),
+    constructionCost: parseFloat(inputs.constructionCost),
+    siloLifeYears: parseFloat(inputs.siloLifeYears),
+    annualOpCost: parseFloat(inputs.annualOpCost),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.thirdPartyFee || parseFloat(inputs.thirdPartyFee) <= 0) return 'Informe a taxa de armazenagem'
-  if (!inputs.volumeAnnual || parseFloat(inputs.volumeAnnual) <= 0) return 'Informe o volume anual'
-  if (!inputs.constructionCost || parseFloat(inputs.constructionCost) <= 0) return 'Informe o custo de construção do silo'
-  return null
+  return validateStorageCost({
+    thirdPartyFeePerScMonth: parseFloat(inputs.thirdPartyFee),
+    volumeAnnualSc: parseFloat(inputs.volumeAnnual),
+    constructionCost: parseFloat(inputs.constructionCost),
+  })
 }
 
 // ── Component ──
 
 export default function StorageCost() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, StorageCostResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

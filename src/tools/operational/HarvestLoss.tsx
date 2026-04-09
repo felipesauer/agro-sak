@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { calculateHarvestLoss, validateHarvestLoss, GRAINS_PER_SC, type HarvestLossResult } from '../../core/operational/harvest-loss'
 
 // ── Types ──
 
@@ -20,21 +21,6 @@ interface Inputs {
   customGrainsFactor: string
 }
 
-interface LossDetail {
-  label: string
-  scHa: number
-  costHa: number
-}
-
-interface Result {
-  losses: LossDetail[]
-  totalScHa: number
-  totalCostHa: number
-  totalCostArea: number | null
-  percentLoss: number
-  severity: 'success' | 'warning' | 'error'
-}
-
 const CROP_OPTIONS = [
   { value: 'soybean', label: 'Soja' },
   { value: 'corn', label: 'Milho' },
@@ -43,15 +29,6 @@ const CROP_OPTIONS = [
   { value: 'bean', label: 'Feijão' },
   { value: 'custom', label: '✦ Personalizado' },
 ]
-
-// Grãos/m² por sc/ha — soja: 16, milho: 8, trigo: 20, arroz: 14, feijão: 12
-const GRAINS_PER_SC: Record<string, number> = {
-  soybean: 16,
-  corn: 8,
-  wheat: 20,
-  rice: 14,
-  bean: 12,
-}
 
 const INITIAL: Inputs = {
   crop: 'soybean',
@@ -66,44 +43,34 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
+function calculate(inputs: Inputs): HarvestLossResult | null {
   const grainsFactor = inputs.crop === 'custom'
     ? (parseFloat(inputs.customGrainsFactor) || 16)
     : (GRAINS_PER_SC[inputs.crop] ?? 16)
-  const price = parseFloat(inputs.sacPrice)
-  const expectedYield = parseFloat(inputs.expectedYield)
-  const area = parseFloat(inputs.area) || 0
-
-  const stages = [
-    { label: 'Pré-colheita (debulha natural)', grains: parseFloat(inputs.preHarvestGrains) },
-    { label: 'Plataforma de corte', grains: parseFloat(inputs.platformGrains) },
-    { label: 'Trilha e separação', grains: parseFloat(inputs.threshingGrains) },
-  ]
-
-  const losses: LossDetail[] = stages.map((s) => {
-    const scHa = s.grains / grainsFactor
-    return { label: s.label, scHa, costHa: scHa * price }
+  return calculateHarvestLoss({
+    grainsFactor,
+    sacPrice: parseFloat(inputs.sacPrice),
+    expectedYieldScHa: parseFloat(inputs.expectedYield),
+    preHarvestGrains: parseFloat(inputs.preHarvestGrains),
+    platformGrains: parseFloat(inputs.platformGrains),
+    threshingGrains: parseFloat(inputs.threshingGrains),
+    areaHa: parseFloat(inputs.area) || undefined,
   })
-
-  const totalScHa = losses.reduce((sum, l) => sum + l.scHa, 0)
-  const totalCostHa = totalScHa * price
-  const totalCostArea = area > 0 ? totalCostHa * area : null
-  const percentLoss = expectedYield > 0 ? (totalScHa / expectedYield) * 100 : 0
-
-  let severity: 'success' | 'warning' | 'error' = 'success'
-  if (totalScHa > 2) severity = 'error'
-  else if (totalScHa > 1) severity = 'warning'
-
-  return { losses, totalScHa, totalCostHa, totalCostArea, percentLoss, severity }
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.expectedYield) return 'Informe a produtividade esperada'
-  if (!inputs.preHarvestGrains) return 'Informe os grãos/m² — pré-colheita'
-  if (!inputs.platformGrains) return 'Informe os grãos/m² — plataforma'
-  if (!inputs.threshingGrains) return 'Informe os grãos/m² — trilha'
-  if (!inputs.sacPrice) return 'Informe o preço da saca'
-  return null
+  const grainsFactor = inputs.crop === 'custom'
+    ? (parseFloat(inputs.customGrainsFactor) || 16)
+    : (GRAINS_PER_SC[inputs.crop] ?? 16)
+  return validateHarvestLoss({
+    grainsFactor,
+    sacPrice: parseFloat(inputs.sacPrice),
+    expectedYieldScHa: parseFloat(inputs.expectedYield),
+    preHarvestGrains: parseFloat(inputs.preHarvestGrains),
+    platformGrains: parseFloat(inputs.platformGrains),
+    threshingGrains: parseFloat(inputs.threshingGrains),
+    areaHa: parseFloat(inputs.area) || undefined,
+  })
 }
 
 // ── Recommendations ──
@@ -126,7 +93,7 @@ function getRecommendation(result: Result): string[] {
 
 export default function HarvestLoss() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, HarvestLossResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

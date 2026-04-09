@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateMicronutrientCorrection, validateMicronutrientCorrection, type MicronutrientCorrectionResult, type NutrientStatus } from '../../core/agronomic/micronutrient-correction'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -18,21 +19,6 @@ interface Inputs {
   area: string
 }
 
-type NutrientStatus = 'Baixo' | 'Médio' | 'Alto'
-
-interface NutrientResult {
-  name: string
-  symbol: string
-  value: number
-  status: NutrientStatus
-  doseKgHa: number
-  totalKg: number
-}
-
-interface Result {
-  nutrients: NutrientResult[]
-}
-
 const CROP_OPTIONS = [
   { value: 'soybean', label: 'Soja' },
   { value: 'corn', label: 'Milho' },
@@ -41,54 +27,6 @@ const CROP_OPTIONS = [
   { value: 'wheat', label: 'Trigo' },
   { value: 'sugarcane', label: 'Cana-de-açúcar' },
 ]
-
-// EMBRAPA classification thresholds (mg/dm³)
-const THRESHOLDS: Record<string, { low: number; high: number }> = {
-  zn: { low: 0.5, high: 1.0 },
-  b: { low: 0.2, high: 0.6 },
-  cu: { low: 0.3, high: 0.8 },
-  mn: { low: 1.5, high: 5.0 },
-}
-
-// Recommended doses (kg/ha of active nutrient) per classification
-const DOSES: Record<string, Record<string, Record<NutrientStatus, number>>> = {
-  soybean: {
-    zn: { Baixo: 6, Médio: 3, Alto: 0 },
-    b: { Baixo: 2, Médio: 1, Alto: 0 },
-    cu: { Baixo: 3, Médio: 1.5, Alto: 0 },
-    mn: { Baixo: 6, Médio: 3, Alto: 0 },
-  },
-  corn: {
-    zn: { Baixo: 6, Médio: 3, Alto: 0 },
-    b: { Baixo: 1.5, Médio: 0.5, Alto: 0 },
-    cu: { Baixo: 3, Médio: 1.5, Alto: 0 },
-    mn: { Baixo: 6, Médio: 3, Alto: 0 },
-  },
-  cotton: {
-    zn: { Baixo: 6, Médio: 3, Alto: 0 },
-    b: { Baixo: 3, Médio: 1.5, Alto: 0 },
-    cu: { Baixo: 3, Médio: 1.5, Alto: 0 },
-    mn: { Baixo: 6, Médio: 3, Alto: 0 },
-  },
-  coffee: {
-    zn: { Baixo: 8, Médio: 4, Alto: 0 },
-    b: { Baixo: 3, Médio: 1.5, Alto: 0 },
-    cu: { Baixo: 4, Médio: 2, Alto: 0 },
-    mn: { Baixo: 8, Médio: 4, Alto: 0 },
-  },
-  wheat: {
-    zn: { Baixo: 5, Médio: 2.5, Alto: 0 },
-    b: { Baixo: 1.5, Médio: 0.5, Alto: 0 },
-    cu: { Baixo: 2, Médio: 1, Alto: 0 },
-    mn: { Baixo: 5, Médio: 2.5, Alto: 0 },
-  },
-  sugarcane: {
-    zn: { Baixo: 6, Médio: 3, Alto: 0 },
-    b: { Baixo: 2, Médio: 1, Alto: 0 },
-    cu: { Baixo: 3, Médio: 1.5, Alto: 0 },
-    mn: { Baixo: 8, Médio: 4, Alto: 0 },
-  },
-}
 
 const INITIAL: Inputs = {
   crop: 'soybean',
@@ -101,50 +39,35 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function classify(nutrient: string, value: number): NutrientStatus {
-  const t = THRESHOLDS[nutrient]
-  if (value < t.low) return 'Baixo'
-  if (value >= t.high) return 'Alto'
-  return 'Médio'
-}
-
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const crop = inputs.crop
-
-  const nutrientKeys: { key: keyof Inputs; name: string; symbol: string }[] = [
-    { key: 'zn', name: 'Zinco', symbol: 'Zn' },
-    { key: 'b', name: 'Boro', symbol: 'B' },
-    { key: 'cu', name: 'Cobre', symbol: 'Cu' },
-    { key: 'mn', name: 'Manganês', symbol: 'Mn' },
-  ]
-
-  const nutrients: NutrientResult[] = nutrientKeys.map(({ key, name, symbol }) => {
-    const value = parseFloat(inputs[key]) || 0
-    const status = classify(key, value)
-    const cropDoses = DOSES[crop]
-    const doseKgHa = cropDoses?.[key]?.[status] ?? 0
-    const totalKg = doseKgHa * area
-
-    return { name, symbol, value, status, doseKgHa, totalKg }
+function calculate(inputs: Inputs): MicronutrientCorrectionResult | null {
+  return calculateMicronutrientCorrection({
+    crop: inputs.crop,
+    areaHa: parseFloat(inputs.area),
+    zn: inputs.zn ? parseFloat(inputs.zn) : undefined,
+    b: inputs.b ? parseFloat(inputs.b) : undefined,
+    cu: inputs.cu ? parseFloat(inputs.cu) : undefined,
+    mn: inputs.mn ? parseFloat(inputs.mn) : undefined,
   })
-
-  return { nutrients }
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.crop) return 'Selecione a cultura'
   if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área'
-  if (!inputs.zn && !inputs.b && !inputs.cu && !inputs.mn)
-    return 'Informe ao menos um micronutriente'
-  return null
+  return validateMicronutrientCorrection({
+    crop: inputs.crop,
+    areaHa: parseFloat(inputs.area),
+    zn: inputs.zn ? parseFloat(inputs.zn) : undefined,
+    b: inputs.b ? parseFloat(inputs.b) : undefined,
+    cu: inputs.cu ? parseFloat(inputs.cu) : undefined,
+    mn: inputs.mn ? parseFloat(inputs.mn) : undefined,
+  })
 }
 
 // ── Component ──
 
 export default function MicronutrientCorrection() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, MicronutrientCorrectionResult>({ initialInputs: INITIAL, calculate, validate })
 
   const statusColor = (s: NutrientStatus) =>
     s === 'Baixo' ? 'text-red-600' : s === 'Médio' ? 'text-yellow-600' : 'text-green-600'

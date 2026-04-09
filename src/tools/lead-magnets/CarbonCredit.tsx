@@ -6,7 +6,8 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
-import { CARBON_SEQUESTRATION, CARBON_PRICE_REF } from '../../data/reference-data'
+import { CARBON_PRICE_REF } from '../../data/reference-data'
+import { calculateCarbonCredit, validateCarbonCredit, type CarbonCreditResult } from '../../core/utilities/carbon-credit'
 
 // ── Types ──
 
@@ -18,16 +19,6 @@ interface Inputs {
   ilpf: string
   years: string
   carbonPrice: string
-}
-
-interface Result {
-  annualSequestration: number
-  totalSequestration: number
-  annualRevenue: number
-  totalRevenue: number
-  revenuePerHa: number
-  practices: { name: string; contribution: number }[]
-  equivalentTrees: number
 }
 
 // ── Constants ──
@@ -57,76 +48,39 @@ const YES_NO_OPTIONS = [
   { value: 'no', label: 'Não' },
 ]
 
-// ── Average CO₂ absorbed per tree per year (tCO₂/tree/year)
-const CO2_PER_TREE_YEAR = 0.022 // Source: EMBRAPA Florestas
-
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const years = parseFloat(inputs.years)
-  const carbonPrice = parseFloat(inputs.carbonPrice)
-  if (isNaN(area) || area <= 0 || isNaN(years) || years <= 0) return null
-
-  const baseRate = CARBON_SEQUESTRATION[inputs.cropSystem] ?? CARBON_SEQUESTRATION.soybean_corn
-
-  const practices: { name: string; contribution: number }[] = []
-  let totalRate = baseRate
-
-  practices.push({ name: 'Sistema de cultivo', contribution: baseRate * area })
-
-  if (inputs.noTill === 'yes') {
-    const noTillBonus = 0.5 // tCO₂eq/ha/year — Source: EMBRAPA Solos, Plano ABC+
-    totalRate += noTillBonus
-    practices.push({ name: 'Plantio direto (SPD)', contribution: noTillBonus * area })
+function calculate(inputs: Inputs): CarbonCreditResult | null {
+  const parsed = {
+    areaHa: parseFloat(inputs.area),
+    cropSystem: inputs.cropSystem,
+    noTill: inputs.noTill === 'yes',
+    coverCrop: inputs.coverCrop === 'yes',
+    ilpf: inputs.ilpf === 'yes',
+    years: parseFloat(inputs.years),
+    carbonPrice: parseFloat(inputs.carbonPrice),
   }
-
-  if (inputs.coverCrop === 'yes') {
-    const coverCropBonus = 0.3 // tCO₂eq/ha/year — Source: EMBRAPA Cerrados
-    totalRate += coverCropBonus
-    practices.push({ name: 'Planta de cobertura', contribution: coverCropBonus * area })
-  }
-
-  if (inputs.ilpf === 'yes') {
-    const ilpfBonus = 1.2 // tCO₂eq/ha/year — Source: EMBRAPA ILPF
-    totalRate += ilpfBonus
-    practices.push({ name: 'ILPF / SAF', contribution: ilpfBonus * area })
-  }
-
-  const annualSequestration = totalRate * area
-  const totalSequestration = annualSequestration * years
-  const annualRevenue = annualSequestration * carbonPrice
-  const totalRevenue = totalSequestration * carbonPrice
-  const equivalentTrees = Math.round(annualSequestration / CO2_PER_TREE_YEAR)
-
-  return {
-    annualSequestration,
-    totalSequestration,
-    annualRevenue,
-    totalRevenue,
-    revenuePerHa: totalRate * carbonPrice,
-    practices,
-    equivalentTrees,
-  }
+  return calculateCarbonCredit(parsed)
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.area) return 'Informe a área em hectares'
-  const area = parseFloat(inputs.area)
-  if (isNaN(area) || area <= 0) return 'A área deve ser maior que zero'
-  if (area > 100_000) return 'Área muito grande — verifique o valor'
-  const years = parseFloat(inputs.years)
-  if (isNaN(years) || years < 1 || years > 50) return 'O prazo deve ser entre 1 e 50 anos'
-  const price = parseFloat(inputs.carbonPrice)
-  if (isNaN(price) || price <= 0) return 'Informe o preço do crédito de carbono'
-  return null
+  return validateCarbonCredit({
+    areaHa: parseFloat(inputs.area),
+    cropSystem: inputs.cropSystem,
+    noTill: inputs.noTill === 'yes',
+    coverCrop: inputs.coverCrop === 'yes',
+    ilpf: inputs.ilpf === 'yes',
+    years: parseFloat(inputs.years),
+    carbonPrice: parseFloat(inputs.carbonPrice),
+  })
 }
 
 // ── Component ──
 
 export default function CarbonCredit() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, CarbonCreditResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

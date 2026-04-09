@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
 import { CROP_KC, cropOptionsFrom } from '../../data/reference-data'
+import { calculateWaterBalance, validateWaterBalance, type WaterBalanceResult } from '../../core/agronomic/water-balance'
 
 // ── Types ──
 
@@ -20,19 +21,6 @@ interface Inputs {
   tempMax: string
   tempMin: string
   customKc: string
-}
-
-interface Result {
-  eto: number
-  etc: number
-  kc: number
-  weeklyDemand: number
-  weeklyBalance: number
-  monthlyBalance: number
-  irrigationLamina: number
-  condition: string
-  conditionVariant: 'info' | 'success' | 'warning' | 'error'
-  recommendation: string
 }
 
 const INITIAL: Inputs = {
@@ -62,119 +50,35 @@ const SOIL_OPTIONS = [
   { value: 'clay', label: 'Argiloso' },
 ]
 
-// Kc by crop and phase
-const KC: Record<string, Record<string, number>> = {
-  soybean: { vegetative: 0.80, flowering: 1.10, grain_fill: 1.00, maturation: 0.50 },
-  corn: { vegetative: 0.75, flowering: 1.15, grain_fill: 1.05, maturation: 0.60 },
-  cotton: { vegetative: 0.70, flowering: 1.15, grain_fill: 1.00, maturation: 0.65 },
-  wheat: { vegetative: 0.70, flowering: 1.10, grain_fill: 1.00, maturation: 0.40 },
-  bean: { vegetative: 0.75, flowering: 1.10, grain_fill: 0.95, maturation: 0.35 },
-  rice: { vegetative: 1.05, flowering: 1.20, grain_fill: 1.10, maturation: 0.90 },
-  coffee: { vegetative: 0.90, flowering: 0.95, grain_fill: 0.95, maturation: 0.90 },
-  sugarcane: { vegetative: 0.60, flowering: 1.25, grain_fill: 1.10, maturation: 0.75 },
-}
-
-// Soil water retention factor (relative)
-const SOIL_FACTOR: Record<string, number> = {
-  sandy: 0.7,
-  medium: 1.0,
-  clay: 1.2,
-}
-
-// Simplified Ra for tropical latitudes (mm/day)
-const RA = 15.0
-
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const tMean = parseFloat(inputs.tempMean)
-  const tMax = parseFloat(inputs.tempMax)
-  const tMin = parseFloat(inputs.tempMin)
-  const precipWeek = parseFloat(inputs.precipWeek) || 0
-  const precipMonth = parseFloat(inputs.precipMonth) || 0
-
-  const kc = inputs.crop === 'custom'
-    ? (parseFloat(inputs.customKc) || 1.0)
-    : (KC[inputs.crop]?.[inputs.phase] ?? 1.0)
-  const soilFactor = SOIL_FACTOR[inputs.soilTexture] ?? 1.0
-
-  // Hargreaves ETo (mm/day)
-  const tRange = Math.max(tMax - tMin, 0.1)
-  const eto = 0.0023 * (tMean + 17.8) * Math.sqrt(tRange) * RA
-
-  // Crop ET
-  const etc = eto * kc
-
-  // Weekly demand
-  const weeklyDemand = etc * 7
-
-  // Balance
-  const weeklyBalance = precipWeek - weeklyDemand
-  const monthlyBalance = precipMonth - etc * 30
-
-  // Adjusted for soil retention
-  const effectiveBalance = weeklyBalance * soilFactor
-
-  // Condition
-  let condition: string
-  let conditionVariant: 'info' | 'success' | 'warning' | 'error'
-  let recommendation: string
-
-  if (effectiveBalance >= 10) {
-    condition = 'Excesso hídrico'
-    conditionVariant = 'info'
-    recommendation = 'Solo pode estar saturado. Verifique drenagem e aeração.'
-  } else if (effectiveBalance >= -5) {
-    condition = 'Adequado'
-    conditionVariant = 'success'
-    recommendation = 'Balanço hídrico dentro do ideal. Manter monitoramento.'
-  } else if (effectiveBalance >= -20) {
-    condition = 'Déficit leve'
-    conditionVariant = 'warning'
-    recommendation = 'Atenção: iniciar irrigação se possível. Monitorar previsão do tempo.'
-  } else {
-    condition = 'Déficit severo'
-    conditionVariant = 'error'
-    recommendation = 'Irrigação urgente! Risco alto de perda de produtividade.'
-  }
-
-  // Phase-specific alert
-  if (inputs.phase === 'flowering' && effectiveBalance < -5) {
-    condition = 'Déficit CRÍTICO (Floração)'
-    conditionVariant = 'error'
-    recommendation = 'ALERTA MÁXIMO: Floração com déficit hídrico causa perda irreversível de produtividade. Irrigar imediatamente!'
-  }
-
-  // Irrigation lamina: how much water to apply (mm) to cover the deficit
-  // Only meaningful when there's a deficit (negative balance)
-  const irrigationLamina = effectiveBalance < 0 ? Math.abs(effectiveBalance) : 0
-
+function buildCoreInput(inputs: Inputs) {
   return {
-    eto,
-    etc,
-    kc,
-    weeklyDemand,
-    weeklyBalance,
-    monthlyBalance,
-    irrigationLamina,
-    condition,
-    conditionVariant,
-    recommendation,
+    crop: inputs.crop,
+    phase: inputs.phase,
+    soilTexture: inputs.soilTexture,
+    precipWeekMm: parseFloat(inputs.precipWeek) || 0,
+    precipMonthMm: parseFloat(inputs.precipMonth) || 0,
+    tempMean: parseFloat(inputs.tempMean),
+    tempMax: parseFloat(inputs.tempMax),
+    tempMin: parseFloat(inputs.tempMin),
+    customKc: inputs.crop === 'custom' ? parseFloat(inputs.customKc) || undefined : undefined,
   }
+}
+
+function calculate(inputs: Inputs): WaterBalanceResult | null {
+  return calculateWaterBalance(buildCoreInput(inputs))
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.tempMean || !inputs.tempMax || !inputs.tempMin) return 'Informe as temperaturas'
-  if (parseFloat(inputs.tempMax) < parseFloat(inputs.tempMin)) return 'Temperatura máxima deve ser maior que a mínima'
-  if (!inputs.precipWeek && !inputs.precipMonth) return 'Informe ao menos a precipitação da semana'
-  return null
+  return validateWaterBalance(buildCoreInput(inputs))
 }
 
 // ── Component ──
 
 export default function WaterBalance() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, WaterBalanceResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateLiming, validateLiming, type LimingResult } from '../../core/agronomic/liming'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -21,12 +22,7 @@ interface Inputs {
   limePrice: string
 }
 
-interface Result {
-  nc: number
-  ncAdjusted: number
-  costPerHa: number | null
-  needsSplitting: boolean
-}
+
 
 const INITIAL: Inputs = {
   method: 'base-saturation',
@@ -55,22 +51,15 @@ const DEPTH_OPTIONS = [
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const ctc = parseFloat(inputs.ctc)
-  const v1 = parseFloat(inputs.v1)
-  const v2 = parseFloat(inputs.v2)
-  const prnt = parseFloat(inputs.prnt)
-  const depth = parseFloat(inputs.depth)
-  const price = parseFloat(inputs.limePrice) || 0
-
-  // Base saturation method: NC = (V2 - V1) × CTC / (10 × PRNT/100)
-  const nc = ((v2 - v1) * ctc) / (10 * (prnt / 100))
-  const depthFactor = depth === 40 ? 2 : 1
-  const ncAdjusted = Math.max(0, nc * depthFactor)
-  const needsSplitting = ncAdjusted > 5
-  const costPerHa = price > 0 ? ncAdjusted * price : null
-
-  return { nc: Math.max(0, nc), ncAdjusted, costPerHa, needsSplitting }
+function calculate(inputs: Inputs): LimingResult | null {
+  return calculateLiming({
+    ctc: parseFloat(inputs.ctc),
+    v1: parseFloat(inputs.v1),
+    v2: parseFloat(inputs.v2),
+    prnt: parseFloat(inputs.prnt),
+    depth: parseFloat(inputs.depth) === 40 ? 40 : 20,
+    limePrice: parseFloat(inputs.limePrice) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
@@ -78,19 +67,20 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.v1) return 'Informe a saturação por bases atual (V%)'
   if (!inputs.v2) return 'Informe a saturação por bases desejada'
   if (!inputs.prnt) return 'Informe o PRNT do calcário'
-  const prnt = parseFloat(inputs.prnt)
-  if (prnt < 50 || prnt > 100) return 'PRNT deve estar entre 50% e 100%'
-  const v1 = parseFloat(inputs.v1)
-  const v2 = parseFloat(inputs.v2)
-  if (v1 >= v2) return 'V% desejada deve ser maior que a atual'
-  return null
+  return validateLiming({
+    ctc: parseFloat(inputs.ctc),
+    v1: parseFloat(inputs.v1),
+    v2: parseFloat(inputs.v2),
+    prnt: parseFloat(inputs.prnt),
+    depth: parseFloat(inputs.depth) === 40 ? 40 : 20,
+  })
 }
 
 // ── Component ──
 
 export default function LimingCalculator() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, LimingResult>({ initialInputs: INITIAL, calculate, validate })
 
   const handleCropChange = (value: string) => {
     updateInput('crop', value as never)

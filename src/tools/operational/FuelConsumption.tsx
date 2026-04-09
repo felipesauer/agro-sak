@@ -10,6 +10,7 @@ import DataFreshness from '../../components/ui/DataFreshness'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { useDieselPrice } from '../../db/hooks'
+import { calculateFuelConsumption, validateFuelConsumption, type FuelConsumptionResult } from '../../core/operational/fuel-consumption'
 
 // ── Types ──
 
@@ -19,13 +20,6 @@ interface Inputs {
   operationalCapacity: string
   dieselPrice: string
   area: string
-}
-
-interface Result {
-  litersPerHa: number
-  costPerHa: number
-  totalCost: number | null
-  totalLiters: number | null
 }
 
 const OPERATION_OPTIONS = [
@@ -57,30 +51,24 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const consumption = parseFloat(inputs.consumptionPerHour)
-  const capacity = parseFloat(inputs.operationalCapacity)
-  const price = parseFloat(inputs.dieselPrice)
-  const area = parseFloat(inputs.area) || 0
-
-  // Consumo (L/ha) = Consumo_h / Capacidade_op
-  const litersPerHa = consumption / capacity
-
-  // Custo (R$/ha) = L/ha × preço diesel
-  const costPerHa = litersPerHa * price
-
-  const totalCost = area > 0 ? costPerHa * area : null
-  const totalLiters = area > 0 ? litersPerHa * area : null
-
-  return { litersPerHa, costPerHa, totalCost, totalLiters }
+function calculate(inputs: Inputs): FuelConsumptionResult | null {
+  return calculateFuelConsumption({
+    consumptionLPerHour: parseFloat(inputs.consumptionPerHour),
+    operationalCapacityHaPerHour: parseFloat(inputs.operationalCapacity),
+    dieselPricePerLiter: parseFloat(inputs.dieselPrice),
+    areaHa: parseFloat(inputs.area) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.consumptionPerHour) return 'Informe o consumo do motor (L/h)'
   if (!inputs.operationalCapacity) return 'Informe a capacidade operacional (ha/h)'
   if (!inputs.dieselPrice) return 'Informe o preço do diesel'
-  if (isNaN(parseFloat(inputs.operationalCapacity)) || parseFloat(inputs.operationalCapacity) <= 0) return 'Capacidade operacional deve ser positiva'
-  return null
+  return validateFuelConsumption({
+    consumptionLPerHour: parseFloat(inputs.consumptionPerHour),
+    operationalCapacityHaPerHour: parseFloat(inputs.operationalCapacity),
+    dieselPricePerLiter: parseFloat(inputs.dieselPrice),
+  })
 }
 
 // ── Reference data ──
@@ -101,7 +89,7 @@ export default function FuelConsumption() {
     dieselPrice: dieselFromDb ? String(dieselFromDb.price) : INITIAL.dieselPrice,
   }), [dieselFromDb])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: currentInitial, calculate, validate })
+    useCalculator<Inputs, FuelConsumptionResult>({ initialInputs: currentInitial, calculate, validate })
 
   const handleOperationChange = (value: string) => {
     updateInput('operation', value)

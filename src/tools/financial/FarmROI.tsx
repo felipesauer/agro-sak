@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
+import { calculateFarmROI, validateFarmROI, type FarmROIResult } from '../../core/financial/farm-roi'
 
 // ── Types ──
 
@@ -14,14 +15,6 @@ interface Inputs {
   totalCost: string
   months: string
   cdiRate: string
-}
-
-interface Result {
-  profit: number
-  roi: number
-  roiAnnualized: number
-  cdiReturn: number
-  cdiAnnual: number
 }
 
 const INITIAL: Inputs = {
@@ -34,40 +27,32 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const investment = parseFloat(inputs.investment)
-  const revenue = parseFloat(inputs.grossRevenue)
-  const cost = parseFloat(inputs.totalCost)
-  const months = parseFloat(inputs.months) || 8
-  const cdiAnnual = parseFloat(inputs.cdiRate) || 13.75
-
-  const profit = revenue - cost
-  const roi = investment > 0 ? (profit / investment) * 100 : 0
-  const roiAnnualized = months > 0
-    ? (Math.pow(1 + roi / 100, 12 / months) - 1) * 100
-    : 0
-
-  // CDI comparison: what the same investment would return in a CDB 100% CDI
-  const cdiMonthly = Math.pow(1 + cdiAnnual / 100, 1 / 12) - 1
-  const cdiReturn = investment * (Math.pow(1 + cdiMonthly, months) - 1)
-
-  return { profit, roi, roiAnnualized, cdiReturn, cdiAnnual }
+function calculate(inputs: Inputs): FarmROIResult | null {
+  return calculateFarmROI({
+    investment: parseFloat(inputs.investment) || 0,
+    grossRevenue: parseFloat(inputs.grossRevenue) || 0,
+    totalCost: parseFloat(inputs.totalCost) || 0,
+    months: parseFloat(inputs.months) || 8,
+    cdiRateAnnual: parseFloat(inputs.cdiRate) || 13.75,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.investment || parseFloat(inputs.investment) <= 0)
-    return 'Informe o investimento total'
-  if (!inputs.grossRevenue) return 'Informe a receita bruta projetada'
-  if (!inputs.totalCost) return 'Informe o custo total'
-  if (!inputs.months || parseFloat(inputs.months) <= 0) return 'Informe o prazo da operação'
-  return null
+  if (!inputs.investment || isNaN(parseFloat(inputs.investment))) return 'Informe o investimento total'
+  return validateFarmROI({
+    investment: parseFloat(inputs.investment) || 0,
+    grossRevenue: parseFloat(inputs.grossRevenue) || 0,
+    totalCost: parseFloat(inputs.totalCost) || 0,
+    months: parseFloat(inputs.months) || 8,
+    cdiRateAnnual: parseFloat(inputs.cdiRate) || 13.75,
+  })
 }
 
 // ── Component ──
 
 export default function FarmROI() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, FarmROIResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

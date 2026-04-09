@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useCalculator from '../../hooks/useCalculator'
+import { calculatePlantSpacing, validatePlantSpacing } from '../../core/agronomic/plant-spacing'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
@@ -8,8 +9,6 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
 
 // ── Types ──
-
-type Mode = 'population' | 'spacing'
 
 interface Inputs {
   rowSpacing: string
@@ -29,37 +28,29 @@ const INITIAL: Inputs = { rowSpacing: '45', plantSpacing: '20', population: '320
 // ── Component ──
 
 export default function PlantSpacing() {
-  const [mode, setMode] = useState<Mode>('population')
+  const [mode, setMode] = useState<'population' | 'spacing'>('population')
 
   const { inputs, result, error, updateInput, run, clear } = useCalculator<Inputs, Result>({
     initialInputs: INITIAL,
     calculate(inputs) {
-      const rowM = parseFloat(inputs.rowSpacing) / 100
-      if (mode === 'population') {
-        const plantM = parseFloat(inputs.plantSpacing) / 100
-        const plantsPerHa = 10_000 / (rowM * plantM)
-        const plantsPerMeter = 1 / plantM
-        const areaPerPlant = rowM * plantM
-        return { plantsPerHa, plantsPerMeter, areaPerPlant, plantSpacingCm: parseFloat(inputs.plantSpacing) }
+      const coreResult = calculatePlantSpacing(
+        mode === 'population'
+          ? { mode: 'fromSpacing', rowSpacingCm: parseFloat(inputs.rowSpacing), plantSpacingCm: parseFloat(inputs.plantSpacing) }
+          : { mode: 'fromPopulation', rowSpacingCm: parseFloat(inputs.rowSpacing), population: parseFloat(inputs.population) }
+      )
+      return {
+        plantsPerHa: coreResult.plantsPerHa,
+        plantsPerMeter: coreResult.plantsPerMeter,
+        areaPerPlant: coreResult.areaPerPlantM2,
+        plantSpacingCm: coreResult.plantSpacingCm,
       }
-      const pop = parseFloat(inputs.population)
-      const plantsPerMeter = pop * rowM / 10_000
-      const plantM = 1 / plantsPerMeter
-      const plantSpacingCm = plantM * 100
-      const areaPerPlant = rowM * plantM
-      return { plantsPerHa: pop, plantsPerMeter, areaPerPlant, plantSpacingCm }
     },
     validate(inputs) {
-      if (!inputs.rowSpacing) return 'Informe o espaçamento entre linhas'
-      if (isNaN(parseFloat(inputs.rowSpacing)) || parseFloat(inputs.rowSpacing) <= 0) return 'Espaçamento entre linhas deve ser positivo'
-      if (mode === 'population') {
-        if (!inputs.plantSpacing) return 'Informe o espaçamento entre plantas'
-        if (isNaN(parseFloat(inputs.plantSpacing)) || parseFloat(inputs.plantSpacing) <= 0) return 'Espaçamento entre plantas deve ser positivo'
-      } else {
-        if (!inputs.population) return 'Informe a população desejada'
-        if (isNaN(parseFloat(inputs.population)) || parseFloat(inputs.population) <= 0) return 'População deve ser positiva'
-      }
-      return null
+      return validatePlantSpacing(
+        mode === 'population'
+          ? { mode: 'fromSpacing', rowSpacingCm: parseFloat(inputs.rowSpacing), plantSpacingCm: parseFloat(inputs.plantSpacing) }
+          : { mode: 'fromPopulation', rowSpacingCm: parseFloat(inputs.rowSpacing), population: parseFloat(inputs.population) }
+      )
     },
   })
 

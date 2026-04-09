@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
+import { calculateSiloDimensioning, validateSiloDimensioning, type SiloDimensioningResult, type SiloType, GRAIN_DENSITY } from '../../core/grain/silo-dimensioning'
 
 // ── Types ──
 
@@ -16,14 +17,6 @@ interface Inputs {
   length: string
   width: string
   grainType: string
-}
-
-interface Result {
-  volumeM3: number
-  capacityTonnes: number
-  capacityBags: number
-  fillPercent: number
-  alerts: string[]
 }
 
 // ── Constants ──
@@ -43,35 +36,16 @@ const SILO_TYPES = [
   { value: 'bag', label: 'Silo Bolsa' },
 ]
 
-// Bulk density of grains (t/m³) — average values from CONAB
-const GRAIN_DENSITY: Record<string, { density: number; label: string; bagKg: number }> = {
-  soybean: { density: 0.72, label: 'Soja', bagKg: 60 },
-  corn: { density: 0.73, label: 'Milho', bagKg: 60 },
-  wheat: { density: 0.78, label: 'Trigo', bagKg: 60 },
-  rice: { density: 0.58, label: 'Arroz', bagKg: 50 },
-  sorghum: { density: 0.72, label: 'Sorgo', bagKg: 60 },
-  cotton_seed: { density: 0.40, label: 'Caroço de algodão', bagKg: 60 },
-  coffee: { density: 0.40, label: 'Café beneficiado', bagKg: 60 },
-  bean: { density: 0.78, label: 'Feijão', bagKg: 60 },
-}
-
 const GRAIN_OPTIONS = Object.entries(GRAIN_DENSITY).map(([value, g]) => ({
   value,
   label: g.label,
 }))
 
-// Practical fill factor — you can't fill 100% of the geometric volume
-const FILL_FACTOR = 0.90
-
-// Silo bolsa standard dimensions
-const BAG_DIAMETER_M = 2.74 // 9 feet standard
-const BAG_CROSS_SECTION_M2 = Math.PI * (BAG_DIAMETER_M / 2) ** 2 * 0.85 // ~85% fill
-
 // ── Component ──
 
 export default function SiloDimensioning() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, SiloDimensioningResult>({
       initialInputs: INITIAL,
       calculate,
       validate,
@@ -232,66 +206,23 @@ export default function SiloDimensioning() {
 // ── Logic ──
 
 function validate(inputs: Inputs): string | null {
-  const { type } = inputs
-
-  if (type === 'cylindrical') {
-    const d = parseFloat(inputs.diameter)
-    const h = parseFloat(inputs.height)
-    if (isNaN(d) || d <= 0) return 'Informe o diâmetro do silo'
-    if (isNaN(h) || h <= 0) return 'Informe a altura útil do silo'
-    if (d > 50) return 'Diâmetro acima de 50 m — verifique o valor'
-    if (h > 40) return 'Altura acima de 40 m — verifique o valor'
-  } else if (type === 'rectangular') {
-    const l = parseFloat(inputs.length)
-    const w = parseFloat(inputs.width)
-    const h = parseFloat(inputs.height)
-    if (isNaN(l) || l <= 0) return 'Informe o comprimento'
-    if (isNaN(w) || w <= 0) return 'Informe a largura'
-    if (isNaN(h) || h <= 0) return 'Informe a altura útil'
-  } else if (type === 'bag') {
-    const l = parseFloat(inputs.length)
-    if (isNaN(l) || l <= 0) return 'Informe o comprimento da bolsa'
-  }
-
-  return null
+  return validateSiloDimensioning({
+    type: inputs.type as SiloType,
+    diameterM: parseFloat(inputs.diameter) || undefined,
+    heightM: parseFloat(inputs.height) || undefined,
+    lengthM: parseFloat(inputs.length) || undefined,
+    widthM: parseFloat(inputs.width) || undefined,
+    grainType: inputs.grainType,
+  })
 }
 
-function calculate(inputs: Inputs): Result {
-  const grain = GRAIN_DENSITY[inputs.grainType] ?? GRAIN_DENSITY.soybean
-  const alerts: string[] = []
-  let volumeGross = 0
-
-  if (inputs.type === 'cylindrical') {
-    const r = parseFloat(inputs.diameter) / 2
-    const h = parseFloat(inputs.height)
-    volumeGross = Math.PI * r ** 2 * h
-  } else if (inputs.type === 'rectangular') {
-    const l = parseFloat(inputs.length)
-    const w = parseFloat(inputs.width)
-    const h = parseFloat(inputs.height)
-    volumeGross = l * w * h
-  } else {
-    // Silo bolsa — cross section already includes 85% fill factor
-    const l = parseFloat(inputs.length)
-    volumeGross = BAG_CROSS_SECTION_M2 * l
-  }
-
-  const volumeM3 = volumeGross * FILL_FACTOR
-  const capacityTonnes = volumeM3 * grain.density
-  const capacityBags = (capacityTonnes * 1000) / grain.bagKg
-  const fillPercent = FILL_FACTOR * 100
-
-  if (inputs.type === 'bag') {
-    const bags60 = Math.floor(capacityTonnes / 200) // ~200t per 60m bag
-    if (bags60 < 1) {
-      alerts.push(`Capacidade estimada: ${formatNumber(capacityTonnes, 0)} t de ${grain.label.toLowerCase()}. `)
-    }
-    alerts.push(`Silo bolsa padrão 9 pés (${formatNumber(BAG_DIAMETER_M, 2)} m). O preenchimento real depende da compactação da ensacadora.`)
-  }
-
-  if (capacityTonnes > 5000) {
-    alerts.push('Capacidade acima de 5.000 t. Para grandes unidades armazenadoras, considere projeto estrutural completo.')
-  }
-
-  return { volumeM3, capacityTonnes, capacityBags, fillPercent, alerts }
+function calculate(inputs: Inputs): SiloDimensioningResult {
+  return calculateSiloDimensioning({
+    type: inputs.type as SiloType,
+    diameterM: parseFloat(inputs.diameter) || undefined,
+    heightM: parseFloat(inputs.height) || undefined,
+    lengthM: parseFloat(inputs.length) || undefined,
+    widthM: parseFloat(inputs.width) || undefined,
+    grainType: inputs.grainType,
+  })
 }

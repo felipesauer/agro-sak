@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
+import { calculateSeedingRate, validateSeedingRate, type SeedingRateResult } from '../../core/agronomic/seeding-rate'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -24,14 +25,6 @@ interface Inputs {
   seedPrice: string
 }
 
-interface Result {
-  seedsPerMeter: number
-  adjustedSeedsPerHa: number
-  kgPerHa: number
-  bagsPerHa: number
-  costPerHa: number | null
-}
-
 function getInitial(crop: string): Inputs {
   const d = SEEDING_DEFAULTS[crop] ?? SEEDING_DEFAULTS.soybean
   return {
@@ -48,32 +41,16 @@ function getInitial(crop: string): Inputs {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const pop = parseFloat(inputs.population)
-  const spacing = parseFloat(inputs.rowSpacing)
-  const germ = parseFloat(inputs.germination)
-  const vig = parseFloat(inputs.vigor)
-  const tsw = parseFloat(inputs.tsw)
-  const price = parseFloat(inputs.seedPrice) || 0
-
-  // Seeds per linear meter
-  const seedsPerMeter = (pop * (spacing / 100)) / 10_000
-
-  // Adjusted seeds/ha (compensate for germination and vigor)
-  const efficiency = (germ / 100) * (vig / 100)
-  const adjustedSeedsPerHa = pop / efficiency
-
-  // Kg per hectare
-  const kgPerHa = (adjustedSeedsPerHa * tsw) / 1_000_000
-
-  // Bags (customizable weight)
-  const bagWeight = parseFloat(inputs.bagWeight) || 40
-  const bagsPerHa = kgPerHa / bagWeight
-
-  // Cost
-  const costPerHa = price > 0 ? bagsPerHa * price : null
-
-  return { seedsPerMeter, adjustedSeedsPerHa, kgPerHa, bagsPerHa, costPerHa }
+function calculate(inputs: Inputs): SeedingRateResult | null {
+  return calculateSeedingRate({
+    population: parseFloat(inputs.population),
+    rowSpacingCm: parseFloat(inputs.rowSpacing),
+    germinationPercent: parseFloat(inputs.germination),
+    vigorPercent: parseFloat(inputs.vigor),
+    tswGrams: parseFloat(inputs.tsw),
+    bagWeightKg: parseFloat(inputs.bagWeight) || 40,
+    seedPricePerBag: parseFloat(inputs.seedPrice) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
@@ -82,11 +59,15 @@ function validate(inputs: Inputs): string | null {
   if (!inputs.germination) return 'Informe a germinação da semente'
   if (!inputs.vigor) return 'Informe o vigor / fator de campo'
   if (!inputs.tsw) return 'Informe o peso de mil sementes (PMG)'
-  const germ = parseFloat(inputs.germination)
-  const vig = parseFloat(inputs.vigor)
-  if (germ < 50 || germ > 100) return 'Germinação deve estar entre 50% e 100%'
-  if (vig < 50 || vig > 100) return 'Vigor deve estar entre 50% e 100%'
-  return null
+  return validateSeedingRate({
+    population: parseFloat(inputs.population),
+    rowSpacingCm: parseFloat(inputs.rowSpacing),
+    germinationPercent: parseFloat(inputs.germination),
+    vigorPercent: parseFloat(inputs.vigor),
+    tswGrams: parseFloat(inputs.tsw),
+    bagWeightKg: parseFloat(inputs.bagWeight) || 40,
+    seedPricePerBag: parseFloat(inputs.seedPrice) || undefined,
+  })
 }
 
 // ── Component ──
@@ -110,7 +91,7 @@ export default function SeedingRate() {
 
   const [crop, setCrop] = useState('soybean')
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, SeedingRateResult>({
       initialInputs: getInitial(crop),
       calculate,
       validate,

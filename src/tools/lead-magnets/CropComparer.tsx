@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { calculateCropComparer, validateCropComparer, type CropCompareResult } from '../../core/financial/crop-comparer'
 
 // ── Types ──
 
@@ -17,15 +18,6 @@ interface CropEntry {
   enabled: boolean
 }
 
-interface CropResult {
-  name: string
-  revenuePerHa: number
-  costPerHa: number
-  profitPerHa: number
-  roi: number
-  margin: number
-}
-
 const DEFAULTS: CropEntry[] = [
   { id: 1, name: 'Soja', productivity: '55', price: '115', productionCost: '3200', enabled: true },
   { id: 2, name: 'Milho', productivity: '100', price: '50', productionCost: '2800', enabled: true },
@@ -36,7 +28,7 @@ const DEFAULTS: CropEntry[] = [
 
 export default function CropComparer() {
   const [crops, setCrops] = useState<CropEntry[]>(DEFAULTS)
-  const [results, setResults] = useState<CropResult[] | null>(null)
+  const [results, setResults] = useState<CropCompareResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function updateCrop(id: number, key: keyof CropEntry, val: string | boolean) {
@@ -50,31 +42,23 @@ export default function CropComparer() {
 
   function run() {
     const enabled = crops.filter((c) => c.enabled)
-    if (enabled.length < 2) { setError('Selecione ao menos 2 culturas para comparar'); return }
+    const entries = enabled
+      .filter((c) => parseFloat(c.productivity) > 0 && parseFloat(c.price) > 0 && parseFloat(c.productionCost) > 0)
+      .map((c) => ({
+        name: c.name,
+        productivity: parseFloat(c.productivity),
+        price: parseFloat(c.price),
+        productionCost: parseFloat(c.productionCost),
+      }))
 
-    const valid = enabled.filter((c) => {
-      const prod = parseFloat(c.productivity)
-      const price = parseFloat(c.price)
-      const cost = parseFloat(c.productionCost)
-      return prod > 0 && price > 0 && cost > 0
-    })
+    const validationError = validateCropComparer(entries)
+    if (validationError) { setError(validationError); return }
 
-    if (valid.length < 2) { setError('Preencha produtividade, preço e custo de ao menos 2 culturas'); return }
+    const calculated = calculateCropComparer(entries)
+    if (!calculated) { setError('Erro ao calcular'); return }
 
-    const results: CropResult[] = valid.map((c) => {
-      const prod = parseFloat(c.productivity)
-      const price = parseFloat(c.price)
-      const cost = parseFloat(c.productionCost)
-      const revenue = prod * price
-      const profit = revenue - cost
-      const roi = cost > 0 ? (profit / cost) * 100 : 0
-      const margin = revenue > 0 ? (profit / revenue) * 100 : 0
-      return { name: c.name, revenuePerHa: revenue, costPerHa: cost, profitPerHa: profit, roi, margin }
-    })
-
-    results.sort((a, b) => b.profitPerHa - a.profitPerHa)
     setError(null)
-    setResults(results)
+    setResults(calculated)
   }
 
   function clear() {

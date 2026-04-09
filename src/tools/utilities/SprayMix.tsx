@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
+import { calculateSprayMix, validateSprayMix, type SprayMixResult } from '../../core/utilities/spray-mix'
 
 // ── Types ──
 
@@ -13,12 +14,6 @@ interface Inputs {
   sprayVolume: string
   dosePerHa: string
   unit: string
-}
-
-interface Result {
-  perTank: number
-  per100L: number
-  areaCoveredPerTank: number
 }
 
 const INITIAL: Inputs = {
@@ -30,24 +25,20 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const tankVol = parseFloat(inputs.tankVolume)
-  const sprayVol = parseFloat(inputs.sprayVolume)
-  const dose = parseFloat(inputs.dosePerHa)
-
-  const areaCoveredPerTank = tankVol / sprayVol
-  const perTank = dose * areaCoveredPerTank
-  const per100L = dose * (100 / sprayVol)
-
-  return { perTank, per100L, areaCoveredPerTank }
+function calculate(inputs: Inputs): SprayMixResult | null {
+  return calculateSprayMix({
+    tankVolumeLiters: parseFloat(inputs.tankVolume),
+    sprayVolumeLPerHa: parseFloat(inputs.sprayVolume),
+    dosePerHa: parseFloat(inputs.dosePerHa),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.tankVolume) return 'Informe o volume do tanque'
-  if (!inputs.sprayVolume) return 'Informe o volume de calda por hectare'
-  if (!inputs.dosePerHa) return 'Informe a dose por hectare'
-  if (isNaN(parseFloat(inputs.sprayVolume)) || parseFloat(inputs.sprayVolume) <= 0) return 'Volume de calda deve ser positivo'
-  return null
+  return validateSprayMix({
+    tankVolumeLiters: parseFloat(inputs.tankVolume),
+    sprayVolumeLPerHa: parseFloat(inputs.sprayVolume),
+    dosePerHa: parseFloat(inputs.dosePerHa),
+  })
 }
 
 const UNIT_MAP = {
@@ -59,7 +50,7 @@ const UNIT_MAP = {
 
 export default function SprayMix() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, SprayMixResult>({ initialInputs: INITIAL, calculate, validate })
 
   const units = UNIT_MAP[inputs.unit as keyof typeof UNIT_MAP] ?? UNIT_MAP.L
 

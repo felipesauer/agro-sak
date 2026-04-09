@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import useCalculator from '../../hooks/useCalculator'
+import { calculateDryingLoss, validateDryingLoss, type DryingLossResult } from '../../core/grain/drying-loss'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -22,15 +23,6 @@ interface Inputs {
   pricePerBag: string
 }
 
-interface Result {
-  finalWeightKg: number
-  lossKg: number
-  lossPercent: number
-  lossBags: number
-  dryingCost: number
-  financialLoss: number
-}
-
 const INITIAL: Inputs = {
   crop: 'soybean',
   initialWeight: '',
@@ -42,41 +34,25 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const initialWeight = parseFloat(inputs.initialWeight)
-  const initialMoisture = parseFloat(inputs.initialMoisture)
-  const targetMoisture = parseFloat(inputs.targetMoisture)
-  const dryingCost = parseFloat(inputs.dryingCostPerBag) || 0
-  const price = parseFloat(inputs.pricePerBag) || 0
-
-  const finalWeightKg =
-    initialWeight * ((100 - initialMoisture) / (100 - targetMoisture))
-  const lossKg = initialWeight - finalWeightKg
-  const lossBags = lossKg / 60
-
-  const initialBags = initialWeight / 60
-  const totalDryingCost = initialBags * dryingCost
-  const financialLoss = lossBags * price
-
-  return {
-    finalWeightKg,
-    lossKg,
-    lossPercent: initialWeight > 0 ? (lossKg / initialWeight) * 100 : 0,
-    lossBags,
-    dryingCost: totalDryingCost,
-    financialLoss,
-  }
+function calculate(inputs: Inputs): DryingLossResult | null {
+  return calculateDryingLoss({
+    initialWeight: parseFloat(inputs.initialWeight),
+    initialMoisture: parseFloat(inputs.initialMoisture),
+    targetMoisture: parseFloat(inputs.targetMoisture),
+    dryingCostPerBag: parseFloat(inputs.dryingCostPerBag) || undefined,
+    pricePerBag: parseFloat(inputs.pricePerBag) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.initialWeight) return 'Informe o peso inicial'
   if (!inputs.initialMoisture) return 'Informe a umidade inicial'
   if (!inputs.targetMoisture) return 'Informe a umidade final desejada'
-  const ui = parseFloat(inputs.initialMoisture)
-  const uf = parseFloat(inputs.targetMoisture)
-  if (ui <= uf) return 'Umidade inicial deve ser maior que a final'
-  if (isNaN(parseFloat(inputs.initialWeight)) || parseFloat(inputs.initialWeight) <= 0) return 'Peso deve ser positivo'
-  return null
+  return validateDryingLoss({
+    initialWeight: parseFloat(inputs.initialWeight),
+    initialMoisture: parseFloat(inputs.initialMoisture),
+    targetMoisture: parseFloat(inputs.targetMoisture),
+  })
 }
 
 // ── Component ──
@@ -92,7 +68,7 @@ export default function DryingLoss() {
     { value: 'custom', label: '✦ Personalizado' },
   ], [moistureStds])
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, DryingLossResult>({ initialInputs: INITIAL, calculate, validate })
 
   const handleCropChange = (v: string) => {
     updateInput('crop', v)

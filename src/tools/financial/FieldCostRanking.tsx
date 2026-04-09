@@ -7,6 +7,7 @@ import ComparisonTable from '../../components/ui/ComparisonTable'
 import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 import { useCropPrice } from '../../db/hooks'
+import { calculateFieldCostRanking, validateFieldCostRanking } from '../../core/financial/field-cost-ranking'
 
 // ── Types ──
 
@@ -69,28 +70,29 @@ export default function FieldCostRanking() {
 
   function run() {
     const price = parseFloat(pricePerSc) || PRICE_PER_SC
-    const valid = fields.filter((f) => parseFloat(f.area) > 0 && parseFloat(f.productivity) > 0)
+    const validFields = fields.filter((f) => parseFloat(f.area) > 0 && parseFloat(f.productivity) > 0)
     const excluded = fields.filter((f) => (parseFloat(f.area) > 0 || parseFloat(f.productivity) > 0) && !(parseFloat(f.area) > 0 && parseFloat(f.productivity) > 0))
-    if (valid.length === 0) { setError('Informe ao menos 1 talhão com área e produtividade'); return }
+
+    const coreFields = validFields.map((f) => ({
+      name: f.name,
+      areaHa: parseFloat(f.area),
+      productivityScHa: parseFloat(f.productivity),
+      inputCostPerHa: parseFloat(f.inputCost) || 0,
+      operationCostPerHa: parseFloat(f.operationCost) || 0,
+      leaseCostPerHa: parseFloat(f.leaseCost) || 0,
+      otherCostPerHa: parseFloat(f.otherCost) || 0,
+    }))
+
+    const validationError = validateFieldCostRanking(coreFields)
+    if (validationError) { setError(validationError); return }
     setExcludedCount(excluded.length)
 
-    const results: FieldResult[] = valid.map((f) => {
-      const area = parseFloat(f.area)
-      const prod = parseFloat(f.productivity)
-      const ic = parseFloat(f.inputCost) || 0
-      const oc = parseFloat(f.operationCost) || 0
-      const lc = parseFloat(f.leaseCost) || 0
-      const otc = parseFloat(f.otherCost) || 0
-      const costPerHa = ic + oc + lc + otc
-      const totalCost = costPerHa * area
-      const costPerSc = prod > 0 ? costPerHa / prod : 0
-      const revenuePerHa = prod * price
-      const profitPerHa = revenuePerHa - costPerHa
-      const profit = profitPerHa * area
-      return { id: f.id, name: f.name, area, totalCost, costPerHa, costPerSc, revenuePerHa, profitPerHa, profit }
+    const coreResults = calculateFieldCostRanking(coreFields, price)
+    const results: FieldResult[] = coreResults.map((r) => {
+      const original = validFields.find((f) => f.name === r.name)
+      return { id: original?.id ?? 0, name: r.name, area: r.areaHa, totalCost: r.totalCost, costPerHa: r.costPerHa, costPerSc: r.costPerSc, revenuePerHa: r.revenuePerHa, profitPerHa: r.profitPerHa, profit: r.profit }
     })
 
-    results.sort((a, b) => b.profitPerHa - a.profitPerHa)
     setError(null)
     setResults(results)
   }

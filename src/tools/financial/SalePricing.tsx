@@ -6,6 +6,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
+import { calculateSalePricing, validateSalePricing, type SalePricingResult } from '../../core/financial/sale-pricing'
 
 // ── Types ──
 
@@ -18,23 +19,10 @@ interface Inputs {
   marketPrice: string
 }
 
-interface Result {
-  totalTaxRate: number
-  minPrice: number
-  priceWithMargin: number
-  markup: number
-  marketDiff: number | null
-}
-
 const PRODUCER_OPTIONS = [
   { value: 'pf', label: 'Pessoa Física (PF) — 1,5%' },
   { value: 'pj', label: 'Pessoa Jurídica (PJ) — 2,85%' },
 ]
-
-const FUNRURAL_RATE: Record<string, number> = {
-  pf: 1.5,
-  pj: 2.85,
-}
 
 const INITIAL: Inputs = {
   costPerSc: '68',
@@ -47,48 +35,34 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const cost = parseFloat(inputs.costPerSc)
-  const funrural = FUNRURAL_RATE[inputs.producerType] ?? 1.5
-  const icms = parseFloat(inputs.icms) || 0
-  const margin = parseFloat(inputs.desiredMargin) || 0
-  const broker = parseFloat(inputs.brokerFee) || 0
-  const market = parseFloat(inputs.marketPrice) || 0
-
-  const totalTaxRate = funrural + icms + broker
-
-  // Preço mínimo = Custo / (1 - impostos_total/100)
-  const minPrice = cost / (1 - totalTaxRate / 100)
-
-  // Preço com margem = Custo / (1 - (impostos + margem)/100)
-  const priceWithMargin = cost / (1 - (totalTaxRate + margin) / 100)
-
-  // Mark-up
-  const markup = ((priceWithMargin - cost) / cost) * 100
-
-  // Market comparison
-  const marketDiff = market > 0 ? market - priceWithMargin : null
-
-  return { totalTaxRate, minPrice, priceWithMargin, markup, marketDiff }
+function calculate(inputs: Inputs): SalePricingResult | null {
+  return calculateSalePricing({
+    costPerSc: parseFloat(inputs.costPerSc) || 0,
+    producerType: inputs.producerType,
+    icmsPercent: parseFloat(inputs.icms) || 0,
+    desiredMarginPercent: parseFloat(inputs.desiredMargin) || 0,
+    brokerFeePercent: parseFloat(inputs.brokerFee) || 0,
+    marketPrice: parseFloat(inputs.marketPrice) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.costPerSc || parseFloat(inputs.costPerSc) <= 0)
-    return 'Informe o custo de produção por saca'
-  const funrural = FUNRURAL_RATE[inputs.producerType] ?? 1.5
-  const icms = parseFloat(inputs.icms) || 0
-  const margin = parseFloat(inputs.desiredMargin) || 0
-  const broker = parseFloat(inputs.brokerFee) || 0
-  const totalDeduct = funrural + icms + margin + broker
-  if (totalDeduct >= 100) return 'Impostos + margem não podem somar 100% ou mais'
-  return null
+  if (!inputs.costPerSc || isNaN(parseFloat(inputs.costPerSc))) return 'Informe o custo de produção por saca'
+  return validateSalePricing({
+    costPerSc: parseFloat(inputs.costPerSc) || 0,
+    producerType: inputs.producerType,
+    icmsPercent: parseFloat(inputs.icms) || 0,
+    desiredMarginPercent: parseFloat(inputs.desiredMargin) || 0,
+    brokerFeePercent: parseFloat(inputs.brokerFee) || 0,
+    marketPrice: parseFloat(inputs.marketPrice) || undefined,
+  })
 }
 
 // ── Component ──
 
 export default function SalePricing() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, SalePricingResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

@@ -5,6 +5,7 @@ import InputField from '../../components/ui/InputField'
 import ActionButtons from '../../components/ui/ActionButtons'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency } from '../../utils/formatters'
+import { calculateCashFlow, type CashFlowResult } from '../../core/financial/cash-flow'
 
 // ── Types ──
 
@@ -25,19 +26,6 @@ interface MonthData {
 interface Inputs {
   months: [MonthData, MonthData, MonthData]
   initialBalance: string
-}
-
-interface MonthResult {
-  label: string
-  totalIncome: number
-  totalExpense: number
-  balance: number
-  accumulated: number
-}
-
-interface Result {
-  monthResults: MonthResult[]
-  hasDeficit: boolean
 }
 
 function emptyMonth(): MonthData {
@@ -69,32 +57,25 @@ function validate(inputs: Inputs): string | null {
   return null
 }
 
-function calculate(inputs: Inputs): Result | null {
-  const initial = parseFloat(inputs.initialBalance) || 0
-  let accumulated = initial
-  const monthResults: MonthResult[] = []
-
-  for (let i = 0; i < 3; i++) {
-    const m = inputs.months[i]
-    const totalIncome =
-      (parseFloat(m.salesRevenue) || 0) +
-      (parseFloat(m.financingIncome) || 0) +
-      (parseFloat(m.otherIncome) || 0)
-    const totalExpense =
-      (parseFloat(m.inputsPurchase) || 0) +
-      (parseFloat(m.leasePay) || 0) +
-      (parseFloat(m.financingPay) || 0) +
-      (parseFloat(m.laborPay) || 0) +
-      (parseFloat(m.fuelMaint) || 0) +
-      (parseFloat(m.otherExpenses) || 0)
-    const balance = totalIncome - totalExpense
-    accumulated += balance
-    monthResults.push({ label: MONTHS[i], totalIncome, totalExpense, balance, accumulated })
+function parseCoreInput(inputs: Inputs) {
+  return {
+    initialBalance: parseFloat(inputs.initialBalance) || 0,
+    months: inputs.months.map(m => ({
+      salesRevenue: parseFloat(m.salesRevenue) || 0,
+      financingIncome: parseFloat(m.financingIncome) || 0,
+      otherIncome: parseFloat(m.otherIncome) || 0,
+      inputsPurchase: parseFloat(m.inputsPurchase) || 0,
+      leasePay: parseFloat(m.leasePay) || 0,
+      financingPay: parseFloat(m.financingPay) || 0,
+      laborPay: parseFloat(m.laborPay) || 0,
+      fuelMaint: parseFloat(m.fuelMaint) || 0,
+      otherExpenses: parseFloat(m.otherExpenses) || 0,
+    })),
   }
+}
 
-  const hasDeficit = monthResults.some((m) => m.accumulated < 0)
-
-  return { monthResults, hasDeficit }
+function calculate(inputs: Inputs): CashFlowResult | null {
+  return calculateCashFlow(parseCoreInput(inputs))
 }
 
 // ── Component ──
@@ -102,7 +83,7 @@ function calculate(inputs: Inputs): Result | null {
 export default function CashFlow() {
   const [activeMonth, setActiveMonth] = useState(0)
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, CashFlowResult>({ initialInputs: INITIAL, calculate, validate })
 
   const updateMonth = (monthIdx: number, field: keyof MonthData, value: string) => {
     const newMonths = [...inputs.months] as [MonthData, MonthData, MonthData]

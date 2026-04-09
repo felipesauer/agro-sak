@@ -6,6 +6,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
+import { calculateOperationalCapacity, validateOperationalCapacity, type OperationalCapacityResult } from '../../core/operational/operational-capacity'
 
 // ── Types ──
 
@@ -15,12 +16,6 @@ interface Inputs {
   efficiency: string
   area: string
   hoursPerDay: string
-}
-
-interface Result {
-  haPerHour: number
-  hoursNeeded: number | null
-  daysNeeded: number | null
 }
 
 const INITIAL: Inputs = {
@@ -33,30 +28,22 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const width = parseFloat(inputs.workWidth)
-  const speed = parseFloat(inputs.speed)
-  const eff = parseFloat(inputs.efficiency)
-
-  // Cap. Operacional (ha/h) = (Largura × Velocidade × Eficiência/100) / 10
-  const haPerHour = (width * speed * (eff / 100)) / 10
-
-  const area = parseFloat(inputs.area) || 0
-  const hpd = parseFloat(inputs.hoursPerDay) || 0
-
-  const hoursNeeded = area > 0 ? area / haPerHour : null
-  const daysNeeded = hoursNeeded !== null && hpd > 0 ? hoursNeeded / hpd : null
-
-  return { haPerHour, hoursNeeded, daysNeeded }
+function calculate(inputs: Inputs): OperationalCapacityResult | null {
+  return calculateOperationalCapacity({
+    workWidthM: parseFloat(inputs.workWidth),
+    speedKmH: parseFloat(inputs.speed),
+    efficiencyPercent: parseFloat(inputs.efficiency),
+    areaHa: parseFloat(inputs.area) || undefined,
+    hoursPerDay: parseFloat(inputs.hoursPerDay) || undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.workWidth) return 'Informe a largura de trabalho'
-  if (!inputs.speed) return 'Informe a velocidade de trabalho'
-  if (!inputs.efficiency) return 'Informe a eficiência operacional'
-  const eff = parseFloat(inputs.efficiency)
-  if (eff <= 0 || eff > 100) return 'Eficiência deve estar entre 1% e 100%'
-  return null
+  return validateOperationalCapacity({
+    workWidthM: parseFloat(inputs.workWidth),
+    speedKmH: parseFloat(inputs.speed),
+    efficiencyPercent: parseFloat(inputs.efficiency),
+  })
 }
 
 // ── Reference data ──
@@ -73,7 +60,7 @@ const EFFICIENCY_REFERENCE = [
 
 export default function OperationalCapacity() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, OperationalCapacityResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

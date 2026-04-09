@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
 import { CROP_KC, cropOptionsFrom } from '../../data/reference-data'
+import { calculateIrrigation, validateIrrigation, type IrrigationResult } from '../../core/agronomic/irrigation'
 
 // ── Types ──
 
@@ -25,16 +26,6 @@ interface Inputs {
   customKc: string
 }
 
-interface Result {
-  eto: number
-  etc: number
-  kc: number
-  netLamina: number
-  grossLamina: number
-  irrigationInterval: number
-  pivotHours: number
-  alert: string | null
-}
 
 const INITIAL: Inputs = {
   crop: 'soybean',
@@ -72,85 +63,45 @@ const SYSTEM_OPTIONS = [
   { value: 'sprinkler', label: 'Aspersão convencional' },
 ]
 
-// Kc by crop and phase
-const KC: Record<string, Record<string, number>> = {
-  soybean: { initial: 0.40, development: 0.85, flowering: 1.10, maturation: 0.50 },
-  corn: { initial: 0.35, development: 0.80, flowering: 1.15, maturation: 0.60 },
-  cotton: { initial: 0.35, development: 0.75, flowering: 1.15, maturation: 0.65 },
-  bean: { initial: 0.40, development: 0.80, flowering: 1.10, maturation: 0.50 },
-  wheat: { initial: 0.30, development: 0.75, flowering: 1.10, maturation: 0.40 },
-  rice: { initial: 1.05, development: 1.10, flowering: 1.20, maturation: 0.90 },
-  coffee: { initial: 0.90, development: 0.90, flowering: 0.95, maturation: 0.90 },
-  sugarcane: { initial: 0.50, development: 0.80, flowering: 1.25, maturation: 0.75 },
-}
-
-// Irrigation system efficiency
-const SYSTEM_EFFICIENCY: Record<string, number> = {
-  pivot: 0.85,
-  drip: 0.92,
-  sprinkler: 0.70,
-}
-
-// Solar radiation approximation (Ra) in mm/day equivalent — simplified for tropical latitudes
-const RA_TROPICAL = 15.0
-
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const tMax = parseFloat(inputs.tempMax)
-  const tMin = parseFloat(inputs.tempMin)
-  const tMean = parseFloat(inputs.tempMean)
-  const cc = parseFloat(inputs.fieldCapacity)
-  const pm = parseFloat(inputs.wiltingPoint)
-  const rootDepth = parseFloat(inputs.rootDepth)
-  const precip = parseFloat(inputs.precipitation) || 0
-  const efficiency = SYSTEM_EFFICIENCY[inputs.irrigationSystem] ?? 0.85
-  const kc = inputs.crop === 'custom'
-    ? (parseFloat(inputs.customKc) || 1.0)
-    : (KC[inputs.crop]?.[inputs.phase] ?? 1.0)
-
-  // Hargreaves simplified ETo (mm/day)
-  const tRange = Math.max(tMax - tMin, 0.1)
-  const eto = 0.0023 * (tMean + 17.8) * Math.sqrt(tRange) * RA_TROPICAL
-
-  // Crop ET
-  const etc = eto * kc
-
-  // Net irrigation lamina (mm) — irrigate at 50% available water
-  const netLamina = (cc - pm) * rootDepth * 0.50
-
-  // Gross lamina
-  const grossLamina = netLamina / efficiency
-
-  // Irrigation interval (days)
-  const effectiveEtc = Math.max(etc - precip / 7, 0.1) // daily net demand
-  const irrigationInterval = netLamina / effectiveEtc
-
-  // Pivot run time (approximate: 6mm/h application rate for center pivots)
-  const applicationRate = inputs.irrigationSystem === 'pivot' ? 6 : inputs.irrigationSystem === 'drip' ? 3 : 8
-  const pivotHours = grossLamina / applicationRate
-
-  // Alert for critical phases
-  let alert: string | null = null
-  if (inputs.phase === 'flowering' && precip < etc * 7 * 0.5) {
-    alert = 'ATENÇÃO: Fase de floração com déficit hídrico! Risco máximo de perda de produtividade.'
-  }
-
-  return { eto, etc, kc, netLamina, grossLamina, irrigationInterval, pivotHours, alert }
+function calculate(inputs: Inputs): IrrigationResult | null {
+  return calculateIrrigation({
+    crop: inputs.crop,
+    phase: inputs.phase,
+    fieldCapacity: parseFloat(inputs.fieldCapacity),
+    wiltingPoint: parseFloat(inputs.wiltingPoint),
+    rootDepth: parseFloat(inputs.rootDepth),
+    precipitationMm: parseFloat(inputs.precipitation) || 0,
+    tempMax: parseFloat(inputs.tempMax),
+    tempMin: parseFloat(inputs.tempMin),
+    tempMean: parseFloat(inputs.tempMean),
+    irrigationSystem: inputs.irrigationSystem,
+    customKc: inputs.crop === 'custom' ? parseFloat(inputs.customKc) || undefined : undefined,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.tempMax || !inputs.tempMin || !inputs.tempMean) return 'Informe as temperaturas'
-  if (parseFloat(inputs.fieldCapacity) <= parseFloat(inputs.wiltingPoint)) return 'Capacidade de campo deve ser maior que ponto de murcha'
-  if (isNaN(parseFloat(inputs.rootDepth)) || parseFloat(inputs.rootDepth) <= 0) return 'Profundidade radicular deve ser positiva'
-  return null
+  return validateIrrigation({
+    crop: inputs.crop,
+    phase: inputs.phase,
+    fieldCapacity: parseFloat(inputs.fieldCapacity),
+    wiltingPoint: parseFloat(inputs.wiltingPoint),
+    rootDepth: parseFloat(inputs.rootDepth),
+    precipitationMm: parseFloat(inputs.precipitation) || 0,
+    tempMax: parseFloat(inputs.tempMax),
+    tempMin: parseFloat(inputs.tempMin),
+    tempMean: parseFloat(inputs.tempMean),
+    irrigationSystem: inputs.irrigationSystem,
+    customKc: inputs.crop === 'custom' ? parseFloat(inputs.customKc) || undefined : undefined,
+  })
 }
 
 // ── Component ──
 
 export default function Irrigation() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, IrrigationResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout
@@ -170,7 +121,7 @@ export default function Irrigation() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <ResultCard label="Turno de rega" value={formatNumber(result.irrigationInterval, 1)} unit="dias" highlight variant="default" />
-              <ResultCard label="Tempo de aplicação" value={formatNumber(result.pivotHours, 1)} unit="horas" variant="default" />
+              <ResultCard label="Tempo de aplicação" value={formatNumber(result.applicationHours, 1)} unit="horas" variant="default" />
             </div>
 
             {result.alert && <AlertBanner variant="error" message={result.alert} />}

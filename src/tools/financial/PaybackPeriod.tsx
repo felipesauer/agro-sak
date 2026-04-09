@@ -7,6 +7,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { calculatePayback, validatePayback, type PaybackResult } from '../../core/financial/payback'
 
 // ── Types ──
 
@@ -17,24 +18,6 @@ interface Inputs {
   usefulLife: string
   residualValue: string
   discountRate: string
-}
-
-interface YearRow {
-  [key: string]: unknown
-  year: number
-  cashFlow: number
-  cumulative: number
-  discountedCF: number
-  cumulativeDiscounted: number
-}
-
-interface Result {
-  simplePayback: number
-  discountedPayback: number
-  totalReturn: number
-  roi: number
-  npv: number
-  yearRows: YearRow[]
 }
 
 // ── Constants ──
@@ -67,78 +50,32 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const investment = parseFloat(inputs.investmentValue)
-  const annualGain = parseFloat(inputs.annualNetGain)
-  const usefulLife = parseInt(inputs.usefulLife)
-  const residualValue = parseFloat(inputs.residualValue) || 0
-  const rate = parseFloat(inputs.discountRate) / 100
-
-  // Simple payback
-  const simplePayback = annualGain > 0 ? investment / annualGain : Infinity
-
-  // Build year-by-year table
-  const yearRows: YearRow[] = []
-  let cumulative = -investment
-  let cumulativeDiscounted = -investment
-  let discountedPayback = Infinity
-
-  for (let y = 1; y <= usefulLife; y++) {
-    const cf = y === usefulLife ? annualGain + residualValue : annualGain
-    cumulative += cf
-    const discountedCF = cf / Math.pow(1 + rate, y)
-    cumulativeDiscounted += discountedCF
-
-    if (discountedPayback === Infinity && cumulativeDiscounted >= 0) {
-      // Interpolate exact year
-      const prevCum = cumulativeDiscounted - discountedCF
-      discountedPayback = discountedCF > 0
-        ? y - 1 + Math.abs(prevCum) / discountedCF
-        : y
-    }
-
-    yearRows.push({
-      year: y,
-      cashFlow: cf,
-      cumulative,
-      discountedCF,
-      cumulativeDiscounted,
-    })
-  }
-
-  const totalReturn = annualGain * usefulLife + residualValue
-  const roi = ((totalReturn - investment) / investment) * 100
-  const npv = cumulativeDiscounted
-
-  return {
-    simplePayback: simplePayback === Infinity ? -1 : simplePayback,
-    discountedPayback: discountedPayback === Infinity ? -1 : discountedPayback,
-    totalReturn,
-    roi,
-    npv,
-    yearRows,
-  }
+function calculate(inputs: Inputs): PaybackResult | null {
+  return calculatePayback({
+    investmentValue: parseFloat(inputs.investmentValue) || 0,
+    annualNetGain: parseFloat(inputs.annualNetGain) || 0,
+    usefulLifeYears: parseInt(inputs.usefulLife) || 15,
+    residualValue: parseFloat(inputs.residualValue) || 0,
+    discountRatePercent: parseFloat(inputs.discountRate) || 10,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  const investment = parseFloat(inputs.investmentValue)
-  if (!inputs.investmentValue || isNaN(investment) || investment <= 0) return 'Informe o valor do investimento'
-  if (investment > 100_000_000) return 'Valor muito alto — verifique'
-  const gain = parseFloat(inputs.annualNetGain)
-  if (!inputs.annualNetGain || isNaN(gain)) return 'Informe o ganho líquido anual'
-  if (gain <= 0) return 'O ganho anual deve ser maior que zero'
-  const life = parseInt(inputs.usefulLife)
-  if (isNaN(life) || life < 1 || life > 50) return 'Vida útil deve estar entre 1 e 50 anos'
-  const rate = parseFloat(inputs.discountRate)
-  if (isNaN(rate) || rate < 0 || rate > 50) return 'Taxa de desconto deve estar entre 0 e 50%'
-  return null
+  if (!inputs.investmentValue || isNaN(parseFloat(inputs.investmentValue))) return 'Informe o valor do investimento'
+  return validatePayback({
+    investmentValue: parseFloat(inputs.investmentValue) || 0,
+    annualNetGain: parseFloat(inputs.annualNetGain) || 0,
+    usefulLifeYears: parseInt(inputs.usefulLife) || 15,
+    residualValue: parseFloat(inputs.residualValue) || 0,
+    discountRatePercent: parseFloat(inputs.discountRate) || 10,
+  })
 }
 
 // ── Component ──
 
 export default function PaybackPeriod() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, PaybackResult>({ initialInputs: INITIAL, calculate, validate })
 
   const hint = INVESTMENT_HINTS[inputs.investmentType]
 

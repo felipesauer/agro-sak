@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatPercent, formatNumber } from '../../utils/formatters'
+import { calculateLivestock, validateLivestock, type LivestockResult } from '../../core/financial/livestock'
 
 // ── Types ──
 
@@ -20,20 +21,6 @@ interface Inputs {
   healthCost: string
   otherCosts: string
   mortalityRate: string
-}
-
-interface Result {
-  purchaseTotal: number
-  saleTotal: number
-  effectiveHeads: number
-  totalOperationalCost: number
-  totalCost: number
-  profit: number
-  margin: number
-  roi: number
-  arrobasProduced: number
-  costPerArroba: number
-  revenuePerArroba: number
 }
 
 const INITIAL: Inputs = {
@@ -52,77 +39,44 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const heads = parseFloat(inputs.herdSize)
-  const purchaseW = parseFloat(inputs.purchaseWeight)
-  const purchaseP = parseFloat(inputs.purchasePrice)
-  const saleW = parseFloat(inputs.saleWeight)
-  const saleP = parseFloat(inputs.salePrice)
-  const months = parseFloat(inputs.finishingMonths)
-  const pasture = parseFloat(inputs.pastureCost)
-  const supplement = parseFloat(inputs.supplementCost)
-  const health = parseFloat(inputs.healthCost)
-  const other = parseFloat(inputs.otherCosts)
-  const mortality = parseFloat(inputs.mortalityRate) || 0
-
-  // Purchase total
-  const purchaseTotal = heads * purchaseW * purchaseP
-
-  // Effective heads after mortality
-  const effectiveHeads = heads * (1 - mortality / 100)
-
-  // Operational costs
-  const pastureTotalCost = heads * pasture * months
-  const supplementTotalCost = heads * supplement * months
-  const healthTotalCost = heads * health
-  const otherTotalCost = heads * other
-  const totalOperationalCost = pastureTotalCost + supplementTotalCost + healthTotalCost + otherTotalCost
-
-  // Sale revenue (only effective heads)
-  const saleTotal = effectiveHeads * saleW * saleP
-
-  const totalCost = purchaseTotal + totalOperationalCost
-  const profit = saleTotal - totalCost
-  const margin = saleTotal > 0 ? (profit / saleTotal) * 100 : 0
-  const roi = totalCost > 0 ? (profit / totalCost) * 100 : 0
-
-  // Arrobas produced (gain per head * effective heads)
-  const arrobasProduced = effectiveHeads * (saleW - purchaseW)
-  const costPerArroba = arrobasProduced > 0 ? totalCost / arrobasProduced : 0
-  const revenuePerArroba = arrobasProduced > 0 ? saleTotal / arrobasProduced : 0
-
-  return {
-    purchaseTotal,
-    saleTotal,
-    effectiveHeads,
-    totalOperationalCost,
-    totalCost,
-    profit,
-    margin,
-    roi,
-    arrobasProduced,
-    costPerArroba,
-    revenuePerArroba,
-  }
+function calculate(inputs: Inputs): LivestockResult | null {
+  return calculateLivestock({
+    herdSize: parseFloat(inputs.herdSize) || 0,
+    purchaseWeightArroba: parseFloat(inputs.purchaseWeight) || 0,
+    purchasePricePerArroba: parseFloat(inputs.purchasePrice) || 0,
+    saleWeightArroba: parseFloat(inputs.saleWeight) || 0,
+    salePricePerArroba: parseFloat(inputs.salePrice) || 0,
+    finishingMonths: parseFloat(inputs.finishingMonths) || 0,
+    pastureCostPerHeadMonth: parseFloat(inputs.pastureCost) || 0,
+    supplementCostPerHeadMonth: parseFloat(inputs.supplementCost) || 0,
+    healthCostPerHead: parseFloat(inputs.healthCost) || 0,
+    otherCostsPerHead: parseFloat(inputs.otherCosts) || 0,
+    mortalityRatePercent: parseFloat(inputs.mortalityRate) || 0,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.herdSize || parseFloat(inputs.herdSize) <= 0) return 'Informe o tamanho do lote'
-  if (!inputs.purchaseWeight || parseFloat(inputs.purchaseWeight) <= 0) return 'Informe o peso de compra'
-  if (!inputs.purchasePrice || parseFloat(inputs.purchasePrice) <= 0) return 'Informe o preço de compra'
-  if (!inputs.saleWeight || parseFloat(inputs.saleWeight) <= 0) return 'Informe o peso de venda'
-  if (!inputs.salePrice || parseFloat(inputs.salePrice) <= 0) return 'Informe o preço de venda'
-  if (!inputs.finishingMonths || parseFloat(inputs.finishingMonths) <= 0) return 'Informe o tempo de engorda'
-  if (parseFloat(inputs.saleWeight) <= parseFloat(inputs.purchaseWeight))
-    return 'Peso de venda deve ser maior que o de compra'
-  return null
+  if (!inputs.herdSize || isNaN(parseFloat(inputs.herdSize))) return 'Informe o tamanho do lote'
+  return validateLivestock({
+    herdSize: parseFloat(inputs.herdSize) || 0,
+    purchaseWeightArroba: parseFloat(inputs.purchaseWeight) || 0,
+    purchasePricePerArroba: parseFloat(inputs.purchasePrice) || 0,
+    saleWeightArroba: parseFloat(inputs.saleWeight) || 0,
+    salePricePerArroba: parseFloat(inputs.salePrice) || 0,
+    finishingMonths: parseFloat(inputs.finishingMonths) || 0,
+    pastureCostPerHeadMonth: parseFloat(inputs.pastureCost) || 0,
+    supplementCostPerHeadMonth: parseFloat(inputs.supplementCost) || 0,
+    healthCostPerHead: parseFloat(inputs.healthCost) || 0,
+    otherCostsPerHead: parseFloat(inputs.otherCosts) || 0,
+    mortalityRatePercent: parseFloat(inputs.mortalityRate) || 0,
+  })
 }
 
 // ── Component ──
 
 export default function LivestockProfitability() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, LivestockResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

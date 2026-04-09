@@ -2,53 +2,8 @@ import { useState, useMemo } from 'react'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
-import {
-  AREA_TO_HECTARES,
-  BAG_WEIGHT_KG,
-  BUSHEL_KG,
-  ARROBA_KG,
-  SC_HA_TO_BU_AC,
-} from '../../utils/conversions'
 import { formatNumber } from '../../utils/formatters'
-
-// ── Unit definitions ──
-
-interface UnitDef {
-  value: string
-  label: string
-  toBase: number // multiply by this to reach the base unit
-}
-
-const AREA_UNITS: UnitDef[] = [
-  { value: 'hectare', label: 'Hectare (ha)', toBase: AREA_TO_HECTARES.hectare },
-  { value: 'alqueire_mt', label: 'Alqueire MT (4,84 ha)', toBase: AREA_TO_HECTARES.alqueire_mt },
-  { value: 'alqueire_sp', label: 'Alqueire Paulista (2,42 ha)', toBase: AREA_TO_HECTARES.alqueire_sp },
-  { value: 'alqueire_mg', label: 'Alqueire Mineiro (4,84 ha)', toBase: AREA_TO_HECTARES.alqueire_mg },
-  { value: 'alqueire_ba', label: 'Alqueire Baiano (9,68 ha)', toBase: AREA_TO_HECTARES.alqueire_ba },
-  { value: 'alqueire_go', label: 'Alqueire Goiano (4,84 ha)', toBase: AREA_TO_HECTARES.alqueire_go },
-  { value: 'tarefa_ne', label: 'Tarefa Nordestina (0,4356 ha)', toBase: AREA_TO_HECTARES.tarefa_ne },
-  { value: 'acre', label: 'Acre (0,4047 ha)', toBase: AREA_TO_HECTARES.acre },
-  { value: 'm2', label: 'Metro quadrado (m²)', toBase: AREA_TO_HECTARES.m2 },
-]
-
-const WEIGHT_UNITS: UnitDef[] = [
-  { value: 'kg', label: 'Quilograma (kg)', toBase: 1 },
-  { value: 'ton', label: 'Tonelada (t)', toBase: 1000 },
-  { value: 'saca_60', label: 'Saca 60 kg', toBase: BAG_WEIGHT_KG.soybean },
-  { value: 'saca_50', label: 'Saca 50 kg (arroz)', toBase: BAG_WEIGHT_KG.rice },
-  { value: 'arroba', label: 'Arroba (15 kg)', toBase: ARROBA_KG },
-  { value: 'bushel_soja', label: 'Bushel Soja (27,216 kg)', toBase: BUSHEL_KG.soybean },
-  { value: 'bushel_milho', label: 'Bushel Milho (25,401 kg)', toBase: BUSHEL_KG.corn },
-]
-
-// Yield base unit: kg/ha
-const YIELD_UNITS: UnitDef[] = [
-  { value: 'sc_ha', label: 'sc/ha (soja 60 kg)', toBase: BAG_WEIGHT_KG.soybean }, // 1 sc/ha = 60 kg/ha
-  { value: 'kg_ha', label: 'kg/ha', toBase: 1 },
-  { value: 't_ha', label: 't/ha', toBase: 1000 },
-  { value: 'bu_ac_soja', label: 'bu/ac (soja)', toBase: BAG_WEIGHT_KG.soybean / SC_HA_TO_BU_AC.soybean },
-  { value: 'bu_ac_milho', label: 'bu/ac (milho)', toBase: BAG_WEIGHT_KG.corn / SC_HA_TO_BU_AC.corn },
-]
+import { convert, AREA_UNITS, WEIGHT_UNITS, YIELD_UNITS, type UnitDef } from '../../core/utilities/unit-converter'
 
 type TabKey = 'area' | 'weight' | 'yield'
 
@@ -57,12 +12,6 @@ const TABS: { key: TabKey; label: string; units: UnitDef[] }[] = [
   { key: 'weight', label: 'Peso', units: WEIGHT_UNITS },
   { key: 'yield', label: 'Produtividade', units: YIELD_UNITS },
 ]
-
-// ── Conversion logic ──
-
-function convert(value: number, fromBase: number, toBase: number): number {
-  return (value * fromBase) / toBase
-}
 
 // ── Component ──
 

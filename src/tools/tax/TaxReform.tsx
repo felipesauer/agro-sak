@@ -9,6 +9,7 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
 import { STATE_OPTIONS } from '../../data/reference-data'
 import { fetchCbsRates, type CbsRates } from '../../utils/cbs-api'
+import { calculateTaxReform, validateTaxReform, type TaxReformResult } from '../../core/tax/tax-reform'
 
 // ── Types ──
 
@@ -21,17 +22,7 @@ interface Inputs {
   inputCost: string
 }
 
-interface Result {
-  currentFunrural: number
-  currentTotal: number
-  newCBS: number
-  newIBS: number
-  newGrossTotal: number
-  newCredits: number
-  newNetTotal: number
-  difference: number
-  differencePercent: number
-}
+type Result = TaxReformResult
 
 const INITIAL: Inputs = {
   producerType: 'pf',
@@ -59,48 +50,20 @@ const YEAR_OPTIONS = [
   { value: '2033-01-01', label: '2033 (implementação plena)' },
 ]
 
-// ── Calculation ──
+// ── Calculation (delegates to core) ──
 
 function calculate(inputs: Inputs, rates: CbsRates): Result | null {
   const revenue = parseFloat(inputs.annualRevenue)
   if (isNaN(revenue) || revenue <= 0) return null
-  const domestic = parseFloat(inputs.domesticPercent) / 100
-  const inputCost = parseFloat(inputs.inputCost) || 0
-
-  // Current regime
-  const funruralRate = inputs.producerType === 'pj' ? 0.0285 : 0.015
-  const domesticRevenue = revenue * domestic
-  const currentFunrural = domesticRevenue * funruralRate
-  const currentTotal = currentFunrural
-
-  // New regime (IBS + CBS) — rates from API or fallback
-  const agroDiscount = 0.4 // 60% reduction → pays 40%
-  const cbsEffective = (rates.cbsRate / 100) * agroDiscount
-  const ibsEffective = (rates.ibsRate / 100) * agroDiscount
-  const totalEffective = cbsEffective + ibsEffective
-
-  const newCBS = domesticRevenue * cbsEffective
-  const newIBS = domesticRevenue * ibsEffective
-  const newGrossTotal = newCBS + newIBS
-
-  // Credits on inputs
-  const newCredits = inputCost * totalEffective
-  const newNetTotal = Math.max(0, newGrossTotal - newCredits)
-
-  const difference = newNetTotal - currentTotal
-  const differencePercent = currentTotal > 0 ? (difference / currentTotal) * 100 : 0
-
-  return {
-    currentFunrural,
-    currentTotal,
-    newCBS,
-    newIBS,
-    newGrossTotal,
-    newCredits,
-    newNetTotal,
-    difference,
-    differencePercent,
-  }
+  return calculateTaxReform(
+    {
+      producerType: inputs.producerType,
+      annualRevenue: revenue,
+      domesticPercent: parseFloat(inputs.domesticPercent) || 0,
+      inputCost: parseFloat(inputs.inputCost) || 0,
+    },
+    rates,
+  )
 }
 
 // ── Component ──
@@ -117,8 +80,15 @@ export default function TaxReform() {
       const dom = parseFloat(inputs.domesticPercent) || 0
       const exp = parseFloat(inputs.exportPercent) || 0
       if (Math.abs(dom + exp - 100) > 1) return 'Mercado interno + exportação deve somar 100%'
-      if (!rates) return 'Aguardando taxas da API...'
-      return null
+      return validateTaxReform(
+        {
+          producerType: inputs.producerType,
+          annualRevenue: parseFloat(inputs.annualRevenue) || 0,
+          domesticPercent: dom,
+          inputCost: parseFloat(inputs.inputCost) || 0,
+        },
+        rates,
+      )
     },
     [rates],
   )
@@ -134,17 +104,18 @@ export default function TaxReform() {
   const handleRateYearChange = useCallback((value: string) => {
     setRateYear(value)
     setLoadingRates(true)
+    setRateError(false)
   }, [])
 
   const handleStateChange = useCallback((value: string) => {
     updateInput('state', value as never)
     setLoadingRates(true)
+    setRateError(false)
   }, [updateInput])
 
   // Fetch CBS/IBS rates when state or year changes
   useEffect(() => {
     let cancelled = false
-    setRateError(false)
     const timeout = setTimeout(() => {
       if (!cancelled) {
         setRates({ cbsRate: 8.8, ibsRate: 17.7, source: 'fallback' } as CbsRates)

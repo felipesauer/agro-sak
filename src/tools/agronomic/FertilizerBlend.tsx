@@ -1,4 +1,5 @@
 import useCalculator from '../../hooks/useCalculator'
+import { calculateFertilizerBlend, validateFertilizerBlend, type FertilizerBlendResult } from '../../core/agronomic/fertilizer-blend'
 import CalculatorLayout from '../../components/layout/CalculatorLayout'
 import InputField from '../../components/ui/InputField'
 import SelectField from '../../components/ui/SelectField'
@@ -8,7 +9,6 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
 import { FERTILIZER_SOURCES } from '../../data/reference-data'
-import type { FertilizerSource } from '../../data/reference-data'
 
 // ── Types ──
 
@@ -23,33 +23,6 @@ interface Inputs {
   targetK: string
   area: string
   sources: SourceSlot[]
-}
-
-interface SourceResult {
-  [key: string]: unknown
-  name: string
-  kgPerHa: number
-  kgTotal: number
-  costPerHa: number
-  costTotal: number
-  nDelivered: number
-  pDelivered: number
-  kDelivered: number
-  sDelivered: number
-}
-
-interface Result {
-  sources: SourceResult[]
-  totalCostPerHa: number
-  totalCostTotal: number
-  totalKgPerHa: number
-  nTotal: number
-  pTotal: number
-  kTotal: number
-  sTotal: number
-  nExcess: number
-  pExcess: number
-  kExcess: number
 }
 
 // ── Constants ──
@@ -71,144 +44,50 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function solveBlend(
-  targets: { n: number; p: number; k: number },
-  selectedSources: { source: FertilizerSource; price: number }[],
-): SourceResult[] | null {
-  // Greedy approach: prioritize P source, then K source, then N source
-  // This is a simplified solver — for 2-3 sources it works well in practice
-  let remainN = targets.n
-  let remainP = targets.p
-  let remainK = targets.k
-
-  const results: SourceResult[] = []
-
-  // Sort: P-rich sources first, then K-rich, then N-rich
-  const sorted = [...selectedSources].sort((a, b) => {
-    const aMax = Math.max(a.source.p2o5, a.source.k2o, a.source.n)
-    const bMax = Math.max(b.source.p2o5, b.source.k2o, b.source.n)
-    // Prioritize sources that have the most of the nutrient with highest remaining demand
-    const aPriority = (a.source.p2o5 > 0 ? remainP : 0) + (a.source.k2o > 0 ? remainK : 0) + (a.source.n > 0 ? remainN : 0)
-    const bPriority = (b.source.p2o5 > 0 ? remainP : 0) + (b.source.k2o > 0 ? remainK : 0) + (b.source.n > 0 ? remainN : 0)
-    return bPriority - aPriority || bMax - aMax
-  })
-
-  for (const { source, price } of sorted) {
-    // Determine kg/ha needed based on the nutrient with highest gap that this source provides
-    let kgPerHa = 0
-
-    if (source.p2o5 > 0 && remainP > 0) {
-      kgPerHa = Math.max(kgPerHa, (remainP / source.p2o5) * 100)
-    }
-    if (source.k2o > 0 && remainK > 0) {
-      kgPerHa = Math.max(kgPerHa, (remainK / source.k2o) * 100)
-    }
-    if (source.n > 0 && remainN > 0 && kgPerHa === 0) {
-      // Only use N as primary if no P or K needed from this source
-      kgPerHa = (remainN / source.n) * 100
-    }
-
-    if (kgPerHa <= 0) continue
-
-    const nDel = (kgPerHa * source.n) / 100
-    const pDel = (kgPerHa * source.p2o5) / 100
-    const kDel = (kgPerHa * source.k2o) / 100
-    const sDel = (kgPerHa * source.s) / 100
-
-    remainN = Math.max(0, remainN - nDel)
-    remainP = Math.max(0, remainP - pDel)
-    remainK = Math.max(0, remainK - kDel)
-
-    const costPerHa = (kgPerHa / 1000) * price
-
-    results.push({
-      name: source.name,
-      kgPerHa,
-      kgTotal: 0, // filled later with area
-      costPerHa,
-      costTotal: 0,
-      nDelivered: nDel,
-      pDelivered: pDel,
-      kDelivered: kDel,
-      sDelivered: sDel,
-    })
-  }
-
-  return results
-}
-
-function calculate(inputs: Inputs): Result | null {
-  const targetN = parseFloat(inputs.targetN) || 0
-  const targetP = parseFloat(inputs.targetP) || 0
-  const targetK = parseFloat(inputs.targetK) || 0
+function calculate(inputs: Inputs): FertilizerBlendResult | null {
   const area = parseFloat(inputs.area)
-
   const selectedSources = inputs.sources
     .filter(s => s.sourceIndex !== '')
     .map(s => {
       const idx = parseInt(s.sourceIndex, 10)
       const source = FERTILIZER_SOURCES[idx]
       const customPrice = parseFloat(s.customPrice)
-      const price = isNaN(customPrice) || customPrice <= 0 ? source.pricePerTon : customPrice
-      return { source, price }
+      return {
+        source,
+        customPrice: isNaN(customPrice) || customPrice <= 0 ? undefined : customPrice,
+      }
     })
 
-  const blend = solveBlend({ n: targetN, p: targetP, k: targetK }, selectedSources)
-  if (!blend || blend.length === 0) return null
-
-  // Fill in area-dependent values
-  const sources = blend.map(s => ({
-    ...s,
-    kgTotal: s.kgPerHa * area,
-    costTotal: s.costPerHa * area,
-  }))
-
-  const nTotal = sources.reduce((sum, s) => sum + s.nDelivered, 0)
-  const pTotal = sources.reduce((sum, s) => sum + s.pDelivered, 0)
-  const kTotal = sources.reduce((sum, s) => sum + s.kDelivered, 0)
-  const sTotal = sources.reduce((sum, s) => sum + s.sDelivered, 0)
-
-  const totalCostPerHa = sources.reduce((sum, s) => sum + s.costPerHa, 0)
-  const totalCostTotal = totalCostPerHa * area
-  const totalKgPerHa = sources.reduce((sum, s) => sum + s.kgPerHa, 0)
-
-  return {
-    sources,
-    totalCostPerHa,
-    totalCostTotal,
-    totalKgPerHa,
-    nTotal,
-    pTotal,
-    kTotal,
-    sTotal,
-    nExcess: Math.max(0, nTotal - targetN),
-    pExcess: Math.max(0, pTotal - targetP),
-    kExcess: Math.max(0, kTotal - targetK),
-  }
+  return calculateFertilizerBlend(
+    { n: parseFloat(inputs.targetN) || 0, p: parseFloat(inputs.targetP) || 0, k: parseFloat(inputs.targetK) || 0 },
+    selectedSources,
+    area,
+  )
 }
 
 function validate(inputs: Inputs): string | null {
-  const n = parseFloat(inputs.targetN) || 0
-  const p = parseFloat(inputs.targetP) || 0
-  const k = parseFloat(inputs.targetK) || 0
-  if (n <= 0 && p <= 0 && k <= 0) return 'Informe a necessidade de pelo menos um nutriente (N, P₂O₅ ou K₂O)'
   if (!inputs.area) return 'Informe a área em hectares'
-  const area = parseFloat(inputs.area)
-  if (isNaN(area) || area <= 0) return 'A área deve ser maior que zero'
-  if (area > 100_000) return 'Área muito grande — verifique o valor'
   const activeSources = inputs.sources.filter(s => s.sourceIndex !== '')
-  if (activeSources.length === 0) return 'Selecione pelo menos uma fonte de adubo'
   // Check for duplicate sources
   const indices = activeSources.map(s => s.sourceIndex)
   if (new Set(indices).size !== indices.length) return 'Remova fontes duplicadas'
-  return null
+  return validateFertilizerBlend(
+    { n: parseFloat(inputs.targetN) || 0, p: parseFloat(inputs.targetP) || 0, k: parseFloat(inputs.targetK) || 0 },
+    activeSources.map(s => {
+      const idx = parseInt(s.sourceIndex, 10)
+      const source = FERTILIZER_SOURCES[idx]
+      const customPrice = parseFloat(s.customPrice)
+      return { source, customPrice: isNaN(customPrice) || customPrice <= 0 ? undefined : customPrice }
+    }),
+    parseFloat(inputs.area),
+  )
 }
 
 // ── Component ──
 
 export default function FertilizerBlend() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, FertilizerBlendResult>({
       initialInputs: INITIAL,
       calculate,
       validate,

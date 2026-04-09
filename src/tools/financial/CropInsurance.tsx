@@ -10,6 +10,7 @@ import DataFreshness from '../../components/ui/DataFreshness'
 import { formatCurrency, formatPercent } from '../../utils/formatters'
 import { CROP_INSURANCE_REF, CROP_PRICE_REF, cropOptionsFrom } from '../../data/reference-data'
 import { useCropPrices } from '../../db/hooks'
+import { calculateCropInsurance, validateCropInsurance, type CropInsuranceResult, type ScenarioRow as CoreScenarioRow } from '../../core/financial/crop-insurance'
 
 // ── Types ──
 
@@ -25,25 +26,13 @@ interface Inputs {
   customPremiumRate: string
 }
 
-interface Result {
-  insuredValuePerHa: number
-  insuredValueTotal: number
-  grossPremium: number
-  subsidyAmount: number
-  farmerPremium: number
-  farmerPremiumPerHa: number
-  coverageValuePerHa: number
-  coverageValueTotal: number
-  breakEvenLossPct: number
-  scenarios: ScenarioRow[]
-}
-
-interface ScenarioRow {
+interface ScenarioRow extends CoreScenarioRow {
   [key: string]: unknown
   scenario: string
-  lossPct: number
-  indemnity: number
-  netResult: number
+}
+
+interface Result extends Omit<CropInsuranceResult, 'scenarios'> {
+  scenarios: ScenarioRow[]
 }
 
 // ── Constants ──
@@ -78,105 +67,47 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const yield_ = parseFloat(inputs.yield)
-  const price = parseFloat(inputs.pricePerBag)
-  const coveragePct = parseFloat(inputs.coverageLevel) / 100
-
-  const revenuePerHa = yield_ * price
-  const revenueTotal = revenuePerHa * area
-
-  if (inputs.insuranceType === 'proagro' || inputs.insuranceType === 'proagro_mais') {
-    const financedValue = parseFloat(inputs.financedValue)
-    if (!financedValue || financedValue <= 0) return null
-
-    const rate = inputs.insuranceType === 'proagro'
-      ? CROP_INSURANCE_REF.proagroRate
-      : CROP_INSURANCE_REF.proagroMaisRate
-
-    const grossPremium = (rate / 100) * financedValue
-    const coverageValueTotal = financedValue
-    const coverageValuePerHa = financedValue / area
-
-    return {
-      insuredValuePerHa: revenuePerHa,
-      insuredValueTotal: revenueTotal,
-      grossPremium,
-      subsidyAmount: 0,
-      farmerPremium: grossPremium,
-      farmerPremiumPerHa: grossPremium / area,
-      coverageValuePerHa,
-      coverageValueTotal,
-      breakEvenLossPct: grossPremium > 0 ? (grossPremium / coverageValueTotal) * 100 : 0,
-      scenarios: buildScenarios(revenuePerHa, area, coverageValuePerHa, grossPremium / area),
-    }
-  }
-
-  // PSR insurance
-  const premiumRate = inputs.customPremiumRate
-    ? parseFloat(inputs.customPremiumRate) / 100
-    : (CROP_INSURANCE_REF.premiumRates[inputs.riskLevel as keyof typeof CROP_INSURANCE_REF.premiumRates]?.rate ?? 6) / 100
-
-  const insuredValuePerHa = revenuePerHa
-  const insuredValueTotal = revenueTotal
-  const grossPremium = insuredValueTotal * premiumRate
-
+function buildCoreInput(inputs: Inputs) {
+  const isProagro = inputs.insuranceType === 'proagro' || inputs.insuranceType === 'proagro_mais'
+  const premiumRatePercent = inputs.customPremiumRate
+    ? parseFloat(inputs.customPremiumRate)
+    : (CROP_INSURANCE_REF.premiumRates[inputs.riskLevel as keyof typeof CROP_INSURANCE_REF.premiumRates]?.rate ?? 6)
   const subsidyCategory = inputs.crop === 'coffee' ? 'coffee' : 'grains'
-  const subsidyRate = CROP_INSURANCE_REF.subsidyRates[subsidyCategory as keyof typeof CROP_INSURANCE_REF.subsidyRates]?.rate ?? 40
-  const subsidyAmount = grossPremium * (subsidyRate / 100)
-  const farmerPremium = grossPremium - subsidyAmount
-  const farmerPremiumPerHa = farmerPremium / area
-
-  const coverageValuePerHa = insuredValuePerHa * coveragePct
-  const coverageValueTotal = insuredValueTotal * coveragePct
-
-  const breakEvenLossPct = farmerPremium > 0 ? (farmerPremium / coverageValueTotal) * 100 : 0
+  const subsidyRatePercent = CROP_INSURANCE_REF.subsidyRates[subsidyCategory as keyof typeof CROP_INSURANCE_REF.subsidyRates]?.rate ?? 40
+  const proagroRatePercent = isProagro
+    ? (inputs.insuranceType === 'proagro' ? CROP_INSURANCE_REF.proagroRate : CROP_INSURANCE_REF.proagroMaisRate)
+    : undefined
 
   return {
-    insuredValuePerHa,
-    insuredValueTotal,
-    grossPremium,
-    subsidyAmount,
-    farmerPremium,
-    farmerPremiumPerHa,
-    coverageValuePerHa,
-    coverageValueTotal,
-    breakEvenLossPct,
-    scenarios: buildScenarios(revenuePerHa, area, coverageValuePerHa, farmerPremiumPerHa),
+    insuranceType: inputs.insuranceType as 'psr' | 'proagro' | 'proagro_mais',
+    areaHa: parseFloat(inputs.area) || 0,
+    yieldScHa: parseFloat(inputs.yield) || 0,
+    pricePerBag: parseFloat(inputs.pricePerBag) || 0,
+    coverageLevelPercent: parseFloat(inputs.coverageLevel) || 70,
+    premiumRatePercent,
+    subsidyRatePercent,
+    financedValue: isProagro ? parseFloat(inputs.financedValue) || 0 : undefined,
+    proagroRatePercent,
   }
 }
 
-function buildScenarios(revenuePerHa: number, area: number, coveragePerHa: number, premiumPerHa: number): ScenarioRow[] {
-  return [20, 40, 60, 80, 100].map(lossPct => {
-    const lostRevenue = revenuePerHa * (lossPct / 100)
-    const indemnityPerHa = Math.min(lostRevenue, coveragePerHa)
-    const netResult = (indemnityPerHa - premiumPerHa) * area
-    return {
-      scenario: `${lossPct}% de perda`,
-      lossPct,
-      indemnity: indemnityPerHa * area,
-      netResult,
-    }
-  })
+function calculate(inputs: Inputs): Result | null {
+  const coreResult = calculateCropInsurance(buildCoreInput(inputs))
+  if (!coreResult) return null
+  return {
+    ...coreResult,
+    scenarios: coreResult.scenarios.map(s => ({
+      ...s,
+      scenario: `${s.lossPct}% de perda`,
+    })),
+  }
 }
 
 function validate(inputs: Inputs): string | null {
   if (!inputs.area) return 'Informe a área em hectares'
   if (!inputs.yield) return 'Informe a produtividade esperada (sc/ha)'
   if (!inputs.pricePerBag) return 'Informe o preço por saca'
-  const area = parseFloat(inputs.area)
-  if (isNaN(area) || area <= 0) return 'A área deve ser maior que zero'
-  if (area > 100_000) return 'Área muito grande — verifique o valor'
-  const yield_ = parseFloat(inputs.yield)
-  if (isNaN(yield_) || yield_ <= 0) return 'A produtividade deve ser maior que zero'
-  const price = parseFloat(inputs.pricePerBag)
-  if (isNaN(price) || price <= 0) return 'O preço deve ser maior que zero'
-  if (price < 50 || price > 2000) return 'Preço por saca fora do intervalo usual (R$ 50–R$ 2.000) — verifique o valor'
-  if ((inputs.insuranceType === 'proagro' || inputs.insuranceType === 'proagro_mais') && !inputs.financedValue) {
-    return 'Informe o valor financiado para o Proagro'
-  }
-  return null
+  return validateCropInsurance(buildCoreInput(inputs))
 }
 
 // ── Component ──

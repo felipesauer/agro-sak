@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatCurrency, formatNumber } from '../../utils/formatters'
+import { calculateInputInventory, validateInputInventory, type InputInventoryResult } from '../../core/financial/input-inventory'
 
 // ── Types ──
 
@@ -23,18 +24,7 @@ interface Inputs {
   safetyMargin: string
 }
 
-interface InputItem {
-  name: string
-  qty: number
-  unit: string
-  cost: number
-}
-
-interface Result {
-  items: InputItem[]
-  subtotal: number
-  marginValue: number
-  grandTotal: number
+interface Result extends InputInventoryResult {
   marginPercent: number
 }
 
@@ -56,68 +46,33 @@ const INITIAL: Inputs = {
 // ── Calculation ──
 
 function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const margin = parseFloat(inputs.safetyMargin) || 0
-
-  const items: InputItem[] = []
-
-  // Seeds (kg)
-  const seedRate = parseFloat(inputs.seedRate) || 0
-  const seedPrice = parseFloat(inputs.seedPrice) || 0
-  if (seedRate > 0) {
-    const qty = seedRate * area
-    items.push({ name: 'Semente', qty, unit: 'kg', cost: qty * seedPrice })
-  }
-
-  // Fertilizer (kg, price per ton)
-  const fertRate = parseFloat(inputs.fertilizerRate) || 0
-  const fertPrice = parseFloat(inputs.fertilizerPrice) || 0
-  if (fertRate > 0) {
-    const qty = fertRate * area
-    items.push({ name: 'Fertilizante', qty, unit: 'kg', cost: qty * (fertPrice / 1000) })
-  }
-
-  // Herbicide (L)
-  const herbRate = parseFloat(inputs.herbicideRate) || 0
-  const herbPrice = parseFloat(inputs.herbicidePrice) || 0
-  if (herbRate > 0) {
-    const qty = herbRate * area
-    items.push({ name: 'Herbicida', qty, unit: 'L', cost: qty * herbPrice })
-  }
-
-  // Insecticide (L)
-  const insRate = parseFloat(inputs.insecticideRate) || 0
-  const insPrice = parseFloat(inputs.insecticidePrice) || 0
-  if (insRate > 0) {
-    const qty = insRate * area
-    items.push({ name: 'Inseticida', qty, unit: 'L', cost: qty * insPrice })
-  }
-
-  // Fungicide (L)
-  const funRate = parseFloat(inputs.fungicideRate) || 0
-  const funPrice = parseFloat(inputs.fungicidePrice) || 0
-  if (funRate > 0) {
-    const qty = funRate * area
-    items.push({ name: 'Fungicida', qty, unit: 'L', cost: qty * funPrice })
-  }
-
-  const subtotal = items.reduce((sum, i) => sum + i.cost, 0)
-  const marginValue = subtotal * (margin / 100)
-  const grandTotal = subtotal + marginValue
-
-  return { items, subtotal, marginValue, grandTotal, marginPercent: margin }
+  const coreResult = calculateInputInventory({
+    areaHa: parseFloat(inputs.area) || 0,
+    items: [
+      { name: 'Semente', ratePerHa: parseFloat(inputs.seedRate) || 0, pricePerUnit: parseFloat(inputs.seedPrice) || 0, unitLabel: 'kg' },
+      { name: 'Fertilizante', ratePerHa: parseFloat(inputs.fertilizerRate) || 0, pricePerUnit: parseFloat(inputs.fertilizerPrice) || 0, unitLabel: 'kg', priceIsTon: true },
+      { name: 'Herbicida', ratePerHa: parseFloat(inputs.herbicideRate) || 0, pricePerUnit: parseFloat(inputs.herbicidePrice) || 0, unitLabel: 'L' },
+      { name: 'Inseticida', ratePerHa: parseFloat(inputs.insecticideRate) || 0, pricePerUnit: parseFloat(inputs.insecticidePrice) || 0, unitLabel: 'L' },
+      { name: 'Fungicida', ratePerHa: parseFloat(inputs.fungicideRate) || 0, pricePerUnit: parseFloat(inputs.fungicidePrice) || 0, unitLabel: 'L' },
+    ],
+    safetyMarginPercent: parseFloat(inputs.safetyMargin) || 0,
+  })
+  return { ...coreResult, marginPercent: parseFloat(inputs.safetyMargin) || 0 }
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área'
-  const hasAny =
-    (parseFloat(inputs.seedRate) || 0) > 0 ||
-    (parseFloat(inputs.fertilizerRate) || 0) > 0 ||
-    (parseFloat(inputs.herbicideRate) || 0) > 0 ||
-    (parseFloat(inputs.insecticideRate) || 0) > 0 ||
-    (parseFloat(inputs.fungicideRate) || 0) > 0
-  if (!hasAny) return 'Informe ao menos um insumo'
-  return null
+  if (!inputs.area || isNaN(parseFloat(inputs.area))) return 'Informe a área'
+  return validateInputInventory({
+    areaHa: parseFloat(inputs.area) || 0,
+    items: [
+      { name: 'Semente', ratePerHa: parseFloat(inputs.seedRate) || 0, pricePerUnit: parseFloat(inputs.seedPrice) || 0, unitLabel: 'kg' },
+      { name: 'Fertilizante', ratePerHa: parseFloat(inputs.fertilizerRate) || 0, pricePerUnit: parseFloat(inputs.fertilizerPrice) || 0, unitLabel: 'kg', priceIsTon: true },
+      { name: 'Herbicida', ratePerHa: parseFloat(inputs.herbicideRate) || 0, pricePerUnit: parseFloat(inputs.herbicidePrice) || 0, unitLabel: 'L' },
+      { name: 'Inseticida', ratePerHa: parseFloat(inputs.insecticideRate) || 0, pricePerUnit: parseFloat(inputs.insecticidePrice) || 0, unitLabel: 'L' },
+      { name: 'Fungicida', ratePerHa: parseFloat(inputs.fungicideRate) || 0, pricePerUnit: parseFloat(inputs.fungicidePrice) || 0, unitLabel: 'L' },
+    ],
+    safetyMarginPercent: parseFloat(inputs.safetyMargin) || 0,
+  })
 }
 
 // ── Component ──

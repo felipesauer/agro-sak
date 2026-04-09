@@ -8,6 +8,7 @@ import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber } from '../../utils/formatters'
 import { BAG_WEIGHT_KG, SC_HA_TO_BU_AC } from '../../utils/conversions'
 import { cropOptionsFrom } from '../../data/reference-data'
+import { calculateYieldConverter, validateYieldConverter, type YieldConverterResult } from '../../core/utilities/yield-converter'
 
 // ── Types ──
 
@@ -16,13 +17,6 @@ interface Inputs {
   value: string
   fromUnit: string
   customBagKg: string
-}
-
-interface Result {
-  scHa: number
-  kgHa: number
-  tHa: number
-  buAc: number | null
 }
 
 const INITIAL: Inputs = {
@@ -57,52 +51,31 @@ const STATE_AVERAGES: Record<string, number> = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const val = parseFloat(inputs.value)
+function calculate(inputs: Inputs): YieldConverterResult | null {
   const bagKg = inputs.crop === 'custom' ? (parseFloat(inputs.customBagKg) || 60) : (BAG_WEIGHT_KG[inputs.crop] ?? 60)
   const buAcFactor = inputs.crop === 'custom' ? null : (SC_HA_TO_BU_AC[inputs.crop] ?? null)
-
-  // Convert input to kg/ha first (base unit)
-  let kgHa: number
-  switch (inputs.fromUnit) {
-    case 'sc_ha':
-      kgHa = val * bagKg
-      break
-    case 'kg_ha':
-      kgHa = val
-      break
-    case 't_ha':
-      kgHa = val * 1000
-      break
-    case 'bu_ac':
-      // bu/ac → sc/ha → kg/ha
-      if (!buAcFactor) return null
-      kgHa = (val / buAcFactor) * bagKg
-      break
-    default:
-      return null
-  }
-
-  const scHa = kgHa / bagKg
-  const tHa = kgHa / 1000
-  const buAc = buAcFactor ? scHa * buAcFactor : null
-
-  return { scHa, kgHa, tHa, buAc }
+  return calculateYieldConverter({
+    value: parseFloat(inputs.value),
+    fromUnit: inputs.fromUnit as 'sc_ha' | 'kg_ha' | 't_ha' | 'bu_ac',
+    bagWeightKg: bagKg,
+    buAcFactor,
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.value) return 'Informe o valor de produtividade'
-  if (parseFloat(inputs.value) < 0) return 'O valor não pode ser negativo'
-  if (inputs.fromUnit === 'bu_ac' && !SC_HA_TO_BU_AC[inputs.crop])
-    return 'Conversão bushel/acre não disponível para esta cultura'
-  return null
+  const buAcFactor = inputs.crop === 'custom' ? null : (SC_HA_TO_BU_AC[inputs.crop] ?? null)
+  return validateYieldConverter({
+    value: parseFloat(inputs.value),
+    fromUnit: inputs.fromUnit,
+    buAcFactor,
+  })
 }
 
 // ── Component ──
 
 export default function YieldConverter() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, YieldConverterResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

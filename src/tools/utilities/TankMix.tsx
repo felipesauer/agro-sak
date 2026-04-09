@@ -8,10 +8,7 @@ import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import ComparisonTable from '../../components/ui/ComparisonTable'
 import { formatNumber } from '../../utils/formatters'
-
-// ── Types ──
-
-type FormulationType = 'SC' | 'WG' | 'EC' | 'SL'
+import { calculateTankMix, validateTankMix, type TankMixResult, type FormulationType } from '../../core/utilities/tank-mix'
 
 interface Product {
   id: string
@@ -25,20 +22,6 @@ interface Inputs {
   tankVolume: string
   sprayVolume: string
   area: string
-}
-
-interface ProductResult extends Record<string, unknown> {
-  name: string
-  formulation: FormulationType
-  perTank: number
-  total: number
-  unit: string
-}
-
-interface Result {
-  tanksNeeded: number
-  products: ProductResult[]
-  additionOrder: string[]
 }
 
 const INITIAL_INPUTS: Inputs = {
@@ -66,14 +49,6 @@ const UNIT_OPTIONS = [
   { value: 'L', label: 'Litros (L/ha)' },
   { value: 'kg', label: 'Quilos (kg/ha)' },
 ]
-
-// Addition order priority (lower = add first)
-const ADDITION_PRIORITY: Record<FormulationType, number> = {
-  WG: 1,
-  SC: 2,
-  EC: 3,
-  SL: 4,
-}
 
 // ── Component ──
 
@@ -103,51 +78,38 @@ export default function TankMix() {
     )
   }
 
-  const calculateFn = (inputs: Inputs): Result | null => {
-    const tankVol = parseFloat(inputs.tankVolume)
-    const sprayVol = parseFloat(inputs.sprayVolume)
-    const area = parseFloat(inputs.area)
-
-    const tanksNeeded = (area * sprayVol) / tankVol
-
+  const calculateFn = (inputs: Inputs): TankMixResult | null => {
     const validProducts = products.filter((p) => p.name && p.dosePerHa)
-
-    const productResults: ProductResult[] = validProducts.map((p) => {
-      const dose = parseFloat(p.dosePerHa)
-      const perTank = dose * (tankVol / sprayVol)
-      const total = dose * area
-      return {
+    return calculateTankMix({
+      tankVolumeL: parseFloat(inputs.tankVolume),
+      sprayVolumeLHa: parseFloat(inputs.sprayVolume),
+      areaHa: parseFloat(inputs.area),
+      products: validProducts.map((p) => ({
         name: p.name,
         formulation: p.formulation,
-        perTank,
-        total,
-        unit: p.unit === 'L' ? 'L' : 'kg',
-      }
+        dosePerHa: parseFloat(p.dosePerHa),
+        unit: p.unit,
+      })),
     })
-
-    // Sort by addition order
-    const additionOrder = [...validProducts]
-      .sort(
-        (a, b) =>
-          (ADDITION_PRIORITY[a.formulation] ?? 99) - (ADDITION_PRIORITY[b.formulation] ?? 99),
-      )
-      .map((p) => `${p.name} (${p.formulation})`)
-
-    return { tanksNeeded, products: productResults, additionOrder }
   }
 
   const validateFn = (inputs: Inputs): string | null => {
-    if (!inputs.tankVolume) return 'Informe o volume do tanque'
-    if (!inputs.sprayVolume) return 'Informe o volume de calda por hectare'
-    if (!inputs.area) return 'Informe a área a ser aplicada'
     const validProducts = products.filter((p) => p.name && p.dosePerHa)
-    if (validProducts.length === 0)
-      return 'Adicione pelo menos um produto com nome e dose'
-    return null
+    return validateTankMix({
+      tankVolumeL: parseFloat(inputs.tankVolume),
+      sprayVolumeLHa: parseFloat(inputs.sprayVolume),
+      areaHa: parseFloat(inputs.area),
+      products: validProducts.map((p) => ({
+        name: p.name,
+        formulation: p.formulation,
+        dosePerHa: parseFloat(p.dosePerHa),
+        unit: p.unit,
+      })),
+    })
   }
 
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, TankMixResult>({
       initialInputs: INITIAL_INPUTS,
       calculate: calculateFn,
       validate: validateFn,

@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { calculateHarvestCost, validateHarvestCost, type HarvestCostResult } from '../../core/operational/harvest-cost'
 
 // ── Types ──
 
@@ -19,20 +20,6 @@ interface Inputs {
   maintenancePercent: string
   thirdPartyPrice: string
   productivity: string
-}
-
-interface Result {
-  depreciation: number
-  fuelCostPerHa: number
-  laborCostPerHa: number
-  maintenanceCostPerHa: number
-  ownCostPerHa: number
-  thirdPartyCostPerHa: number
-  ownCostPerSac: number
-  thirdPartyCostPerSac: number
-  savingsPerHa: number
-  savingsTotal: number
-  breakEvenArea: number
 }
 
 const INITIAL: Inputs = {
@@ -50,83 +37,41 @@ const INITIAL: Inputs = {
 
 // ── Calculation ──
 
-function calculate(inputs: Inputs): Result | null {
-  const area = parseFloat(inputs.area)
-  const price = parseFloat(inputs.purchasePrice)
-  const life = parseFloat(inputs.usefulLife)
-  const hoursYear = parseFloat(inputs.hoursPerYear)
-  const fuelL = parseFloat(inputs.fuelConsumption)
-  const diesel = parseFloat(inputs.dieselPrice)
-  const salary = parseFloat(inputs.operatorSalary)
-  const maintPct = parseFloat(inputs.maintenancePercent)
-  const thirdParty = parseFloat(inputs.thirdPartyPrice)
-  const prod = parseFloat(inputs.productivity)
-
-  // Capacity: assume ~3 ha/h for harvester
-  const haPerHour = area / hoursYear || 1
-
-  // Annual depreciation
-  const annualDepreciation = price / life
-  const depreciation = annualDepreciation / area
-
-  // Fuel cost
-  const fuelCostPerHa = (fuelL / haPerHour) * diesel
-
-  // Labor: salary * months of harvest season (~2 months) spread over area
-  const laborCostPerHa = (salary * 12) / area
-
-  // Maintenance
-  const maintenanceCostPerHa = (price * (maintPct / 100)) / area
-
-  const ownCostPerHa = depreciation + fuelCostPerHa + laborCostPerHa + maintenanceCostPerHa
-  const thirdPartyCostPerHa = thirdParty
-
-  const ownCostPerSac = prod > 0 ? ownCostPerHa / prod : 0
-  const thirdPartyCostPerSac = prod > 0 ? thirdPartyCostPerHa / prod : 0
-
-  const savingsPerHa = thirdPartyCostPerHa - ownCostPerHa
-  const savingsTotal = savingsPerHa * area
-
-  // Break-even: fixed costs / (third-party - variable own costs)
-  const fixedCosts = annualDepreciation + (price * maintPct / 100) + (salary * 12)
-  const variablePerHa = fuelCostPerHa
-  const breakEvenArea = (thirdParty - variablePerHa) > 0
-    ? fixedCosts / (thirdParty - variablePerHa)
-    : 0
-
-  return {
-    depreciation,
-    fuelCostPerHa,
-    laborCostPerHa,
-    maintenanceCostPerHa,
-    ownCostPerHa,
-    thirdPartyCostPerHa,
-    ownCostPerSac,
-    thirdPartyCostPerSac,
-    savingsPerHa,
-    savingsTotal,
-    breakEvenArea,
-  }
+function calculate(inputs: Inputs): HarvestCostResult | null {
+  return calculateHarvestCost({
+    areaHa: parseFloat(inputs.area),
+    purchasePrice: parseFloat(inputs.purchasePrice),
+    usefulLifeYears: parseFloat(inputs.usefulLife),
+    hoursPerYear: parseFloat(inputs.hoursPerYear),
+    fuelConsumptionLPerH: parseFloat(inputs.fuelConsumption),
+    dieselPricePerL: parseFloat(inputs.dieselPrice),
+    operatorMonthlySalary: parseFloat(inputs.operatorSalary),
+    maintenancePercent: parseFloat(inputs.maintenancePercent),
+    thirdPartyPricePerHa: parseFloat(inputs.thirdPartyPrice),
+    productivityScHa: parseFloat(inputs.productivity),
+  })
 }
 
 function validate(inputs: Inputs): string | null {
-  if (!inputs.area || parseFloat(inputs.area) <= 0) return 'Informe a área'
-  if (!inputs.purchasePrice || parseFloat(inputs.purchasePrice) <= 0) return 'Informe o valor da colhedora'
-  if (!inputs.usefulLife || parseFloat(inputs.usefulLife) <= 0) return 'Informe a vida útil'
-  if (!inputs.hoursPerYear || parseFloat(inputs.hoursPerYear) <= 0) return 'Informe as horas/ano'
-  if (!inputs.fuelConsumption || parseFloat(inputs.fuelConsumption) <= 0) return 'Informe o consumo de combustível'
-  if (!inputs.dieselPrice || parseFloat(inputs.dieselPrice) <= 0) return 'Informe o preço do diesel'
-  if (!inputs.operatorSalary || parseFloat(inputs.operatorSalary) <= 0) return 'Informe o salário do operador'
-  if (!inputs.thirdPartyPrice || parseFloat(inputs.thirdPartyPrice) <= 0) return 'Informe o valor do terceirizado'
-  if (!inputs.productivity || parseFloat(inputs.productivity) <= 0) return 'Informe a produtividade'
-  return null
+  return validateHarvestCost({
+    areaHa: parseFloat(inputs.area),
+    purchasePrice: parseFloat(inputs.purchasePrice),
+    usefulLifeYears: parseFloat(inputs.usefulLife),
+    hoursPerYear: parseFloat(inputs.hoursPerYear),
+    fuelConsumptionLPerH: parseFloat(inputs.fuelConsumption),
+    dieselPricePerL: parseFloat(inputs.dieselPrice),
+    operatorMonthlySalary: parseFloat(inputs.operatorSalary),
+    maintenancePercent: parseFloat(inputs.maintenancePercent),
+    thirdPartyPricePerHa: parseFloat(inputs.thirdPartyPrice),
+    productivityScHa: parseFloat(inputs.productivity),
+  })
 }
 
 // ── Component ──
 
 export default function HarvestCost() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({ initialInputs: INITIAL, calculate, validate })
+    useCalculator<Inputs, HarvestCostResult>({ initialInputs: INITIAL, calculate, validate })
 
   return (
     <CalculatorLayout

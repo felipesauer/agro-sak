@@ -5,6 +5,7 @@ import ActionButtons from '../../components/ui/ActionButtons'
 import ResultCard from '../../components/ui/ResultCard'
 import AlertBanner from '../../components/ui/AlertBanner'
 import { formatNumber, formatCurrency } from '../../utils/formatters'
+import { calculateRainVolume, validateRainVolume, type RainVolumeResult } from '../../core/utilities/rain-volume'
 
 // ── Types ──
 
@@ -12,14 +13,6 @@ interface Inputs {
   rainMm: string
   area: string
   pricePerCubicMeter: string
-}
-
-interface Result {
-  litersPerHa: number
-  totalLiters: number
-  totalCubicMeters: number
-  equivalentCost: number
-  alerts: string[]
 }
 
 // ── Constants ──
@@ -30,14 +23,11 @@ const INITIAL: Inputs = {
   pricePerCubicMeter: '',
 }
 
-// 1 mm of rain on 1 ha = 10,000 liters = 10 m³
-const LITERS_PER_MM_PER_HA = 10_000
-
 // ── Component ──
 
 export default function RainVolume() {
   const { inputs, result, error, updateInput, run, clear } =
-    useCalculator<Inputs, Result>({
+    useCalculator<Inputs, RainVolumeResult>({
       initialInputs: INITIAL,
       calculate,
       validate,
@@ -138,37 +128,25 @@ export default function RainVolume() {
 // ── Logic ──
 
 function validate(inputs: Inputs): string | null {
-  const rain = parseFloat(inputs.rainMm)
-  const area = parseFloat(inputs.area)
-  if (isNaN(rain) || rain <= 0) return 'Informe a precipitação em mm'
-  if (isNaN(area) || area <= 0) return 'Informe a área em hectares'
-  if (rain > 500) return 'Precipitação acima de 500 mm — verifique o valor'
-  return null
+  return validateRainVolume({
+    rainMm: parseFloat(inputs.rainMm),
+    areaHa: parseFloat(inputs.area),
+    pricePerCubicMeter: parseFloat(inputs.pricePerCubicMeter) || undefined,
+  })
 }
 
-function calculate(inputs: Inputs): Result {
-  const rain = parseFloat(inputs.rainMm)
-  const area = parseFloat(inputs.area)
+function calculate(inputs: Inputs): RainVolumeResult {
   const price = parseFloat(inputs.pricePerCubicMeter) || 0
+  const result = calculateRainVolume({
+    rainMm: parseFloat(inputs.rainMm),
+    areaHa: parseFloat(inputs.area),
+    pricePerCubicMeter: price,
+  })
 
-  const litersPerHa = rain * LITERS_PER_MM_PER_HA
-  const totalLiters = litersPerHa * area
-  const totalCubicMeters = totalLiters / 1000
-  const equivalentCost = totalCubicMeters * price
-
-  const alerts: string[] = []
-
-  if (rain < 5) {
-    alerts.push('Precipitação inferior a 5 mm. Em solo seco, essa chuva pode evaporar antes de infiltrar.')
-  } else if (rain >= 5 && rain < 20) {
-    alerts.push('Chuva leve a moderada. Boa para manutenção hídrica, mas insuficiente para recarregar o perfil do solo.')
-  } else if (rain >= 50) {
-    alerts.push('Precipitação intensa. Risco de escoamento superficial e erosão, especialmente em solos descobertos ou com declividade.')
-  }
-
+  // Extra UI alert for economic equivalent (not in core)
   if (price > 0) {
-    alerts.push(`Essa chuva equivale economicamente a ${formatCurrency(equivalentCost)} em irrigação.`)
+    result.alerts.push(`Essa chuva equivale economicamente a ${formatCurrency(result.equivalentCost)} em irrigação.`)
   }
 
-  return { litersPerHa, totalLiters, totalCubicMeters, equivalentCost, alerts }
+  return result
 }
