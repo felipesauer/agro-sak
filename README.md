@@ -1,7 +1,6 @@
 # Agro SAK
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Deploy](https://img.shields.io/badge/deploy-vercel-black?logo=vercel&logoColor=white)](https://github.com/felipesauer/agro-sak)
 
 **Agro SAK** é uma coleção de **63 calculadoras gratuitas** para o agronegócio brasileiro. O objetivo é simples: dar ao produtor rural, técnico agrícola e consultor acesso rápido a cálculos do dia a dia — sem precisar de planilha, cadastro ou internet (depois do primeiro acesso).
 
